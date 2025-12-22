@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PesaFix</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Loans</div>
+    <nav class="topnav">
+      <a class="link" href="login.html">Login</a>
+      <a class="btn btn-primary" href="register.html">Apply Now</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Fast service-fee based loan processing for Kenya</h1>
+      <p class="muted">
+        Apply in minutes using your phone number and National ID. Pay the required service fee to begin processing,
+        then track your loan status on your dashboard. 
+      </p>
+
+      <div class="card">
+        <h2>How it works</h2>
+        <ol class="steps">
+          <li>Create an account with your phone number, National ID, and password.</li>
+          <li>Request a loan amount and confirm your M-Pesa number.</li>
+          <li>Pay the service fee via Paystack (card / mobile money options supported by Paystack).</li>
+          <li>We verify payment server-side and, if approved, disburse via Paystack Transfer to M-Pesa.</li>
+        </ol>
+        <p></p>
+        <a class="btn btn-primary btn-block" href="register.html">Get Started</a>
+        
+          <p></p>
+          <p></p>
+        <p class="tiny muted">
+          By proceeding you agree to provide accurate information. Keep your credentials secure.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="muted tiny">© <span id="y"></span> PesaFix.KE . All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("y").textContent = String(new Date().getFullYear());
+  </script>
+</body>
+</html>

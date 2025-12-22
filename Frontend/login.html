@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login - Loan Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Loan Platform</div>
+    <nav class="topnav">
+      <a class="link" href="register.html">Register</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h1>Login</h1>
+      <p class="muted">Access your dashboard to apply and track status.</p>
+
+      <form id="loginForm" class="form">
+        <label>
+          Phone number
+          <input id="phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX or 2547XXXXXXXX" required />
+        </label>
+
+        <label>
+          Password
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+        </label>
+
+        <button class="btn btn-primary btn-block" type="submit">Login</button>
+        <div id="msg" class="msg" aria-live="polite"></div>
+      </form>
+
+      <div class="divider"></div>
+      <p class="tiny muted">No account? <a class="link" href="register.html">Create one</a></p>
+    </section>
+  </main>
+
+  <script src="js/auth.js?v=2"></script>
+  <script>
+    window.Auth.init();
+    if (window.Auth.isAuthenticated()) {
+      window.location.href = "dashboard.html";
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("msg");
+      msg.textContent = "";
+      msg.className = "msg";
+
+      const phone = document.getElementById("phone").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        await window.Auth.login({ phone, password });
+        window.location.href = "dashboard.html";
+      } catch (err) {
+        msg.textContent = err.message || "Login failed.";
+        msg.classList.add("msg-error");
+      }
+    });
+  </script>
+</body>
+</html>

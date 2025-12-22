@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Register - Loan Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Loan Platform</div>
+    <nav class="topnav">
+      <a class="link" href="login.html">Login</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h1>Create account</h1>
+      <p class="muted">Use your Kenyan phone number and National ID.</p>
+
+      <form id="registerForm" class="form">
+        <label>
+          Phone number
+          <input id="phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX or 2547XXXXXXXX" required />
+          <div class="hint">Accepted: 07XXXXXXXX, 01XXXXXXXX, 2547XXXXXXXX, 2541XXXXXXXX</div>
+        </label>
+
+        <label>
+          National ID
+          <input id="national_id" name="national_id" inputmode="numeric" autocomplete="off" placeholder="e.g. 12345678" required />
+          <div class="hint">Numbers only.</div>
+        </label>
+
+        <label>
+          Password
+          <input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required />
+          <div class="hint">At least 8 characters.</div>
+        </label>
+
+        <button class="btn btn-primary btn-block" type="submit">Create account</button>
+        <div id="msg" class="msg" aria-live="polite"></div>
+      </form>
+
+      <div class="divider"></div>
+      <p class="tiny muted">Already have an account? <a class="link" href="login.html">Login</a></p>
+    </section>
+  </main>
+
+  <script src="js/auth.js?v=2"></script>
+  <script>
+    window.Auth.init();
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("msg");
+      msg.textContent = "";
+      msg.className = "msg";
+
+      const phone = document.getElementById("phone").value.trim();
+      const national_id = document.getElementById("national_id").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        await window.Auth.register({ phone, national_id, password });
+        msg.textContent = "Account created. Redirecting to login…";
+        msg.classList.add("msg-success");
+        window.location.href = "login.html";
+      } catch (err) {
+        msg.textContent = err.message || "Registration failed.";
+        msg.classList.add("msg-error");
+      }
+    });
+  </script>
+</body>
+</html>

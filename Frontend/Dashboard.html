@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - Loan Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Loan Platform</div>
+    <nav class="topnav">
+      <button id="logoutBtn" class="btn btn-ghost" type="button">Logout</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h1>Dashboard</h1>
+      <div class="row">
+        <div class="badge">Account</div>
+        <div class="muted" id="userPhone">Loading…</div>
+      </div>
+      <div class="divider"></div>
+
+      <h2>Apply for a loan</h2>
+      <p class="muted">
+        You can only have one active loan at a time. Pay the service fee to start processing.
+      </p>
+
+      <form id="loanForm" class="form">
+        <label>
+          Loan amount (KES)
+          <input id="amount" name="amount" inputmode="numeric" min="1000" max="60000" step="1" placeholder="e.g. 5000" required />
+          <div class="hint">Minimum 1,000. Maximum 60,000.</div>
+        </label>
+
+        <div class="row row-between">
+          <div>
+            <div class="muted tiny">Required service fee</div>
+            <div class="price" id="feeText">—</div>
+          </div>
+          <div class="badge" id="feeBracket">—</div>
+        </div>
+
+        <label>
+          M-Pesa phone number (for disbursement)
+          <input id="mpesa_phone" name="mpesa_phone" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX or 2547XXXXXXXX" required />
+        </label>
+
+        <button class="btn btn-primary btn-block" id="payBtn" type="submit" disabled>Pay service fee</button>
+        <div id="msg" class="msg" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Your current loan</h2>
+      <div id="loanBox" class="loan-box">
+        <div class="muted">Loading…</div>
+      </div>
+      <button id="refreshBtn" class="btn btn-ghost btn-block" type="button">Refresh status</button>
+    </section>
+  </main>
+
+  <script src="js/auth.js?v=2"></script>
+  <script src="js/loan.js?v=2"></script>
+  <script src="js/paystack.js?v=2"></script>
+  <script>
+    window.Auth.init();
+
+    if (!window.Auth.isAuthenticated()) {
+      window.location.href = "login.html";
+    }
+
+    const logoutBtn = document.getElementById("logoutBtn");
+    logoutBtn.addEventListener("click", () => {
+      window.Auth.logout();
+      window.location.href = "login.html";
+    });
+
+    const userPhoneEl = document.getElementById("userPhone");
+    const feeText = document.getElementById("feeText");
+    const feeBracket = document.getElementById("feeBracket");
+    const payBtn = document.getElementById("payBtn");
+    const msg = document.getElementById("msg");
+    const amountInput = document.getElementById("amount");
+    const mpesaPhoneInput = document.getElementById("mpesa_phone");
+
+    function setMsg(text, kind) {
+      msg.textContent = text || "";
+      msg.className = "msg";
+      if (kind === "error") msg.classList.add("msg-error");
+      if (kind === "success") msg.classList.add("msg-success");
+      if (kind === "info") msg.classList.add("msg-info");
+    }
+
+    async function loadMe() {
+      const me = await window.Auth.me();
+      userPhoneEl.textContent = me.phone;
+    }
+
+    async function loadLoan() {
+      const box = document.getElementById("loanBox");
+      box.innerHTML = '<div class="muted">Loading…</div>';
+      try {
+        const loan = await window.Loan.getMyActiveLoan();
+        if (!loan) {
+          box.innerHTML = `
+            <div class="row row-between">
+              <div>
+                <div class="muted tiny">Status</div>
+                <div class="status status-none">No active loan</div>
+              </div>
+              <div class="muted tiny">Apply above</div>
+            </div>
+          `;
+          return;
+        }
+        box.innerHTML = `
+          <div class="grid2">
+            <div>
+              <div class="muted tiny">Amount</div>
+              <div class="value">KES ${window.Loan.formatMoney(loan.amount)}</div>
+            </div>
+            <div>
+              <div class="muted tiny">Service fee</div>
+              <div class="value">KES ${window.Loan.formatMoney(loan.service_fee)}</div>
+            </div>
+            <div>
+              <div class="muted tiny">M-Pesa</div>
+              <div class="value">${loan.mpesa_phone}</div>
+            </div>
+            <div>
+              <div class="muted tiny">Status</div>
+              <div class="status status-${loan.status.toLowerCase()}">${loan.status}</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="muted tiny">Created: ${new Date(loan.created_at).toLocaleString()}</div>
+          <div class="muted tiny">Updated: ${new Date(loan.updated_at).toLocaleString()}</div>
+        `;
+      } catch (e) {
+        box.innerHTML = `<div class="msg msg-error">${e.message || "Failed to load loan."}</div>`;
+      }
+    }
+
+    function updateFeeUI() {
+      const amount = Number(String(amountInput.value || "").trim());
+      try {
+        const info = window.Loan.computeServiceFee(amount);
+        feeText.textContent = `KES ${window.Loan.formatMoney(info.fee)}`;
+        feeBracket.textContent = info.label;
+        payBtn.disabled = false;
+      } catch (e) {
+        feeText.textContent = "—";
+        feeBracket.textContent = "—";
+        payBtn.disabled = true;
+      }
+    }
+
+    amountInput.addEventListener("input", updateFeeUI);
+
+    document.getElementById("refreshBtn").addEventListener("click", async () => {
+      await loadLoan();
+    });
+
+    document.getElementById("loanForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setMsg("", "");
+
+      const amount = Number(String(amountInput.value || "").trim());
+      const mpesa_phone = String(mpesaPhoneInput.value || "").trim();
+
+      let feeInfo;
+      try {
+        feeInfo = window.Loan.computeServiceFee(amount);
+      } catch (err) {
+        setMsg(err.message || "Invalid amount.", "error");
+        return;
+      }
+
+      try {
+        setMsg("Creating loan and initializing payment…", "info");
+
+        // Create the loan first (server enforces one active loan).
+        const created = await window.Loan.createLoan({ amount, mpesa_phone });
+
+        // Ask backend to initialize Paystack payment for exact service fee.
+        const init = await window.Loan.initServiceFeePayment({ loan_id: created.id });
+
+        setMsg("Open Paystack to pay the service fee…", "info");
+
+        // Paystack inline using PUBLIC key only; backend verifies reference.
+        await window.Paystack.payServiceFeeInline({
+          paystack_public_key: init.paystack_public_key,
+          email: init.email, // backend generated or user-email surrogate; safe
+          amount_kes: init.amount_kes,
+          reference: init.reference,
+          metadata: init.metadata
+        });
+
+        // On success, Paystack returns reference; verify with backend and update state.
+        setMsg("Verifying payment…", "info");
+        await window.Loan.verifyServiceFeePayment({ reference: init.reference });
+
+        setMsg("Payment verified. Your loan is now in processing.", "success");
+        await loadLoan();
+      } catch (err) {
+        setMsg(err.message || "Payment flow failed.", "error");
+        await loadLoan();
+      }
+    });
+
+    (async function boot() {
+      try {
+        await loadMe();
+        updateFeeUI();
+        await loadLoan();
+      } catch (e) {
+        window.Auth.logout();
+        window.location.href = "login.html";
+      }
+    })();
+  </script>
+</body>
+</html>
