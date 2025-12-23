@@ -50,15 +50,16 @@ class LoginSerializer(serializers.Serializer):
         return normalize_phone(value)
 
     def validate(self, attrs):
-        phone = attrs.get("phone")
-        password = attrs.get("password")
-        user = authenticate(username=phone, password=password)
-        if not user:
-            raise serializers.ValidationError("Invalid credentials.")
-        if not user.is_active:
-            raise serializers.ValidationError("Account disabled.")
-        attrs["user"] = user
-        return attrs
+    phone = attrs.get("phone")
+    password = attrs.get("password")
+    user = authenticate(phone=phone, password=password)
+    if not user:
+        raise serializers.ValidationError({"non_field_errors": ["Invalid phone or password."]})
+    if not user.is_active:
+        raise serializers.ValidationError({"non_field_errors": ["Account is disabled."]})
+    attrs["user"] = user
+    return attrs
+
 
 class MeSerializer(serializers.ModelSerializer):
     class Meta:
