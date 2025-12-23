@@ -17,10 +17,16 @@ class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        s = RegisterSerializer(data=request.data)
-        s.is_valid(raise_exception=True)
-        s.save()
-        return Response({"ok": True}, status=201)
+        try:
+            s = RegisterSerializer(data=request.data)
+            s.is_valid(raise_exception=True)
+            s.save()
+            return Response({"ok": True}, status=201)
+        except serializers.ValidationError as e:
+            return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response({"error": "An unexpected error occurred."}, status=500)
+
 
 
 
