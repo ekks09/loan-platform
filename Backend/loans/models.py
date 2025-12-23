@@ -22,7 +22,7 @@ class Loan(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # payment/disbursement linkage
+    # Payment / disbursement linkage
     service_fee_paid = models.BooleanField(default=False)
     paystack_reference = models.CharField(max_length=64, unique=True, blank=True, null=True)
     last_event = models.CharField(max_length=255, blank=True, default="")
@@ -63,4 +63,5 @@ class Loan(models.Model):
 
     @classmethod
     def user_has_active_loan(cls, user: User) -> bool:
+        # Returns True if the user has any loan not yet disbursed
         return cls.objects.filter(user=user).exclude(status=cls.Status.DISBURSED).exists()
