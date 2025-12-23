@@ -13,8 +13,6 @@
     if (a < 1000) throw new Error("Minimum loan amount is 1,000.");
     if (a > 60000) throw new Error("Maximum loan amount is 60,000.");
 
-    // Fee schedule in KES: bracket-based, continuing the provided logic up to 60,000.
-    // Deterministic, no hard-coded secrets. This is business logic.
     const brackets = [
       { min: 1000, max: 1000, fee: 200, label: "KES 1,000" },
       { min: 2000, max: 2000, fee: 290, label: "KES 2,000" },
@@ -39,8 +37,7 @@
   };
 
   Loan.getMyActiveLoan = async function () {
-    const data = await window.Auth.api("/loans/current/", { method: "GET", auth: true });
-    return data;
+    return await window.Auth.api("/loans/active/", { method: "GET", auth: true });
   };
 
   Loan.initServiceFeePayment = async function ({ loan_id }) {
