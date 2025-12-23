@@ -52,7 +52,7 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, attrs):
         phone = attrs.get("phone")
         password = attrs.get("password")
-        user = authenticate(phone=phone, password=password)
+        user = authenticate(username=phone, password=password)
         if not user:
             raise serializers.ValidationError("Invalid credentials.")
         if not user.is_active:
