@@ -1,9 +1,6 @@
 from __future__ import annotations
-
 from django.conf import settings
-from django.db import models, transaction
-from django.utils import timezone
-
+from django.db import models
 from users.models import User, normalize_ke_phone
 
 
@@ -13,17 +10,21 @@ class Loan(models.Model):
         APPROVED = "APPROVED"
         DISBURSED = "DISBURSED"
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="loans")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="loans"
+    )
     amount = models.PositiveIntegerField()  # KES
     service_fee = models.PositiveIntegerField()  # KES
     mpesa_phone = models.CharField(max_length=12)  # 2547XXXXXXXX
-    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     # payment/disbursement linkage
     service_fee_paid = models.BooleanField(default=False)
-    paystack_reference = models.CharField(max_length=64, unique=True)
+    paystack_reference = models.CharField(max_length=64, unique=True, blank=True, null=True)
     last_event = models.CharField(max_length=255, blank=True, default="")
 
     class Meta:
@@ -32,12 +33,14 @@ class Loan(models.Model):
             models.Index(fields=["paystack_reference"]),
         ]
 
-    def clean(self):
+    def save(self, *args, **kwargs):
         self.mpesa_phone = normalize_ke_phone(self.mpesa_phone)
+        if not self.service_fee:
+            self.service_fee = self.compute_service_fee(self.amount)
+        super().save(*args, **kwargs)
 
     @staticmethod
     def compute_service_fee(amount: int) -> int:
-        # Must match frontend tiers. Server is authoritative.
         a = int(amount)
         if a < 1000 or a > 60000:
             raise ValueError("Loan amount out of range.")
