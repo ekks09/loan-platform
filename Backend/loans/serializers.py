@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from rest_framework import serializers
 from users.models import normalize_ke_phone
 from .models import Loan
