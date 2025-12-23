@@ -1,10 +1,11 @@
 <!doctype html>
+{% load static %}
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard - Loan Platform</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
   <script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
 <body>
@@ -63,20 +64,20 @@
     </section>
   </main>
 
-  <script src="js/auth.js?v=2"></script>
-  <script src="js/loan.js?v=2"></script>
-  <script src="js/paystack.js?v=2"></script>
+  <script src="{% static 'js/auth.js' %}"></script>
+  <script src="{% static 'js/loan.js' %}"></script>
+  <script src="{% static 'js/paystack.js' %}"></script>
   <script>
     window.Auth.init();
 
     if (!window.Auth.isAuthenticated()) {
-      window.location.href = "login.html";
+      window.location.href = "{% url 'login_view' %}";
     }
 
     const logoutBtn = document.getElementById("logoutBtn");
     logoutBtn.addEventListener("click", () => {
       window.Auth.logout();
-      window.location.href = "login.html";
+      window.location.href = "{% url 'login_view' %}";
     });
 
     const userPhoneEl = document.getElementById("userPhone");
@@ -182,28 +183,18 @@
 
       try {
         setMsg("Creating loan and initializing payment…", "info");
-
-        // Create the loan first (server enforces one active loan).
         const created = await window.Loan.createLoan({ amount, mpesa_phone });
-
-        // Ask backend to initialize Paystack payment for exact service fee.
         const init = await window.Loan.initServiceFeePayment({ loan_id: created.id });
-
         setMsg("Open Paystack to pay the service fee…", "info");
-
-        // Paystack inline using PUBLIC key only; backend verifies reference.
         await window.Paystack.payServiceFeeInline({
           paystack_public_key: init.paystack_public_key,
-          email: init.email, // backend generated or user-email surrogate; safe
+          email: init.email,
           amount_kes: init.amount_kes,
           reference: init.reference,
           metadata: init.metadata
         });
-
-        // On success, Paystack returns reference; verify with backend and update state.
         setMsg("Verifying payment…", "info");
         await window.Loan.verifyServiceFeePayment({ reference: init.reference });
-
         setMsg("Payment verified. Your loan is now in processing.", "success");
         await loadLoan();
       } catch (err) {
@@ -219,7 +210,7 @@
         await loadLoan();
       } catch (e) {
         window.Auth.logout();
-        window.location.href = "login.html";
+        window.location.href = "{% url 'login_view' %}";
       }
     })();
   </script>

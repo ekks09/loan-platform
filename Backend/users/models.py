@@ -3,19 +3,18 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.core.validators import RegexValidator
 
+# Utility to normalize Kenyan phone numbers to 254XXXXXXXXX format
 def normalize_ke_phone(phone: str) -> str:
-    """Normalizes a Kenyan phone number to 254... format."""
     if not phone:
         return ""
     p = re.sub(r"\s+", "", str(phone)).lstrip("+")
     if p.startswith("0"):
-        # Handles 07... and 01...
         p = "254" + p[1:]
     elif len(p) == 9 and (p.startswith("7") or p.startswith("1")):
-        # Handles 7... and 1...
         p = "254" + p
     return p
 
+# Validators
 KENYAN_PHONE_REGEX = r"^254(7|1)\d{8}$"
 phone_validator = RegexValidator(
     regex=KENYAN_PHONE_REGEX,
@@ -27,12 +26,14 @@ national_id_validator = RegexValidator(
     message="National ID must be 6-10 digits.",
 )
 
+# Custom User Manager
 class UserManager(BaseUserManager):
     def create_user(self, phone: str, national_id: str, password: str | None = None, **extra_fields):
         if not phone:
             raise ValueError("Phone is required")
         if not national_id:
             raise ValueError("National ID is required")
+
         phone = phone.strip()
         national_id = national_id.strip()
 
@@ -48,8 +49,15 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
+
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
         return self.create_user(phone=phone, national_id=national_id, password=password, **extra_fields)
 
+# Custom User Model
 class User(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=12, unique=True, validators=[phone_validator])
     national_id = models.CharField(max_length=10, validators=[national_id_validator])

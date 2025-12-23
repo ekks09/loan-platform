@@ -1,17 +1,18 @@
 <!doctype html>
+{% load static %}
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PesaFix</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 <body>
   <header class="topbar">
     <div class="brand">Loans</div>
     <nav class="topnav">
-      <a class="link" href="login.html">Login</a>
-      <a class="btn btn-primary" href="register.html">Apply Now</a>
+      <a class="link" href="{% url 'login_view' %}">Login</a>
+      <a class="btn btn-primary" href="{% url 'register' %}">Apply Now</a>
     </nav>
   </header>
 
@@ -31,11 +32,10 @@
           <li>Pay the service fee via Paystack (card / mobile money options supported by Paystack).</li>
           <li>We verify payment server-side and, if approved, disburse via Paystack Transfer to M-Pesa.</li>
         </ol>
+        <a class="btn btn-primary btn-block" href="{% url 'register' %}">Get Started</a>
         <p></p>
-        <a class="btn btn-primary btn-block" href="register.html">Get Started</a>
-        
-          <p></p>
-          <p></p>
+        <p></p>
+
         <p class="tiny muted">
           By proceeding you agree to provide accurate information. Keep your credentials secure.
         </p>
@@ -45,7 +45,7 @@
 
   <footer class="footer">
     <div class="container">
-      <div class="muted tiny">© <span id="y"></span> PesaFix.KE . All rights reserved.</div>
+      <div class="muted tiny">© <span id="y"></span> PesaFix.KE. All rights reserved.</div>
     </div>
   </footer>
 

@@ -10,35 +10,35 @@ services:
     plan: free
     envVars:
       - key: DJANGO_SECRET_KEY
-        sync: false
+        value: "<YOUR_DJANGO_SECRET_KEY>"
       - key: DJANGO_DEBUG
         value: false
       - key: DJANGO_ALLOWED_HOSTS
         value: YOUR_BACKEND_SERVICE.onrender.com
       - key: DJANGO_CSRF_TRUSTED_ORIGINS
-        value: https://YOUR_BACKEND_SERVICE.onrender.com
+        value: https://loan-platform.onrender.com
       - key: CORS_ALLOWED_ORIGINS
-        value: https://YOUR_FRONTEND_SERVICE.onrender.com
+        value: https://loan-platform.onrender.com
       - key: SUPABASE_DB_HOST
-        sync: false
+        value: "<YOUR_SUPABASE_HOST>"
       - key: SUPABASE_DB_PORT
         value: 5432
       - key: SUPABASE_DB_NAME
-        sync: false
+        value: "<YOUR_SUPABASE_DB_NAME>"
       - key: SUPABASE_DB_USER
-        sync: false
+        value: "<YOUR_SUPABASE_USER>"
       - key: SUPABASE_DB_PASSWORD
-        sync: false
+        value: "<YOUR_SUPABASE_PASSWORD>"
       - key: SUPABASE_DB_SSLMODE
         value: require
       - key: PAYSTACK_SECRET_KEY
-        sync: false
+        value: "<YOUR_PAYSTACK_SECRET_KEY>"
       - key: PAYSTACK_PUBLIC_KEY
-        sync: false
+        value: "<YOUR_PAYSTACK_PUBLIC_KEY>"
       - key: PAYSTACK_BASE_URL
         value: https://api.paystack.co
       - key: PAYSTACK_WEBHOOK_SECRET
-        sync: false
+        value: "<YOUR_PAYSTACK_WEBHOOK_SECRET>"
       - key: INTERNAL_EMAIL_DOMAIN
         value: example.com
       - key: APP_FEE_CURRENCY

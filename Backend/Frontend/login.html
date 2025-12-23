@@ -1,16 +1,17 @@
 <!doctype html>
+{% load static %}
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login - Loan Platform</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 <body>
   <header class="topbar">
     <div class="brand">Loan Platform</div>
     <nav class="topnav">
-      <a class="link" href="register.html">Register</a>
+      <a class="link" href="{% url 'register' %}">Register</a>
     </nav>
   </header>
 
@@ -34,16 +35,17 @@
         <div id="msg" class="msg" aria-live="polite"></div>
       </form>
 
-      <div class="divider"></div>
-      <p class="tiny muted">No account? <a class="link" href="register.html">Create one</a></p>
+      <p class="tiny muted">No account? <a class="link" href="{% url 'register' %}">Create one</a></p>
     </section>
   </main>
 
-  <script src="js/auth.js?v=2"></script>
+  <script src="{% static 'js/auth.js' %}"></script>
+  <script src="{% static 'js/loan.js' %}"></script>
+  <script src="{% static 'js/paystack.js' %}"></script>
   <script>
     window.Auth.init();
     if (window.Auth.isAuthenticated()) {
-      window.location.href = "dashboard.html";
+      window.location.href = "{% url 'dashboard' %}";
     }
 
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
@@ -57,7 +59,7 @@
 
       try {
         await window.Auth.login({ phone, password });
-        window.location.href = "dashboard.html";
+        window.location.href = "{% url 'dashboard' %}";
       } catch (err) {
         msg.textContent = err.message || "Login failed.";
         msg.classList.add("msg-error");
