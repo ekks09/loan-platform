@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import secrets
 from django.conf import settings
 from django.db import transaction
@@ -10,21 +9,20 @@ from rest_framework.exceptions import ValidationError
 from .models import Loan
 from .serializers import ApplyLoanSerializer, CurrentLoanSerializer
 from payments.paystack import PaystackClient
-from payments.views import ensure_payment_record_created  # defined in payments/views.py
+from payments.views import ensure_payment_record_created
 
 
 def internal_email_for_phone(phone_254: str) -> str:
-    # Stable email for Paystack initialization
     return f"user-{phone_254}@{settings.INTERNAL_EMAIL_DOMAIN}"
 
 
 class ApplyLoanView(APIView):
     def post(self, request):
-        s = ApplyLoanSerializer(data=request.data)
-        s.is_valid(raise_exception=True)
+        serializer = ApplyLoanSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        amount = int(s.validated_data["amount"])
-        mpesa_phone = s.validated_data["mpesa_phone"]
+        amount = int(serializer.validated_data["amount"])
+        mpesa_phone = serializer.validated_data["mpesa_phone"]
 
         if Loan.user_has_active_loan(request.user):
             raise ValidationError("You already have an active loan.")
@@ -44,10 +42,8 @@ class ApplyLoanView(APIView):
                 last_event="Awaiting service fee payment",
             )
 
-            # Ensure payment record exists (prevents duplicates)
-            ensure_payment_record_created(loan=loan)
+            ensure_payment_record_created(loan)
 
-        # Initialize transaction with Paystack
         client = PaystackClient()
         email = internal_email_for_phone(request.user.phone)
         init = client.initialize_transaction(
@@ -62,16 +58,14 @@ class ApplyLoanView(APIView):
             },
         )
 
-        return Response(
-            {
-                "loan_id": loan.id,
-                "payment_reference": reference,
-                "amount_kobo": service_fee * 100,
-                "email": email,
-                "paystack_authorization_url": init.get("authorization_url"),
-                "paystack_access_code": init.get("access_code"),
-            }
-        )
+        return Response({
+            "loan_id": loan.id,
+            "payment_reference": reference,
+            "amount_kobo": service_fee * 100,
+            "email": email,
+            "paystack_authorization_url": init.get("authorization_url"),
+            "paystack_access_code": init.get("access_code"),
+        })
 
 
 class CurrentLoanView(APIView):
@@ -85,15 +79,14 @@ class CurrentLoanView(APIView):
         if not loan:
             return Response({"has_loan": False})
 
-        serializer = CurrentLoanSerializer(
-            {
-                "has_loan": True,
-                "status": loan.status,
-                "amount": loan.amount,
-                "service_fee": loan.service_fee,
-                "mpesa_phone": loan.mpesa_phone,
-                "created_at": loan.created_at,
-                "last_event": loan.last_event,
-            }
-        )
+        serializer = CurrentLoanSerializer(data={
+            "has_loan": True,
+            "status": loan.status,
+            "amount": loan.amount,
+            "service_fee": loan.service_fee,
+            "mpesa_phone": loan.mpesa_phone,
+            "created_at": loan.created_at,
+            "last_event": loan.last_event,
+        })
+        serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
