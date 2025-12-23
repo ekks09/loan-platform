@@ -1,3 +1,5 @@
+[file name]: style.css
+[file content begin]
 :root {
   --bg: #0a0f1f;
   --card: #0d142e;
@@ -55,7 +57,7 @@ body::before {
   opacity: 0.3;
 }
 
-/* Animated gradient orbs */
+/* Animated gradient orbs - FIXED: Added pointer-events: none */
 body::after {
   content: "";
   position: fixed;
@@ -68,6 +70,7 @@ body::after {
   z-index: 0;
   animation: float 20s ease-in-out infinite alternate;
   filter: blur(60px);
+  pointer-events: none; /* CRITICAL FIX: Prevents blocking clicks */
 }
 
 @keyframes float {
@@ -75,11 +78,24 @@ body::after {
   100% { transform: translate(-100px, 100px) scale(1.2); }
 }
 
+/* Ensure all interactive elements are above background layers */
 .container {
   width: min(520px, 92vw);
   margin: 24px auto;
   position: relative;
-  z-index: 1;
+  z-index: 10; /* Increased from 1 to 10 */
+}
+
+/* Form elements must be above everything */
+input, button, select, textarea {
+  position: relative;
+  z-index: 20 !important; /* Ensure inputs are clickable */
+}
+
+/* Card and form containers */
+.card, .form {
+  position: relative;
+  z-index: 15; /* Above container */
 }
 
 /* Enhanced glassmorphism */
@@ -176,6 +192,7 @@ body::after {
 .hero {
   position: relative;
   padding: 32px 0;
+  z-index: 10;
 }
 
 .hero h1 {
@@ -317,6 +334,8 @@ label {
   gap: 8px;
   font-size: 0.95rem;
   font-weight: 500;
+  position: relative;
+  z-index: 15;
 }
 
 input {
@@ -330,6 +349,8 @@ input {
   font-family: inherit;
   transition: all 0.3s ease;
   outline: none;
+  position: relative;
+  z-index: 20;
 }
 
 input:focus {
@@ -355,6 +376,7 @@ input:focus {
   font-size: 1rem;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  z-index: 20; /* Ensure buttons are clickable */
 }
 
 .btn::before {
@@ -449,6 +471,7 @@ input:focus {
   overflow: hidden;
   transition: all 0.3s ease;
   font-weight: 500;
+  z-index: 20;
 }
 
 .link::after {
@@ -485,6 +508,8 @@ input:focus {
   backdrop-filter: blur(10px);
   font-size: 0.95rem;
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 15;
 }
 
 .msg-error {
@@ -560,7 +585,7 @@ input:focus {
   padding: 32px 0 48px;
   text-align: center;
   position: relative;
-  z-index: 1;
+  z-index: 10;
 }
 
 /* Utility Classes - Enhanced */
@@ -762,3 +787,33 @@ input:focus {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+
+/* CRITICAL FIXES ADDED TO ENSURE CLICKABILITY */
+/* Ensure all interactive elements are above background layers */
+input, button, select, textarea, .btn, .link {
+  position: relative;
+  z-index: 20;
+}
+
+/* Prevent pseudo-elements from blocking interactions */
+body::before, body::after {
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* Ensure form containers are above backgrounds */
+.form, .card, .container {
+  position: relative;
+  z-index: 10;
+}
+
+/* Specific fix for inputs to ensure they're always clickable */
+input[type="text"],
+input[type="tel"],
+input[type="password"],
+input[type="number"],
+input[type="email"] {
+  position: relative;
+  z-index: 25 !important;
+}
+[file content end]
