@@ -8,15 +8,13 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
 from .models import Loan
-from .serializers import ApplyLoanSerializer
+from .serializers import ApplyLoanSerializer, CurrentLoanSerializer
 from payments.paystack import PaystackClient
-from payments.views import ensure_payment_record_created  # defined in payments/views.py module section
+from payments.views import ensure_payment_record_created  # defined in payments/views.py
 
 
 def internal_email_for_phone(phone_254: str) -> str:
-    # Paystack requires an email for initialize transaction.
-    # This provides a stable, non-guessable email without collecting user email.
-    # phone_254 is not secret; domain is controlled by you.
+    # Stable email for Paystack initialization
     return f"user-{phone_254}@{settings.INTERNAL_EMAIL_DOMAIN}"
 
 
@@ -33,9 +31,8 @@ class ApplyLoanView(APIView):
 
         service_fee = Loan.compute_service_fee(amount)
 
-        # Create loan + initialize Paystack transaction reference atomically.
         with transaction.atomic():
-            reference = "LPF_" + secrets.token_hex(12)  # unique, not a secret
+            reference = "LPF_" + secrets.token_hex(12)
             loan = Loan.objects.create(
                 user=request.user,
                 amount=amount,
@@ -47,10 +44,10 @@ class ApplyLoanView(APIView):
                 last_event="Awaiting service fee payment",
             )
 
-            # Ensure a payment record exists (prevents duplicate processing).
+            # Ensure payment record exists (prevents duplicates)
             ensure_payment_record_created(loan=loan)
 
-        # Initialize transaction with Paystack (server-side) so amount is authoritative.
+        # Initialize transaction with Paystack
         client = PaystackClient()
         email = internal_email_for_phone(request.user.phone)
         init = client.initialize_transaction(
@@ -58,7 +55,11 @@ class ApplyLoanView(APIView):
             amount_kobo=service_fee * 100,
             reference=reference,
             currency=settings.APP_FEE_CURRENCY,
-            metadata={"loan_id": loan.id, "phone": request.user.phone, "purpose": "service_fee"},
+            metadata={
+                "loan_id": loan.id,
+                "phone": request.user.phone,
+                "purpose": "service_fee",
+            },
         )
 
         return Response(
@@ -84,7 +85,7 @@ class CurrentLoanView(APIView):
         if not loan:
             return Response({"has_loan": False})
 
-        return Response(
+        serializer = CurrentLoanSerializer(
             {
                 "has_loan": True,
                 "status": loan.status,
@@ -95,3 +96,4 @@ class CurrentLoanView(APIView):
                 "last_event": loan.last_event,
             }
         )
+        return Response(serializer.data)
