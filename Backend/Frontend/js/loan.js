@@ -39,7 +39,7 @@
   };
 
   Loan.getMyActiveLoan = async function () {
-    const data = await window.Auth.api("/loans/active/", { method: "GET", auth: true });
+    const data = await window.Auth.api("/loans/current/", { method: "GET", auth: true });
     return data;
   };
 
