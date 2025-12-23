@@ -7,7 +7,7 @@
     // For deployment, if window.location.host matches the deployed frontend, set it to the Render backend root
     if (window.location.hostname.endsWith('onrender.com')) {
       // Put your Render backend URL here (update after first deploy!)
-      API_BASE = 'https://YOUR-BACKEND-SERVICE.onrender.com/api';
+      API_BASE = 'https://loan-platform.onrender.com/api';
     } else {
       API_BASE = localStorage.getItem("API_BASE") || "http://127.0.0.1:8000";
     }
