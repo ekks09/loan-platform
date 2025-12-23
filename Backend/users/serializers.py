@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from .models import User, phone_validator, national_id_validator
 
+
 def normalize_phone(phone: str) -> str:
     raw = (phone or "").strip().replace(" ", "")
     if raw.startswith("+"):
@@ -13,8 +14,9 @@ def normalize_phone(phone: str) -> str:
         raw2 = "254" + raw[1:]
         phone_validator(raw2)
         return raw2
-    phone_validator(raw)  # will raise
+    phone_validator(raw)  # will raise ValidationError if invalid
     return raw
+
 
 class RegisterSerializer(serializers.Serializer):
     phone = serializers.CharField()
@@ -42,6 +44,7 @@ class RegisterSerializer(serializers.Serializer):
             password=validated_data["password"],
         )
 
+
 class LoginSerializer(serializers.Serializer):
     phone = serializers.CharField()
     password = serializers.CharField(write_only=True)
@@ -50,15 +53,15 @@ class LoginSerializer(serializers.Serializer):
         return normalize_phone(value)
 
     def validate(self, attrs):
-    phone = attrs.get("phone")
-    password = attrs.get("password")
-    user = authenticate(phone=phone, password=password)
-    if not user:
-        raise serializers.ValidationError({"non_field_errors": ["Invalid phone or password."]})
-    if not user.is_active:
-        raise serializers.ValidationError({"non_field_errors": ["Account is disabled."]})
-    attrs["user"] = user
-    return attrs
+        phone = attrs.get("phone")
+        password = attrs.get("password")
+        user = authenticate(phone=phone, password=password)
+        if not user:
+            raise serializers.ValidationError({"non_field_errors": ["Invalid phone or password."]})
+        if not user.is_active:
+            raise serializers.ValidationError({"non_field_errors": ["Account is disabled."]})
+        attrs["user"] = user
+        return attrs
 
 
 class MeSerializer(serializers.ModelSerializer):
