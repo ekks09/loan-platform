@@ -1,28 +1,39 @@
 from rest_framework import serializers
-from users.models import normalize_ke_phone
 from .models import Loan
 
 
-class ApplyLoanSerializer(serializers.Serializer):
+class LoanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Loan
+        fields = [
+            "id",
+            "amount",
+            "service_fee",
+            "mpesa_phone",
+            "status",
+            "service_fee_paid",
+            "paystack_reference",
+            "last_event",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "service_fee",
+            "status",
+            "service_fee_paid",
+            "paystack_reference",
+            "last_event",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class LoanApplySerializer(serializers.Serializer):
     amount = serializers.IntegerField(min_value=1000, max_value=60000)
-    mpesa_phone = serializers.CharField()
+    mpesa_phone = serializers.CharField(max_length=12)
 
-    def validate_mpesa_phone(self, value: str) -> str:
-        try:
-            return normalize_ke_phone(value)
-        except ValueError as e:
-            raise serializers.ValidationError(str(e))
-
-    def validate_amount(self, value: int) -> int:
-        # Will also be validated when computing service fee.
-        return int(value)
-
-
-class CurrentLoanSerializer(serializers.Serializer):
-    has_loan = serializers.BooleanField()
-    status = serializers.CharField(required=False)
-    amount = serializers.IntegerField(required=False)
-    service_fee = serializers.IntegerField(required=False)
-    mpesa_phone = serializers.CharField(required=False)
-    created_at = serializers.DateTimeField(required=False)
-    last_event = serializers.CharField(required=False)
+    def validate_mpesa_phone(self, value):
+        if not value.startswith("254") or not value.isdigit():
+            raise serializers.ValidationError("Invalid Kenyan phone number")
+        return value
