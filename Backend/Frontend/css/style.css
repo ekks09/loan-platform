@@ -799,3 +799,63 @@ select:focus {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+ /* --- NEW: Loan Option Grid Styles --- */
+
+.loan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.loan-option {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 8px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.loan-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.loan-option.selected {
+  border-color: var(--primary);
+  background: linear-gradient(
+    135deg,
+    rgba(58, 134, 255, 0.2),
+    rgba(58, 134, 255, 0.1)
+  );
+  box-shadow: 
+    0 4px 20px rgba(58, 134, 255, 0.2),
+    inset 0 0 0 1px rgba(58, 134, 255, 0.3);
+}
+
+.loan-option .amt {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.loan-option.selected .amt {
+  color: var(--primary);
+  text-shadow: 0 0 10px rgba(58, 134, 255, 0.4);
+}
+
+.loan-option .fee-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.loan-option.selected .fee-hint {
+  color: rgba(255, 255, 255, 0.9);
+}
