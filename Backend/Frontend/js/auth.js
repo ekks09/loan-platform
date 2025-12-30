@@ -64,9 +64,7 @@
       const parts = token.split(".");
       if (parts.length !== 3) return null;
 
-      let payload = parts[1]
-        .replace(/-/g, "+")
-        .replace(/_/g, "/");
+      let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
 
       while (payload.length % 4) payload += "=";
 
@@ -100,6 +98,7 @@
     removeToken();
   };
 
+  // Standard JSON API call
   async function api(path, { method = "GET", body = null, auth = true } = {}) {
     if (!API_BASE) Auth.init();
 
@@ -136,8 +135,63 @@
     return data;
   }
 
-  // REGISTER = CREATE ACCOUNT ONLY
-  Auth.register = async function ({ phone, national_id, password }) {
+  // FormData API call (for file uploads)
+  async function apiFormData(path, { method = "POST", formData, auth = false, onProgress = null } = {}) {
+    if (!API_BASE) Auth.init();
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      // Progress tracking
+      if (onProgress && xhr.upload) {
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            onProgress(percent);
+          }
+        });
+      }
+
+      xhr.onload = function () {
+        let data = null;
+        try {
+          data = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+        } catch (e) {
+          data = { error: xhr.responseText || "Unknown error" };
+        }
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(data);
+        } else {
+          reject(new Error(data?.error || data?.detail || "Request failed"));
+        }
+      };
+
+      xhr.onerror = function () {
+        reject(new Error("Network error. Please check your connection."));
+      };
+
+      xhr.ontimeout = function () {
+        reject(new Error("Request timed out. Please try again."));
+      };
+
+      xhr.open(method, API_BASE + path);
+      xhr.timeout = 120000; // 2 minutes for file uploads
+
+      // Add auth header if needed
+      if (auth) {
+        const token = getToken();
+        if (token) {
+          xhr.setRequestHeader("Authorization", "Bearer " + token);
+        }
+      }
+
+      xhr.send(formData);
+    });
+  }
+
+  // REGISTER with optional photo uploads
+  Auth.register = async function ({ phone, national_id, password, photos = null, onProgress = null }) {
     if (!phone || !national_id || !password) {
       throw new Error("All fields are required.");
     }
@@ -148,6 +202,27 @@
 
     const normalized = normalizeKenyanPhone(phone);
 
+    // If photos are provided, use FormData upload
+    if (photos && photos.id_front && photos.id_back && photos.selfie) {
+      const formData = new FormData();
+      formData.append("phone", normalized);
+      formData.append("national_id", String(national_id).trim());
+      formData.append("password", password);
+      formData.append("id_front", photos.id_front);
+      formData.append("id_back", photos.id_back);
+      formData.append("selfie", photos.selfie);
+
+      const data = await apiFormData("/users/register/", {
+        method: "POST",
+        formData,
+        auth: false,
+        onProgress,
+      });
+
+      return { registered: true, verification_status: data.verification_status || "pending" };
+    }
+
+    // Standard JSON registration (no photos)
     await api("/users/register/", {
       method: "POST",
       auth: false,
@@ -158,13 +233,10 @@
       },
     });
 
-    // IMPORTANT:
-    // NO TOKEN STORED HERE
-    // User must login explicitly
     return { registered: true };
   };
 
-  // LOGIN = ONLY PLACE TOKEN IS STORED
+  // LOGIN
   Auth.login = async function ({ phone, password }) {
     if (!phone || !password) {
       throw new Error("Phone and password required.");
@@ -190,7 +262,12 @@
     return api("/users/me/", { auth: true });
   };
 
+  Auth.getVerificationStatus = async function () {
+    return api("/users/verification-status/", { auth: true });
+  };
+
   Auth.api = api;
+  Auth.apiFormData = apiFormData;
   Auth.getToken = getToken;
   Auth.normalizeKenyanPhone = normalizeKenyanPhone;
 
