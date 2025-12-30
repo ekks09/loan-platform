@@ -5,11 +5,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Register - Loan Platform</title>
+  <!-- FAVICON LINK (Pointing to css/logo.png) -->
+  <link rel="icon" type="image/png" href="{% static 'css/logo.png' %}" />
   <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">Loan Platform</div>
+    <div class="brand">
+        <!-- HEADER LOGO (Pointing to css/logo.png) -->
+        <img src="{% static 'css/logo.png' %}" alt="Logo" class="brand-logo">
+        <span>Loan Platform</span>
+    </div>
     <nav class="topnav">
       <a class="link" href="{% url 'login_view' %}">Login</a>
     </nav>
