@@ -118,6 +118,24 @@ DATABASES = {
 }
 
 # =========================
+# SUPABASE STORAGE
+# =========================
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
+
+# Validate Supabase settings only if we expect file uploads
+if SUPABASE_URL and not SUPABASE_SERVICE_KEY:
+    import warnings
+    warnings.warn("SUPABASE_URL is set but SUPABASE_SERVICE_KEY is missing. File uploads will fail.")
+
+# =========================
+# FILE UPLOAD SETTINGS
+# =========================
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB per file
+DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024  # 20MB total (for 3 images + form data)
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10
+
+# =========================
 # STATIC FILES
 # =========================
 STATIC_URL = "/static/"
