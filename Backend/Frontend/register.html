@@ -5,16 +5,325 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Register - Loan Platform</title>
-  <!-- FAVICON LINK (Pointing to css/logo.png) -->
   <link rel="icon" type="image/png" href="{% static 'css/logo.png' %}" />
   <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <style>
+    /* Photo Upload Styles */
+    .photo-section {
+      margin-top: 1.5rem;
+      padding: 1.25rem;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 12px;
+      border: 2px dashed #dee2e6;
+    }
+
+    .photo-section h3 {
+      margin: 0 0 0.5rem 0;
+      color: #212529;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .photo-section .section-desc {
+      color: #6c757d;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+
+    .upload-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .upload-item {
+      background: white;
+      border-radius: 10px;
+      padding: 0.75rem;
+      border: 1px solid #dee2e6;
+      transition: all 0.3s ease;
+    }
+
+    .upload-item:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .upload-item.has-file {
+      border-color: #28a745;
+      background: #f8fff9;
+    }
+
+    .upload-item.has-error {
+      border-color: #dc3545;
+      background: #fff8f8;
+    }
+
+    .upload-item label.upload-label {
+      display: block;
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .upload-box {
+      position: relative;
+      border: 2px dashed #ced4da;
+      border-radius: 8px;
+      padding: 1rem 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #f8f9fa;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .upload-box:hover {
+      border-color: #007bff;
+      background: #e7f1ff;
+    }
+
+    .upload-box.dragover {
+      border-color: #28a745;
+      background: #d4edda;
+    }
+
+    .upload-box input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .upload-text {
+      color: #6c757d;
+      font-size: 0.75rem;
+      line-height: 1.3;
+    }
+
+    .upload-text strong {
+      color: #007bff;
+      display: block;
+    }
+
+    .preview-wrap {
+      position: relative;
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    .preview-wrap.active {
+      display: block;
+    }
+
+    .preview-img {
+      width: 100%;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #dee2e6;
+    }
+
+    .remove-file {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #dc3545;
+      color: white;
+      border: 2px solid white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      line-height: 1;
+      padding: 0;
+    }
+
+    .remove-file:hover {
+      transform: scale(1.1);
+    }
+
+    .file-name {
+      margin-top: 0.25rem;
+      font-size: 0.7rem;
+      color: #28a745;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .upload-error-text {
+      color: #dc3545;
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+    }
+
+    .upload-requirements {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: #fff3cd;
+      border-radius: 6px;
+      border-left: 4px solid #ffc107;
+    }
+
+    .upload-requirements h4 {
+      margin: 0 0 0.4rem 0;
+      font-size: 0.8rem;
+      color: #856404;
+    }
+
+    .upload-requirements ul {
+      margin: 0;
+      padding-left: 1.1rem;
+      font-size: 0.75rem;
+      color: #856404;
+    }
+
+    .upload-requirements li {
+      margin-bottom: 0.15rem;
+    }
+
+    .progress-container {
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .progress-container.active {
+      display: block;
+    }
+
+    .progress-bar-wrap {
+      height: 8px;
+      background: #e9ecef;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #007bff, #28a745);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .progress-label {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #6c757d;
+      margin-top: 0.25rem;
+    }
+
+    /* Camera Modal */
+    .camera-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .camera-overlay.active {
+      display: flex;
+    }
+
+    .camera-box {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .camera-box h3 {
+      margin: 0 0 1rem 0;
+      font-size: 1.1rem;
+    }
+
+    .camera-box video {
+      width: 100%;
+      border-radius: 8px;
+      background: #000;
+    }
+
+    .camera-actions {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .camera-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .camera-btn-capture {
+      background: #007bff;
+      color: white;
+    }
+
+    .camera-btn-cancel {
+      background: #6c757d;
+      color: white;
+    }
+
+    .use-camera-btn {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding: 0.4rem;
+      background: white;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .use-camera-btn:hover {
+      background: #f8f9fa;
+      border-color: #007bff;
+    }
+
+    @media (max-width: 400px) {
+      .upload-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-        <!-- HEADER LOGO (Pointing to css/logo.png) -->
-        <img src="{% static 'css/logo.png' %}" alt="Logo" class="brand-logo">
-        <span>Loan Platform</span>
+      <img src="{% static 'css/logo.png' %}" alt="Logo" class="brand-logo">
+      <span>Loan Platform</span>
     </div>
     <nav class="topnav">
       <a class="link" href="{% url 'login_view' %}">Login</a>
@@ -26,7 +335,7 @@
       <h1>Create account</h1>
       <p class="muted">Use your Kenyan phone number and National ID.</p>
 
-      <form id="registerForm" class="form">
+      <form id="registerForm" class="form" enctype="multipart/form-data">
         <label>
           Phone number
           <input id="phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX or 2547XXXXXXXX" required />
@@ -45,7 +354,87 @@
           <div class="hint">At least 8 characters.</div>
         </label>
 
-        <button class="btn btn-primary btn-block" type="submit">Create account</button>
+        <!-- Photo ID Upload Section -->
+        <div class="photo-section">
+          <h3>📸 Identity Verification</h3>
+          <p class="section-desc">Upload clear photos of your National ID (front & back) and a selfie.</p>
+
+          <div class="upload-grid">
+            <!-- ID Front -->
+            <div class="upload-item" id="idFrontItem">
+              <label class="upload-label">ID Front *</label>
+              <div class="upload-box" id="idFrontBox">
+                <input type="file" id="id_front" name="id_front" accept="image/jpeg,image/png,image/webp" required />
+                <div class="placeholder-content">
+                  <div class="upload-icon">🪪</div>
+                  <div class="upload-text"><strong>Tap to upload</strong>Front of ID</div>
+                </div>
+              </div>
+              <div class="preview-wrap" id="idFrontPreview">
+                <img class="preview-img" alt="ID Front">
+                <button type="button" class="remove-file" data-field="id_front">&times;</button>
+              </div>
+              <div class="file-name" id="idFrontName"></div>
+              <div class="upload-error-text" id="idFrontError"></div>
+            </div>
+
+            <!-- ID Back -->
+            <div class="upload-item" id="idBackItem">
+              <label class="upload-label">ID Back *</label>
+              <div class="upload-box" id="idBackBox">
+                <input type="file" id="id_back" name="id_back" accept="image/jpeg,image/png,image/webp" required />
+                <div class="placeholder-content">
+                  <div class="upload-icon">🪪</div>
+                  <div class="upload-text"><strong>Tap to upload</strong>Back of ID</div>
+                </div>
+              </div>
+              <div class="preview-wrap" id="idBackPreview">
+                <img class="preview-img" alt="ID Back">
+                <button type="button" class="remove-file" data-field="id_back">&times;</button>
+              </div>
+              <div class="file-name" id="idBackName"></div>
+              <div class="upload-error-text" id="idBackError"></div>
+            </div>
+
+            <!-- Selfie -->
+            <div class="upload-item" id="selfieItem">
+              <label class="upload-label">Selfie *</label>
+              <div class="upload-box" id="selfieBox">
+                <input type="file" id="selfie" name="selfie" accept="image/jpeg,image/png,image/webp" capture="user" required />
+                <div class="placeholder-content">
+                  <div class="upload-icon">🤳</div>
+                  <div class="upload-text"><strong>Tap to upload</strong>Your face</div>
+                </div>
+              </div>
+              <div class="preview-wrap" id="selfiePreview">
+                <img class="preview-img" alt="Selfie">
+                <button type="button" class="remove-file" data-field="selfie">&times;</button>
+              </div>
+              <div class="file-name" id="selfieName"></div>
+              <div class="upload-error-text" id="selfieError"></div>
+              <button type="button" class="use-camera-btn" id="useCameraBtn">📷 Use Camera</button>
+            </div>
+          </div>
+
+          <div class="upload-requirements">
+            <h4>📋 Requirements:</h4>
+            <ul>
+              <li>Clear, readable photos (JPG, PNG, WebP)</li>
+              <li>Max 5MB per image</li>
+              <li>ID must show all corners</li>
+              <li>Selfie must clearly show your face</li>
+            </ul>
+          </div>
+
+          <div class="progress-container" id="progressContainer">
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-label" id="progressLabel">Uploading...</div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit" id="submitBtn">Create account</button>
         <div id="msg" class="msg" aria-live="polite"></div>
       </form>
 
@@ -53,29 +442,255 @@
     </section>
   </main>
 
-  <script src="{% static 'js/auth.js' %}"></script>
-  <script src="{% static 'js/loan.js' %}"></script>
-  <script src="{% static 'js/paystack.js' %}"></script>
-  <script>
-    window.Auth.init();
-    document.getElementById("registerForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const msg = document.getElementById("msg");
-      msg.textContent = "";
-      msg.className = "msg";
+  <!-- Camera Modal -->
+  <div class="camera-overlay" id="cameraOverlay">
+    <div class="camera-box">
+      <h3>📸 Take a Selfie</h3>
+      <video id="cameraVideo" autoplay playsinline></video>
+      <canvas id="cameraCanvas" style="display: none;"></canvas>
+      <div class="camera-actions">
+        <button type="button" class="camera-btn camera-btn-cancel" id="cameraCancelBtn">Cancel</button>
+        <button type="button" class="camera-btn camera-btn-capture" id="cameraCaptureBtn">📸 Capture</button>
+      </div>
+    </div>
+  </div>
 
-      const phone = document.getElementById("phone").value.trim();
-      const national_id = document.getElementById("national_id").value.trim();
-      const password = document.getElementById("password").value;
+  <script src="{% static 'js/auth.js' %}"></script>
+  <script>
+    // Constants
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+    // State
+    const selectedFiles = { id_front: null, id_back: null, selfie: null };
+    let cameraStream = null;
+
+    // Initialize
+    window.Auth.init();
+
+    // Field config
+    const fields = [
+      { id: 'id_front', item: 'idFrontItem', box: 'idFrontBox', preview: 'idFrontPreview', name: 'idFrontName', error: 'idFrontError' },
+      { id: 'id_back', item: 'idBackItem', box: 'idBackBox', preview: 'idBackPreview', name: 'idBackName', error: 'idBackError' },
+      { id: 'selfie', item: 'selfieItem', box: 'selfieBox', preview: 'selfiePreview', name: 'selfieName', error: 'selfieError' },
+    ];
+
+    // Setup each upload field
+    fields.forEach(field => {
+      const input = document.getElementById(field.id);
+      const box = document.getElementById(field.box);
+
+      // File input change
+      input.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+          handleFile(field, e.target.files[0]);
+        }
+      });
+
+      // Drag and drop
+      box.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        box.classList.add('dragover');
+      });
+
+      box.addEventListener('dragleave', () => {
+        box.classList.remove('dragover');
+      });
+
+      box.addEventListener('drop', (e) => {
+        e.preventDefault();
+        box.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+          handleFile(field, e.dataTransfer.files[0]);
+        }
+      });
+    });
+
+    // Remove buttons
+    document.querySelectorAll('.remove-file').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const fieldId = btn.dataset.field;
+        removeFile(fieldId);
+      });
+    });
+
+    function handleFile(field, file) {
+      const item = document.getElementById(field.item);
+      const preview = document.getElementById(field.preview);
+      const nameEl = document.getElementById(field.name);
+      const errorEl = document.getElementById(field.error);
+      const placeholder = document.getElementById(field.box).querySelector('.placeholder-content');
+
+      // Reset
+      item.classList.remove('has-file', 'has-error');
+      errorEl.textContent = '';
+      nameEl.innerHTML = '';
+
+      // Validate type
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        errorEl.textContent = '⚠️ Use JPG, PNG, or WebP';
+        item.classList.add('has-error');
+        return;
+      }
+
+      // Validate size
+      if (file.size > MAX_FILE_SIZE) {
+        errorEl.textContent = '⚠️ Max 5MB allowed';
+        item.classList.add('has-error');
+        return;
+      }
+
+      // Store file
+      selectedFiles[field.id] = file;
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        preview.querySelector('img').src = e.target.result;
+        preview.classList.add('active');
+        placeholder.style.display = 'none';
+        nameEl.innerHTML = `✓ ${formatSize(file.size)}`;
+        item.classList.add('has-file');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeFile(fieldId) {
+      const field = fields.find(f => f.id === fieldId);
+      if (!field) return;
+
+      const input = document.getElementById(field.id);
+      const item = document.getElementById(field.item);
+      const preview = document.getElementById(field.preview);
+      const nameEl = document.getElementById(field.name);
+      const placeholder = document.getElementById(field.box).querySelector('.placeholder-content');
+
+      input.value = '';
+      selectedFiles[fieldId] = null;
+      preview.classList.remove('active');
+      placeholder.style.display = '';
+      nameEl.innerHTML = '';
+      item.classList.remove('has-file');
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // Camera functionality
+    const cameraBtn = document.getElementById('useCameraBtn');
+    const cameraOverlay = document.getElementById('cameraOverlay');
+    const cameraVideo = document.getElementById('cameraVideo');
+    const cameraCanvas = document.getElementById('cameraCanvas');
+    const cameraCaptureBtn = document.getElementById('cameraCaptureBtn');
+    const cameraCancelBtn = document.getElementById('cameraCancelBtn');
+
+    cameraBtn.addEventListener('click', async () => {
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
+          audio: false
+        });
+        cameraVideo.srcObject = cameraStream;
+        cameraOverlay.classList.add('active');
+      } catch (err) {
+        alert('Cannot access camera. Please upload a photo instead.');
+      }
+    });
+
+    cameraCancelBtn.addEventListener('click', closeCamera);
+
+    cameraCaptureBtn.addEventListener('click', () => {
+      cameraCanvas.width = cameraVideo.videoWidth;
+      cameraCanvas.height = cameraVideo.videoHeight;
+      cameraCanvas.getContext('2d').drawImage(cameraVideo, 0, 0);
+
+      cameraCanvas.toBlob((blob) => {
+        const file = new File([blob], 'selfie.jpg', { type: 'image/jpeg' });
+        const selfieField = fields.find(f => f.id === 'selfie');
+        handleFile(selfieField, file);
+        closeCamera();
+      }, 'image/jpeg', 0.9);
+    });
+
+    function closeCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+      }
+      cameraVideo.srcObject = null;
+      cameraOverlay.classList.remove('active');
+    }
+
+    // Close camera on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeCamera();
+    });
+
+    // Form submission
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const msg = document.getElementById('msg');
+      const submitBtn = document.getElementById('submitBtn');
+      const progressContainer = document.getElementById('progressContainer');
+      const progressFill = document.getElementById('progressFill');
+      const progressLabel = document.getElementById('progressLabel');
+
+      msg.textContent = '';
+      msg.className = 'msg';
+
+      // Validate files
+      if (!selectedFiles.id_front || !selectedFiles.id_back || !selectedFiles.selfie) {
+        msg.textContent = 'Please upload all 3 photos (ID front, ID back, and selfie).';
+        msg.classList.add('msg-error');
+        return;
+      }
+
+      const phone = document.getElementById('phone').value.trim();
+      const national_id = document.getElementById('national_id').value.trim();
+      const password = document.getElementById('password').value;
+
+      // Disable form
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating account...';
+      progressContainer.classList.add('active');
+      progressFill.style.width = '0%';
 
       try {
-        await window.Auth.register({ phone, national_id, password });
-        msg.textContent = "Account created. Redirecting to login…";
-        msg.classList.add("msg-success");
-        window.location.href = "{% url 'login_view' %}";
+        await window.Auth.register({
+          phone,
+          national_id,
+          password,
+          photos: {
+            id_front: selectedFiles.id_front,
+            id_back: selectedFiles.id_back,
+            selfie: selectedFiles.selfie
+          },
+          onProgress: (percent) => {
+            progressFill.style.width = percent + '%';
+            progressLabel.textContent = `Uploading... ${percent}%`;
+          }
+        });
+
+        progressFill.style.width = '100%';
+        progressLabel.textContent = 'Complete!';
+
+        msg.textContent = 'Account created! Your documents are pending verification. Redirecting to login...';
+        msg.classList.add('msg-success');
+
+        setTimeout(() => {
+          window.location.href = "{% url 'login_view' %}";
+        }, 2500);
+
       } catch (err) {
-        msg.textContent = err.message || "Registration failed.";
-        msg.classList.add("msg-error");
+        msg.textContent = err.message || 'Registration failed. Please try again.';
+        msg.classList.add('msg-error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create account';
+        progressContainer.classList.remove('active');
       }
     });
   </script>
