@@ -47,10 +47,10 @@
       window.Auth.init();
       
       // Check if already authenticated with valid token
-      if (window.Auth.isAuthenticated()) {
+      /*if (window.Auth.isAuthenticated()) {
         window.location.href = "{% url 'dashboard' %}";
         return;
-      }
+      }*/
 
       const form = document.getElementById("loginForm");
       const msg = document.getElementById("msg");
