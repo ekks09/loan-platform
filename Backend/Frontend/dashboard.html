@@ -5,14 +5,16 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dashboard - Loan Platform</title>
+  <!-- FAVICON LINK (Pointing to css/logo.png) -->
+  <link rel="icon" type="image/png" href="{% static 'css/logo.png' %}" />
   <link rel="stylesheet" href="{% static 'css/style.css' %}" />
   <script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <!-- Updated Brand with Logo -->
     <div class="brand">
-        <img src="{% static 'img/logo.png' %}" alt="Logo" class="brand-logo" style="height: 32px; width: auto;">
+        <!-- HEADER LOGO (Pointing to css/logo.png) -->
+        <img src="{% static 'css/logo.png' %}" alt="Logo" class="brand-logo">
         <span>Loan Platform</span>
     </div>
     
@@ -44,7 +46,7 @@
 
         <form id="loanForm" class="form">
           
-          <!-- NEW: Clickable Loan Options Grid -->
+          <!-- Clickable Loan Options Grid -->
           <label style="margin-bottom: 12px;">Select Loan Amount</label>
           <div id="loanOptionsGrid" class="loan-grid">
             <!-- JavaScript will inject buttons here -->
@@ -207,12 +209,11 @@
         }
       }
 
-      // --- NEW: RENDER THE BUTTONS ---
+      // --- RENDER THE BUTTONS ---
       function renderLoanOptions() {
         loanOptionsGrid.innerHTML = "";
         
         FIXED_AMOUNTS.forEach(amt => {
-          // Optional: Calculate fee just for display hint
           let feeDisplay = "";
           try {
             const info = window.Loan.computeServiceFee(amt);
@@ -231,22 +232,16 @@
         });
       }
 
-      // --- NEW: HANDLE CLICK SELECTION ---
+      // --- HANDLE CLICK SELECTION ---
       function selectLoanAmount(amount, clickedDiv) {
-        // 1. Update Hidden Input
         selectedAmountInput.value = amount;
-
-        // 2. Update Visual Classes
         const allOptions = document.querySelectorAll(".loan-option");
         allOptions.forEach(opt => opt.classList.remove("selected"));
         clickedDiv.classList.add("selected");
-
-        // 3. Update Fee UI
         updateFeeUI();
       }
 
       function updateFeeUI() {
-        // Read from HIDDEN input now
         const amount = Number(selectedAmountInput.value);
         
         if (!amount) {
@@ -276,17 +271,14 @@
         e.preventDefault();
         setMsg("", "");
 
-        // GET VALUE FROM HIDDEN INPUT
         const amount = Number(selectedAmountInput.value);
         const mpesa_phone = String(mpesaPhoneInput.value || "").trim();
 
-        // Validate amount
         if (!amount) {
           setMsg("Please select a loan amount option.", "error");
           return;
         }
 
-        // Validate amount logic (secondary check)
         let feeInfo;
         try {
           feeInfo = window.Loan.computeServiceFee(amount);
@@ -295,7 +287,6 @@
           return;
         }
 
-        // Validate phone
         if (!mpesa_phone) {
           setMsg("Please enter your M-Pesa phone number.", "error");
           return;
@@ -334,14 +325,12 @@
           await loadLoan();
         } finally {
           payBtn.disabled = false;
-          // No need to clear input, user might want to try again
         }
       });
 
-      // Initialize dashboard
       async function boot() {
         try {
-          renderLoanOptions(); // Create the buttons
+          renderLoanOptions(); 
           await loadMe();
           await loadLoan();
           showMainContent();
