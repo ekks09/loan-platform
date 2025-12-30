@@ -17,201 +17,278 @@
   </header>
 
   <main class="container">
-    <section class="card">
-      <h1>Dashboard</h1>
-      <div class="row">
-        <div class="badge">Account</div>
-        <div class="muted" id="userPhone">Loading…</div>
-      </div>
-      <div class="divider"></div>
+    <!-- Loading State -->
+    <div id="loadingState" class="card">
+      <div class="muted">Loading your dashboard...</div>
+    </div>
 
-      <h2>Apply for a loan</h2>
-      <p class="muted">
-        You can only have one active loan at a time. Pay the service fee to start processing.
-      </p>
-
-      <form id="loanForm" class="form">
-        <label>
-          Loan amount (KES)
-          <input id="amount" name="amount" inputmode="numeric" min="1000" max="60000" step="1" placeholder="e.g. 5000" required />
-          <div class="hint">Minimum 1,000. Maximum 60,000.</div>
-        </label>
-
-        <div class="row row-between">
-          <div>
-            <div class="muted tiny">Required service fee</div>
-            <div class="price" id="feeText">—</div>
-          </div>
-          <div class="badge" id="feeBracket">—</div>
+    <!-- Main Content (hidden until loaded) -->
+    <div id="mainContent" style="display: none;">
+      <section class="card">
+        <h1>Dashboard</h1>
+        <div class="row">
+          <div class="badge">Account</div>
+          <div class="muted" id="userPhone">—</div>
         </div>
+        <div class="divider"></div>
 
-        <label>
-          M-Pesa phone number (for disbursement)
-          <input id="mpesa_phone" name="mpesa_phone" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX or 2547XXXXXXXX" required />
-        </label>
+        <h2>Apply for a loan</h2>
+        <p class="muted">
+          You can only have one active loan at a time. Pay the service fee to start processing.
+        </p>
 
-        <button class="btn btn-primary btn-block" id="payBtn" type="submit" disabled>Pay service fee</button>
-        <div id="msg" class="msg" aria-live="polite"></div>
-      </form>
-    </section>
+        <form id="loanForm" class="form">
+          <label>
+            Loan amount (KES)
+            <input id="amount" name="amount" type="number" inputmode="numeric" min="1000" max="60000" step="1" placeholder="e.g. 5000" required />
+            <div class="hint">Minimum 1,000. Maximum 60,000.</div>
+          </label>
 
-    <section class="card">
-      <h2>Your current loan</h2>
-      <div id="loanBox" class="loan-box">
-        <div class="muted">Loading…</div>
-      </div>
-      <button id="refreshBtn" class="btn btn-ghost btn-block" type="button">Refresh status</button>
-    </section>
+          <div class="row row-between">
+            <div>
+              <div class="muted tiny">Required service fee</div>
+              <div class="price" id="feeText">—</div>
+            </div>
+            <div class="badge" id="feeBracket">—</div>
+          </div>
+
+          <label>
+            M-Pesa phone number (for disbursement)
+            <input id="mpesa_phone" name="mpesa_phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX or 2547XXXXXXXX" required />
+          </label>
+
+          <button class="btn btn-primary btn-block" id="payBtn" type="submit" disabled>Pay service fee</button>
+          <div id="msg" class="msg" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Your current loan</h2>
+        <div id="loanBox" class="loan-box">
+          <div class="muted">Loading…</div>
+        </div>
+        <button id="refreshBtn" class="btn btn-ghost btn-block" type="button">Refresh status</button>
+      </section>
+    </div>
   </main>
 
   <script src="{% static 'js/auth.js' %}"></script>
   <script src="{% static 'js/loan.js' %}"></script>
   <script src="{% static 'js/paystack.js' %}"></script>
   <script>
-    window.Auth.init();
+    (function() {
+      window.Auth.init();
 
-    if (!window.Auth.isAuthenticated()) {
-      window.location.href = "{% url 'login_view' %}";
-    }
-
-    const logoutBtn = document.getElementById("logoutBtn");
-    logoutBtn.addEventListener("click", () => {
-      window.Auth.logout();
-      window.location.href = "{% url 'login_view' %}";
-    });
-
-    const userPhoneEl = document.getElementById("userPhone");
-    const feeText = document.getElementById("feeText");
-    const feeBracket = document.getElementById("feeBracket");
-    const payBtn = document.getElementById("payBtn");
-    const msg = document.getElementById("msg");
-    const amountInput = document.getElementById("amount");
-    const mpesaPhoneInput = document.getElementById("mpesa_phone");
-
-    function setMsg(text, kind) {
-      msg.textContent = text || "";
-      msg.className = "msg";
-      if (kind === "error") msg.classList.add("msg-error");
-      if (kind === "success") msg.classList.add("msg-success");
-      if (kind === "info") msg.classList.add("msg-info");
-    }
-
-    async function loadMe() {
-      const me = await window.Auth.me();
-      userPhoneEl.textContent = me.phone;
-    }
-
-    async function loadLoan() {
-      const box = document.getElementById("loanBox");
-      box.innerHTML = '<div class="muted">Loading…</div>';
-      try {
-        const loan = await window.Loan.getMyActiveLoan();
-        if (!loan) {
-          box.innerHTML = `
-            <div class="row row-between">
-              <div>
-                <div class="muted tiny">Status</div>
-                <div class="status status-none">No active loan</div>
-              </div>
-              <div class="muted tiny">Apply above</div>
-            </div>
-          `;
-          return;
-        }
-        box.innerHTML = `
-          <div class="grid2">
-            <div>
-              <div class="muted tiny">Amount</div>
-              <div class="value">KES ${window.Loan.formatMoney(loan.amount)}</div>
-            </div>
-            <div>
-              <div class="muted tiny">Service fee</div>
-              <div class="value">KES ${window.Loan.formatMoney(loan.service_fee)}</div>
-            </div>
-            <div>
-              <div class="muted tiny">M-Pesa</div>
-              <div class="value">${loan.mpesa_phone}</div>
-            </div>
-            <div>
-              <div class="muted tiny">Status</div>
-              <div class="status status-${loan.status.toLowerCase()}">${loan.status}</div>
-            </div>
-          </div>
-          <div class="divider"></div>
-          <div class="muted tiny">Created: ${new Date(loan.created_at).toLocaleString()}</div>
-          <div class="muted tiny">Updated: ${new Date(loan.updated_at).toLocaleString()}</div>
-        `;
-      } catch (e) {
-        box.innerHTML = `<div class="msg msg-error">${e.message || "Failed to load loan."}</div>`;
-      }
-    }
-
-    function updateFeeUI() {
-      const amount = Number(String(amountInput.value || "").trim());
-      try {
-        const info = window.Loan.computeServiceFee(amount);
-        feeText.textContent = `KES ${window.Loan.formatMoney(info.fee)}`;
-        feeBracket.textContent = info.label;
-        payBtn.disabled = false;
-      } catch (e) {
-        feeText.textContent = "—";
-        feeBracket.textContent = "—";
-        payBtn.disabled = true;
-      }
-    }
-
-    amountInput.addEventListener("input", updateFeeUI);
-
-    document.getElementById("refreshBtn").addEventListener("click", async () => {
-      await loadLoan();
-    });
-
-    document.getElementById("loanForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      setMsg("", "");
-
-      const amount = Number(String(amountInput.value || "").trim());
-      const mpesa_phone = String(mpesaPhoneInput.value || "").trim();
-
-      let feeInfo;
-      try {
-        feeInfo = window.Loan.computeServiceFee(amount);
-      } catch (err) {
-        setMsg(err.message || "Invalid amount.", "error");
-        return;
+      // Check authentication FIRST - redirect if not authenticated
+      if (!window.Auth.isAuthenticated()) {
+        window.location.href = "{% url 'login_view' %}";
+        return; // Stop execution
       }
 
-      try {
-        setMsg("Creating loan and initializing payment…", "info");
-        const created = await window.Loan.createLoan({ amount, mpesa_phone });
-        const init = await window.Loan.initServiceFeePayment({ loan_id: created.id });
-        setMsg("Open Paystack to pay the service fee…", "info");
-        await window.Paystack.payServiceFeeInline({
-          paystack_public_key: init.paystack_public_key,
-          email: init.email,
-          amount_kes: init.amount_kes,
-          reference: init.reference,
-          metadata: init.metadata
-        });
-        setMsg("Verifying payment…", "info");
-        await window.Loan.verifyServiceFeePayment({ reference: init.reference });
-        setMsg("Payment verified. Your loan is now in processing.", "success");
-        await loadLoan();
-      } catch (err) {
-        setMsg(err.message || "Payment flow failed.", "error");
-        await loadLoan();
-      }
-    });
+      // Elements
+      const loadingState = document.getElementById("loadingState");
+      const mainContent = document.getElementById("mainContent");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const userPhoneEl = document.getElementById("userPhone");
+      const feeText = document.getElementById("feeText");
+      const feeBracket = document.getElementById("feeBracket");
+      const payBtn = document.getElementById("payBtn");
+      const msg = document.getElementById("msg");
+      const amountInput = document.getElementById("amount");
+      const mpesaPhoneInput = document.getElementById("mpesa_phone");
+      const loanBox = document.getElementById("loanBox");
 
-    (async function boot() {
-      try {
-        await loadMe();
-        updateFeeUI();
-        await loadLoan();
-      } catch (e) {
+      // Logout handler
+      logoutBtn.addEventListener("click", function() {
+        window.Auth.logout();
+        window.location.href = "{% url 'login_view' %}";
+      });
+
+      function setMsg(text, kind) {
+        msg.textContent = text || "";
+        msg.className = "msg";
+        if (kind === "error") msg.classList.add("msg-error");
+        if (kind === "success") msg.classList.add("msg-success");
+        if (kind === "info") msg.classList.add("msg-info");
+      }
+
+      function showMainContent() {
+        loadingState.style.display = "none";
+        mainContent.style.display = "block";
+      }
+
+      function handleAuthError() {
         window.Auth.logout();
         window.location.href = "{% url 'login_view' %}";
       }
+
+      async function loadMe() {
+        try {
+          const me = await window.Auth.me();
+          userPhoneEl.textContent = me.phone || "Unknown";
+          return me;
+        } catch (e) {
+          if (e.message.includes("expired") || e.message.includes("Invalid") || 
+              e.message.includes("denied") || e.message.includes("login")) {
+            handleAuthError();
+            throw e;
+          }
+          userPhoneEl.textContent = "Error loading";
+          throw e;
+        }
+      }
+
+      async function loadLoan() {
+        loanBox.innerHTML = '<div class="muted">Loading…</div>';
+        try {
+          const loan = await window.Loan.getMyActiveLoan();
+          
+          if (!loan || !loan.has_loan) {
+            loanBox.innerHTML = `
+              <div class="row row-between">
+                <div>
+                  <div class="muted tiny">Status</div>
+                  <div class="status status-none">No active loan</div>
+                </div>
+                <div class="muted tiny">Apply above</div>
+              </div>
+            `;
+            return null;
+          }
+
+          loanBox.innerHTML = `
+            <div class="grid2">
+              <div>
+                <div class="muted tiny">Amount</div>
+                <div class="value">KES ${window.Loan.formatMoney(loan.amount)}</div>
+              </div>
+              <div>
+                <div class="muted tiny">Service fee</div>
+                <div class="value">KES ${window.Loan.formatMoney(loan.service_fee)}</div>
+              </div>
+              <div>
+                <div class="muted tiny">M-Pesa</div>
+                <div class="value">${loan.mpesa_phone || '—'}</div>
+              </div>
+              <div>
+                <div class="muted tiny">Status</div>
+                <div class="status status-${(loan.status || 'pending').toLowerCase()}">${loan.status || 'PENDING'}</div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="muted tiny">Last update: ${loan.last_event || 'None'}</div>
+            <div class="muted tiny">Created: ${loan.created_at ? new Date(loan.created_at).toLocaleString() : '—'}</div>
+          `;
+          
+          return loan;
+        } catch (e) {
+          if (e.message.includes("expired") || e.message.includes("Invalid") || 
+              e.message.includes("denied") || e.message.includes("login")) {
+            handleAuthError();
+            throw e;
+          }
+          loanBox.innerHTML = `<div class="msg msg-error">${e.message || "Failed to load loan."}</div>`;
+          return null;
+        }
+      }
+
+      function updateFeeUI() {
+        const amount = Number(String(amountInput.value || "").trim());
+        try {
+          const info = window.Loan.computeServiceFee(amount);
+          feeText.textContent = `KES ${window.Loan.formatMoney(info.fee)}`;
+          feeBracket.textContent = info.label;
+          payBtn.disabled = false;
+        } catch (e) {
+          feeText.textContent = "—";
+          feeBracket.textContent = "—";
+          payBtn.disabled = true;
+        }
+      }
+
+      amountInput.addEventListener("input", updateFeeUI);
+
+      document.getElementById("refreshBtn").addEventListener("click", async function() {
+        await loadLoan();
+      });
+
+      document.getElementById("loanForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        setMsg("", "");
+
+        const amount = Number(String(amountInput.value || "").trim());
+        const mpesa_phone = String(mpesaPhoneInput.value || "").trim();
+
+        // Validate amount
+        let feeInfo;
+        try {
+          feeInfo = window.Loan.computeServiceFee(amount);
+        } catch (err) {
+          setMsg(err.message || "Invalid amount.", "error");
+          return;
+        }
+
+        // Validate phone
+        if (!mpesa_phone) {
+          setMsg("Please enter your M-Pesa phone number.", "error");
+          return;
+        }
+
+        payBtn.disabled = true;
+
+        try {
+          setMsg("Creating loan application...", "info");
+          const created = await window.Loan.createLoan({ amount, mpesa_phone });
+          
+          if (!created || !created.loan_id) {
+            throw new Error("Failed to create loan. Please try again.");
+          }
+
+          setMsg("Initializing payment...", "info");
+          const init = await window.Loan.initServiceFeePayment({ loan_id: created.loan_id });
+
+          setMsg("Opening payment window...", "info");
+          await window.Paystack.payServiceFeeInline({
+            paystack_public_key: init.paystack_public_key,
+            email: init.email,
+            amount_kes: init.amount_kes,
+            reference: init.reference,
+            metadata: init.metadata
+          });
+
+          setMsg("Verifying payment...", "info");
+          await window.Loan.verifyServiceFeePayment({ reference: init.reference });
+
+          setMsg("Payment verified! Your loan is now being processed.", "success");
+          await loadLoan();
+
+        } catch (err) {
+          setMsg(err.message || "Payment flow failed.", "error");
+          await loadLoan();
+        } finally {
+          payBtn.disabled = false;
+          updateFeeUI();
+        }
+      });
+
+      // Initialize dashboard
+      async function boot() {
+        try {
+          await loadMe();
+          updateFeeUI();
+          await loadLoan();
+          showMainContent();
+        } catch (e) {
+          console.error("Dashboard boot error:", e);
+          // If it's an auth error, user will be redirected
+          // Otherwise show error in loading state
+          if (!e.message.includes("expired") && !e.message.includes("login")) {
+            loadingState.innerHTML = `<div class="msg msg-error">Failed to load dashboard: ${e.message}</div>`;
+          }
+        }
+      }
+
+      boot();
     })();
   </script>
 </body>
