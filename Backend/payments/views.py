@@ -124,31 +124,62 @@ class InitPaymentView(APIView):
         if loan.service_fee_paid:
             raise ValidationError("Service fee already paid")
 
-        ensure_payment_record_created(loan)
+        # Get or create the payment record
+        payment = ensure_payment_record_created(loan)
+        
+        email = _internal_email(request.user.phone)
+        metadata = {
+            "loan_id": loan.id,
+            "phone": request.user.phone,
+            "purpose": "service_fee",
+        }
+
+        # --- FIX: Check if we already have the URL from ApplyLoanView ---
+        if payment.authorization_url and payment.access_code:
+            logger.info(f"Returning existing Paystack URL for loan {loan.id}")
+            return Response({
+                "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
+                "email": email,
+                "amount_kes": loan.service_fee,
+                "reference": loan.paystack_reference,
+                "authorization_url": payment.authorization_url,
+                "access_code": payment.access_code,
+                "metadata": metadata,
+            })
+        # ----------------------------------------------------------------
 
         try:
             client = PaystackClient()
-            email = _internal_email(request.user.phone)
-
+            
+            # Only initialize if we don't have it yet
             init = client.initialize_transaction(
                 email=email,
                 amount_kobo=loan.service_fee * 100,
                 reference=loan.paystack_reference,
                 currency=settings.APP_FEE_CURRENCY,
-                metadata={
-                    "loan_id": loan.id,
-                    "phone": request.user.phone,
-                    "purpose": "service_fee",
-                },
+                metadata=metadata,
             )
+
+            authorization_url = init.get("authorization_url")
+            access_code = init.get("access_code")
+
+            # Update Payment Model
+            payment.authorization_url = authorization_url
+            payment.access_code = access_code
+            payment.save()
+            
+            # Update Loan Model (to keep them in sync)
+            loan.paystack_authorization_url = authorization_url
+            loan.paystack_access_code = access_code
+            loan.save(update_fields=["paystack_authorization_url", "paystack_access_code"])
 
             return Response({
                 "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
                 "email": email,
                 "amount_kes": loan.service_fee,
                 "reference": loan.paystack_reference,
-                "authorization_url": init.get("authorization_url"),
-                "access_code": init.get("access_code"),
+                "authorization_url": authorization_url,
+                "access_code": access_code,
                 "metadata": init.get("metadata", {}),
             })
 
