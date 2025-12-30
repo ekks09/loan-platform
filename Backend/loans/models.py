@@ -61,14 +61,24 @@ class Loan(models.Model):
 
     service_fee_paid = models.BooleanField(default=False)
 
-    # NOTE:
-    # Paystack reference should live on a Payment model.
-    # NOT unique to avoid webhook retries breaking production.
+    # Paystack fields
     paystack_reference = models.CharField(
         max_length=64,
         blank=True,
         null=True,
         db_index=True,
+    )
+    paystack_authorization_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Paystack checkout URL for service fee payment",
+    )
+    paystack_access_code = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Paystack access code for inline payment",
     )
 
     last_event = models.CharField(max_length=255, blank=True, default="")
