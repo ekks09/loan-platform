@@ -876,3 +876,21 @@ select:focus {
   /* Optional: Adds a subtle glow to the logo to match theme */
   filter: drop-shadow(0 0 5px rgba(58, 134, 255, 0.5)); 
 }
+
+.terms-notice {
+  background-color: #f8f9fa;
+  border-left: 4px solid #007bff;
+  padding: 12px 15px;
+  margin: 20px 0;
+  border-radius: 4px;
+}
+
+.terms-notice .emphasized {
+  color: #495057;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.terms-notice strong {
+  color: #dc3545;
+}
