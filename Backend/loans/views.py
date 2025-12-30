@@ -14,19 +14,24 @@ from rest_framework import status
 from .models import Loan
 from .serializers import LoanApplySerializer, LoanSerializer
 from payments.paystack import PaystackClient, PaystackError
-from payments.views import ensure_payment_record_created, internal_email_for_phone
+from payments.views import ensure_payment_record_created
 
 logger = logging.getLogger(__name__)
 
 
+def internal_email_for_phone(phone_254: str) -> str:
+    return f"user-{phone_254}@{settings.INTERNAL_EMAIL_DOMAIN}"
+
+
 class ApplyLoanView(APIView):
-    """Apply for a new loan."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = LoanApplySerializer(data=request.data)
+        logger.info(f"Loan application received from user {request.user.id}")
         
+        serializer = LoanApplySerializer(data=request.data)
         if not serializer.is_valid():
+            logger.warning(f"Validation failed: {serializer.errors}")
             return Response(
                 {"error": "Validation failed", "details": serializer.errors},
                 status=status.HTTP_400_BAD_REQUEST
@@ -35,8 +40,8 @@ class ApplyLoanView(APIView):
         amount = serializer.validated_data["amount"]
         mpesa_phone = serializer.validated_data["mpesa_phone"]
 
-        # Check for existing active loan
         if Loan.user_has_active_loan(request.user):
+            logger.warning(f"User {request.user.id} already has active loan")
             return Response(
                 {"error": "You already have an active loan."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -45,6 +50,7 @@ class ApplyLoanView(APIView):
         try:
             service_fee = Loan.compute_service_fee(amount)
         except ValueError as e:
+            logger.warning(f"Service fee computation failed: {e}")
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST
@@ -65,63 +71,69 @@ class ApplyLoanView(APIView):
                     last_event="Awaiting service fee payment",
                 )
 
-                # Create payment record
                 ensure_payment_record_created(loan)
-
-            # Initialize Paystack transaction
-            client = PaystackClient()
-            
-            # Get user's phone for email generation
-            user_phone = getattr(request.user, 'phone', mpesa_phone)
-            email = internal_email_for_phone(user_phone)
-
-            try:
-                init_data = client.initialize_transaction(
-                    email=email,
-                    amount_kobo=service_fee * 100,
-                    reference=reference,
-                    currency=getattr(settings, 'APP_FEE_CURRENCY', 'KES'),
-                    metadata={
-                        "loan_id": loan.id,
-                        "phone": user_phone,
-                        "purpose": "service_fee",
-                    },
-                )
-
-                return Response({
-                    "loan_id": loan.id,
-                    "payment_reference": reference,
-                    "amount_kobo": service_fee * 100,
-                    "service_fee": service_fee,
-                    "email": email,
-                    "paystack_authorization_url": init_data.get("authorization_url"),
-                    "paystack_access_code": init_data.get("access_code"),
-                })
-
-            except PaystackError as e:
-                logger.error(f"Paystack initialization failed: {e}")
-                # Still return loan info even if Paystack fails
-                # User can retry payment later
-                return Response({
-                    "loan_id": loan.id,
-                    "payment_reference": reference,
-                    "amount_kobo": service_fee * 100,
-                    "service_fee": service_fee,
-                    "email": email,
-                    "paystack_error": str(e),
-                    "message": "Loan created. Payment initialization failed, please retry.",
-                }, status=status.HTTP_201_CREATED)
+                logger.info(f"Loan {loan.id} created for user {request.user.id}")
 
         except Exception as e:
-            logger.exception(f"Error creating loan: {e}")
+            logger.exception(f"Failed to create loan: {e}")
             return Response(
                 {"error": "Failed to create loan. Please try again."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+        # Initialize Paystack transaction
+        try:
+            client = PaystackClient()
+            email = internal_email_for_phone(request.user.phone)
+
+            init = client.initialize_transaction(
+                email=email,
+                amount_kobo=service_fee * 100,
+                reference=reference,
+                currency=settings.APP_FEE_CURRENCY,
+                metadata={
+                    "loan_id": loan.id,
+                    "phone": request.user.phone,
+                    "purpose": "service_fee",
+                },
+            )
+
+            logger.info(f"Paystack transaction initialized for loan {loan.id}")
+
+            return Response({
+                "loan_id": loan.id,
+                "payment_reference": reference,
+                "amount_kobo": service_fee * 100,
+                "service_fee": service_fee,
+                "email": email,
+                "paystack_authorization_url": init.get("authorization_url"),
+                "paystack_access_code": init.get("access_code"),
+            })
+
+        except PaystackError as e:
+            logger.error(f"Paystack initialization failed for loan {loan.id}: {e}")
+            # Return loan info even if Paystack fails - user can retry payment
+            return Response({
+                "loan_id": loan.id,
+                "payment_reference": reference,
+                "service_fee": service_fee,
+                "amount_kobo": service_fee * 100,
+                "email": internal_email_for_phone(request.user.phone),
+                "paystack_error": str(e),
+                "message": "Loan created. Payment initialization failed - please retry via dashboard.",
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.exception(f"Unexpected error during Paystack init for loan {loan.id}: {e}")
+            return Response({
+                "loan_id": loan.id,
+                "payment_reference": reference,
+                "service_fee": service_fee,
+                "error": "Payment initialization failed. Please retry.",
+            }, status=status.HTTP_201_CREATED)
+
 
 class CurrentLoanView(APIView):
-    """Get the current user's active loan."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
