@@ -14,20 +14,28 @@
   };
 
   function normalizeKenyanPhone(input) {
-    const raw = String(input || "").trim().replace(/\s+/g, "");
+    const raw = String(input || "").trim().replace(/\s+/g, "").replace(/-/g, "");
     if (!raw) throw new Error("Phone number is required.");
     
     const plusStripped = raw.startsWith("+") ? raw.slice(1) : raw;
     
-    if (plusStripped.startsWith("254")) {
-      const rest = plusStripped.slice(3);
-      if (!/^(7|1)\d{8}$/.test(rest)) throw new Error("Invalid Kenyan phone number.");
-      return "254" + rest;
+    if (plusStripped.startsWith("254") && plusStripped.length === 12) {
+      const prefix = plusStripped[3];
+      if (prefix !== "7" && prefix !== "1") {
+        throw new Error("Invalid Kenyan phone number. Must start with 07 or 01.");
+      }
+      return plusStripped;
     }
+    
     if (/^0(7|1)\d{8}$/.test(plusStripped)) {
       return "254" + plusStripped.slice(1);
     }
-    throw new Error("Invalid Kenyan phone number. Use format: 07XXXXXXXX or 2547XXXXXXXX");
+    
+    if (/^(7|1)\d{8}$/.test(plusStripped)) {
+      return "254" + plusStripped;
+    }
+    
+    throw new Error("Invalid phone number format. Use 07XXXXXXXX or 2547XXXXXXXX.");
   }
 
   function getToken() {
@@ -44,19 +52,26 @@
     localStorage.removeItem("access_token");
   }
 
-  // Parse JWT payload without verification (for client-side expiry check)
+  // Parse JWT payload (without verification - that's done server-side)
   function parseJWT(token) {
     try {
       if (!token) return null;
       const parts = token.split(".");
       if (parts.length !== 3) return null;
       
-      const payload = parts[1];
       // Handle base64url encoding
-      const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
-      const decoded = atob(base64);
+      let payload = parts[1];
+      payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+      
+      // Add padding if needed
+      while (payload.length % 4) {
+        payload += '=';
+      }
+      
+      const decoded = atob(payload);
       return JSON.parse(decoded);
     } catch (e) {
+      console.error("JWT parse error:", e);
       return null;
     }
   }
@@ -66,18 +81,17 @@
     if (!payload) return true;
     
     const exp = payload.exp;
-    if (!exp) return false; // No expiry claim
+    if (!exp) return false;
     
-    // exp is in seconds, Date.now() is in milliseconds
-    // Add 30 second buffer to account for clock skew
-    return Date.now() >= (exp * 1000) - 30000;
+    // Add 30 second buffer
+    const now = Math.floor(Date.now() / 1000);
+    return now >= (exp - 30);
   }
 
   Auth.isAuthenticated = function () {
     const token = getToken();
     if (!token) return false;
     
-    // Check if token is expired
     if (isTokenExpired(token)) {
       removeToken();
       return false;
@@ -98,7 +112,6 @@
     if (auth) {
       const token = getToken();
       if (token) {
-        // Check if token is expired before making request
         if (isTokenExpired(token)) {
           removeToken();
           throw new Error("Session expired. Please login again.");
@@ -115,7 +128,8 @@
         body: body ? JSON.stringify(body) : null,
       });
     } catch (networkError) {
-      throw new Error("Network error. Please check your connection and try again.");
+      console.error("Network error:", networkError);
+      throw new Error("Network error. Please check your connection.");
     }
 
     const text = await res.text();
@@ -123,49 +137,35 @@
     try {
       data = text ? JSON.parse(text) : null;
     } catch {
-      data = { detail: text };
+      data = { error: text || "Unknown error" };
     }
 
-    // Handle different error statuses with clear messages
     if (!res.ok) {
-      // Extract error message from various response formats
       let errorMsg = "Request failed";
       
       if (data) {
-        if (data.error) {
+        // Handle different error formats
+        if (typeof data.error === "string") {
           errorMsg = data.error;
+        } else if (typeof data.error === "object") {
+          // Handle nested errors like {"error": {"phone": ["error msg"]}}
+          const firstKey = Object.keys(data.error)[0];
+          const firstValue = data.error[firstKey];
+          if (Array.isArray(firstValue)) {
+            errorMsg = firstValue[0];
+          } else if (typeof firstValue === "string") {
+            errorMsg = firstValue;
+          }
         } else if (data.detail) {
           errorMsg = data.detail;
         } else if (data.message) {
           errorMsg = data.message;
-        } else if (typeof data === 'string') {
-          errorMsg = data;
         }
       }
 
-      // Add context for specific HTTP status codes
-      switch (res.status) {
-        case 400:
-          // Bad request - validation error, use message as is
-          break;
-        case 401:
-          removeToken();
-          errorMsg = errorMsg || "Invalid credentials. Please check your phone number and password.";
-          break;
-        case 403:
-          removeToken();
-          errorMsg = "Access denied. Please login again.";
-          break;
-        case 404:
-          errorMsg = "Account not found. Please check your phone number or register.";
-          break;
-        case 500:
-          errorMsg = "Server error. Please try again later.";
-          break;
-        default:
-          if (!errorMsg || errorMsg === "Request failed") {
-            errorMsg = `Request failed (${res.status})`;
-          }
+      // Handle auth errors
+      if (res.status === 401 || res.status === 403) {
+        removeToken();
       }
 
       throw new Error(errorMsg);
@@ -175,14 +175,22 @@
   }
 
   Auth.register = async function ({ phone, national_id, password }) {
+    // Client-side validation
+    if (!phone || !phone.trim()) {
+      throw new Error("Phone number is required.");
+    }
+    if (!national_id || !national_id.trim()) {
+      throw new Error("National ID is required.");
+    }
+    if (!password || password.length < 8) {
+      throw new Error("Password must be at least 8 characters.");
+    }
+
     const normalized = normalizeKenyanPhone(phone);
-    const nid = String(national_id || "").trim();
+    const nid = String(national_id).trim();
     
     if (!/^\d{6,10}$/.test(nid)) {
       throw new Error("National ID must be 6-10 digits.");
-    }
-    if (String(password || "").length < 8) {
-      throw new Error("Password must be at least 8 characters.");
     }
 
     const data = await api("/users/register/", {
@@ -191,7 +199,7 @@
       body: { phone: normalized, national_id: nid, password }
     });
 
-    // If registration returns a token, store it
+    // Store token if returned
     if (data && data.access) {
       setToken(data.access);
     }
@@ -200,7 +208,7 @@
   };
 
   Auth.login = async function ({ phone, password }) {
-    // Validate inputs before sending
+    // Client-side validation
     if (!phone || !phone.trim()) {
       throw new Error("Phone number is required.");
     }
