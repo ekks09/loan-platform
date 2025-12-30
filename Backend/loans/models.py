@@ -5,7 +5,9 @@ from django.db import models
 
 def normalize_ke_phone(phone: str) -> str:
     """Normalize a Kenyan phone number to 2547XXXXXXXX format."""
-    phone = phone.strip().replace(" ", "").replace("-", "")
+    if not phone:
+        return phone
+    phone = str(phone).strip().replace(" ", "").replace("-", "")
     if phone.startswith("+"):
         phone = phone[1:]
     if phone.startswith("0"):
@@ -52,22 +54,22 @@ class Loan(models.Model):
 
     @staticmethod
     def compute_service_fee(amount: int) -> int:
-        """Compute service fee based on loan amount tiers."""
+        """Compute service fee based on loan amount tiers - ALIGNED WITH FRONTEND."""
         a = int(amount)
         if a < 1000 or a > 60000:
             raise ValueError("Loan amount out of range.")
 
-        # Updated tiers to match frontend
+        # Tiers aligned with frontend (no gaps)
         tiers = [
             (1000, 1000, 200),
             (2000, 2000, 290),
             (3000, 5000, 680),
             (6000, 11000, 1200),
             (12000, 22000, 2200),
-            (23000, 32000, 3200),
-            (33000, 42000, 4200),
-            (43000, 52000, 5200),
-            (53000, 60000, 6000),
+            (23000, 32000, 3200),   # Fixed: was 23000-30000
+            (33000, 42000, 4200),   # Fixed: was 31000-40000
+            (43000, 52000, 5200),   # Fixed: was 41000-50000
+            (53000, 60000, 6000),   # Fixed: was 51000-60000 with fee 6200
         ]
         for mn, mx, fee in tiers:
             if mn <= a <= mx:
