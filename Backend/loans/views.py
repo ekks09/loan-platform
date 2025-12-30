@@ -53,6 +53,9 @@ class ApplyLoanView(APIView):
 
         try:
             with transaction.atomic():
+                # GENERATE PAYSTACK REFERENCE FIRST
+                reference = "LPF_" + secrets.token_hex(12)
+
                 loan = Loan.objects.create(
                     user=request.user,
                     amount=amount,
@@ -61,8 +64,10 @@ class ApplyLoanView(APIView):
                     status=Loan.Status.PENDING,
                     service_fee_paid=False,
                     last_event="Awaiting service fee payment",
+                    paystack_reference=reference,  # assign here
                 )
 
+                # ENSURE PAYMENT RECORD
                 ensure_payment_record_created(loan)
 
         except Exception:
@@ -72,10 +77,8 @@ class ApplyLoanView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        # INIT PAYSTACK (reference PER ATTEMPT)
+        # INIT PAYSTACK (reference already generated)
         try:
-            reference = "LPF_" + secrets.token_hex(12)
-
             client = PaystackClient()
             email = internal_email_for_phone(request.user.phone)
 
