@@ -10,7 +10,12 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">Loan Platform</div>
+    <!-- Updated Brand with Logo -->
+    <div class="brand">
+        <img src="{% static 'img/logo.png' %}" alt="Logo" class="brand-logo" style="height: 32px; width: auto;">
+        <span>Loan Platform</span>
+    </div>
+    
     <nav class="topnav">
       <button id="logoutBtn" class="btn btn-ghost" type="button">Logout</button>
     </nav>
@@ -34,15 +39,19 @@
 
         <h2>Apply for a loan</h2>
         <p class="muted">
-          You can only have one active loan at a time. Pay the service fee to start processing.
+          Select a loan limit below. You can only have one active loan at a time.
         </p>
 
         <form id="loanForm" class="form">
-          <label>
-            Loan amount (KES)
-            <input id="amount" name="amount" type="number" inputmode="numeric" min="1000" max="60000" step="1" placeholder="e.g. 5000" required />
-            <div class="hint">Minimum 1,000. Maximum 60,000.</div>
-          </label>
+          
+          <!-- NEW: Clickable Loan Options Grid -->
+          <label style="margin-bottom: 12px;">Select Loan Amount</label>
+          <div id="loanOptionsGrid" class="loan-grid">
+            <!-- JavaScript will inject buttons here -->
+          </div>
+          
+          <!-- Hidden Input to store the selected value -->
+          <input type="hidden" id="selectedAmount" name="amount" value="" required>
 
           <div class="row row-between">
             <div>
@@ -94,9 +103,15 @@
       const feeBracket = document.getElementById("feeBracket");
       const payBtn = document.getElementById("payBtn");
       const msg = document.getElementById("msg");
-      const amountInput = document.getElementById("amount");
       const mpesaPhoneInput = document.getElementById("mpesa_phone");
       const loanBox = document.getElementById("loanBox");
+
+      // NEW ELEMENTS FOR CLICKABLE GRID
+      const selectedAmountInput = document.getElementById("selectedAmount");
+      const loanOptionsGrid = document.getElementById("loanOptionsGrid");
+
+      // DEFINE FIXED AMOUNTS
+      const FIXED_AMOUNTS = [1000, 2000, 3000, 5000, 10000, 20000, 35000, 50000];
 
       // Logout handler
       logoutBtn.addEventListener("click", function() {
@@ -192,8 +207,55 @@
         }
       }
 
+      // --- NEW: RENDER THE BUTTONS ---
+      function renderLoanOptions() {
+        loanOptionsGrid.innerHTML = "";
+        
+        FIXED_AMOUNTS.forEach(amt => {
+          // Optional: Calculate fee just for display hint
+          let feeDisplay = "";
+          try {
+            const info = window.Loan.computeServiceFee(amt);
+            feeDisplay = `Fee: ${window.Loan.formatMoney(info.fee)}`;
+          } catch(e) {}
+
+          const div = document.createElement("div");
+          div.className = "loan-option";
+          div.innerHTML = `
+            <div class="amt">${window.Loan.formatMoney(amt)}</div>
+            <div class="fee-hint">${feeDisplay}</div>
+          `;
+          
+          div.onclick = () => selectLoanAmount(amt, div);
+          loanOptionsGrid.appendChild(div);
+        });
+      }
+
+      // --- NEW: HANDLE CLICK SELECTION ---
+      function selectLoanAmount(amount, clickedDiv) {
+        // 1. Update Hidden Input
+        selectedAmountInput.value = amount;
+
+        // 2. Update Visual Classes
+        const allOptions = document.querySelectorAll(".loan-option");
+        allOptions.forEach(opt => opt.classList.remove("selected"));
+        clickedDiv.classList.add("selected");
+
+        // 3. Update Fee UI
+        updateFeeUI();
+      }
+
       function updateFeeUI() {
-        const amount = Number(String(amountInput.value || "").trim());
+        // Read from HIDDEN input now
+        const amount = Number(selectedAmountInput.value);
+        
+        if (!amount) {
+          feeText.textContent = "—";
+          feeBracket.textContent = "—";
+          payBtn.disabled = true;
+          return;
+        }
+
         try {
           const info = window.Loan.computeServiceFee(amount);
           feeText.textContent = `KES ${window.Loan.formatMoney(info.fee)}`;
@@ -206,8 +268,6 @@
         }
       }
 
-      amountInput.addEventListener("input", updateFeeUI);
-
       document.getElementById("refreshBtn").addEventListener("click", async function() {
         await loadLoan();
       });
@@ -216,10 +276,17 @@
         e.preventDefault();
         setMsg("", "");
 
-        const amount = Number(String(amountInput.value || "").trim());
+        // GET VALUE FROM HIDDEN INPUT
+        const amount = Number(selectedAmountInput.value);
         const mpesa_phone = String(mpesaPhoneInput.value || "").trim();
 
         // Validate amount
+        if (!amount) {
+          setMsg("Please select a loan amount option.", "error");
+          return;
+        }
+
+        // Validate amount logic (secondary check)
         let feeInfo;
         try {
           feeInfo = window.Loan.computeServiceFee(amount);
@@ -267,21 +334,19 @@
           await loadLoan();
         } finally {
           payBtn.disabled = false;
-          updateFeeUI();
+          // No need to clear input, user might want to try again
         }
       });
 
       // Initialize dashboard
       async function boot() {
         try {
+          renderLoanOptions(); // Create the buttons
           await loadMe();
-          updateFeeUI();
           await loadLoan();
           showMainContent();
         } catch (e) {
           console.error("Dashboard boot error:", e);
-          // If it's an auth error, user will be redirected
-          // Otherwise show error in loading state
           if (!e.message.includes("expired") && !e.message.includes("login")) {
             loadingState.innerHTML = `<div class="msg msg-error">Failed to load dashboard: ${e.message}</div>`;
           }
