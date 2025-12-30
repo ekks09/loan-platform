@@ -164,7 +164,12 @@ LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Africa/Nairobi"
 USE_I18N = True
 USE_TZ = True
-
+# =========================
+# JWT SETTINGS
+# =========================
+JWT_ACCESS_TTL_MINUTES = int(os.getenv("JWT_ACCESS_TTL_MINUTES", 30))
+JWT_ISSUER = os.getenv("JWT_ISSUER", "loan-platform")
+JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "loan-platform-users")
 # =========================
 # PAYSTACK
 # =========================
