@@ -859,3 +859,20 @@ select:focus {
 .loan-option.selected .fee-hint {
   color: rgba(255, 255, 255, 0.9);
 }
+/* Add to static/css/style.css */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  /* Optional: Adds a subtle glow to the logo to match theme */
+  filter: drop-shadow(0 0 5px rgba(58, 134, 255, 0.5)); 
+}
