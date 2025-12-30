@@ -233,6 +233,43 @@
       margin-top: 0.25rem;
     }
 
+    /* Password Toggle Styles */
+    .password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-wrapper input {
+      width: 100%;
+      padding-right: 40px;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #6c757d;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s ease;
+    }
+
+    .toggle-password:hover {
+      color: #007bff;
+    }
+
+    .toggle-password .eye-icon {
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
     /* Camera Modal */
     .camera-overlay {
       display: none;
@@ -350,8 +387,13 @@
 
         <label>
           Password
-          <input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required />
-          <div class="hint">At least 8 characters.</div>
+          <div class="password-wrapper">
+            <input id="password" name="password" type="password" minlength="8" autocomplete="new-password" placeholder="Enter at least 8 characters" required />
+            <button type="button" class="toggle-password" id="togglePassword" aria-label="Toggle password visibility">
+              <span class="eye-icon">👁️</span>
+            </button>
+          </div>
+          <div class="hint">At least 8 characters. Use letters, numbers, and symbols for security.</div>
         </label>
 
         <!-- Photo ID Upload Section -->
@@ -439,6 +481,9 @@
       </form>
 
       <p class="tiny muted">Already have an account? <a class="link" href="{% url 'login_view' %}">Login</a></p>
+      <p class="tiny muted" style="margin-top: 0.5rem;">
+        <strong>Note:</strong> Keep your password secure. Never share it with anyone.
+      </p>
     </section>
   </main>
 
@@ -467,6 +512,25 @@
 
     // Initialize
     window.Auth.init();
+
+    // Password toggle functionality
+    const togglePasswordButton = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+    
+    togglePasswordButton.addEventListener('click', function() {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      
+      // Change eye icon based on visibility
+      const eyeIcon = this.querySelector('.eye-icon');
+      if (type === 'text') {
+        eyeIcon.textContent = '👁️‍🗨️'; // Open eye with slash
+        this.setAttribute('aria-label', 'Hide password');
+      } else {
+        eyeIcon.textContent = '👁️'; // Regular eye
+        this.setAttribute('aria-label', 'Show password');
+      }
+    });
 
     // Field config
     const fields = [
@@ -649,9 +713,16 @@
         return;
       }
 
+      // Validate password strength
+      const password = document.getElementById('password').value;
+      if (password.length < 8) {
+        msg.textContent = 'Password must be at least 8 characters long.';
+        msg.classList.add('msg-error');
+        return;
+      }
+
       const phone = document.getElementById('phone').value.trim();
       const national_id = document.getElementById('national_id').value.trim();
-      const password = document.getElementById('password').value;
 
       // Disable form
       submitBtn.disabled = true;
