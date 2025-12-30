@@ -13,6 +13,7 @@
     if (a < 1000) throw new Error("Minimum loan amount is 1,000.");
     if (a > 60000) throw new Error("Maximum loan amount is 60,000.");
 
+    // Updated brackets to match backend
     const brackets = [
       { min: 1000, max: 1000, fee: 200, label: "KES 1,000" },
       { min: 2000, max: 2000, fee: 290, label: "KES 2,000" },
@@ -33,7 +34,11 @@
   Loan.createLoan = async function ({ amount, mpesa_phone }) {
     const a = Number(amount);
     const mp = window.Auth.normalizeKenyanPhone(mpesa_phone);
-    return await window.Auth.api("/loans/apply/", { method: "POST", auth: true, body: { amount: a, mpesa_phone: mp } });
+    return await window.Auth.api("/loans/apply/", { 
+      method: "POST", 
+      auth: true, 
+      body: { amount: a, mpesa_phone: mp } 
+    });
   };
 
   Loan.getMyActiveLoan = async function () {
@@ -41,11 +46,19 @@
   };
 
   Loan.initServiceFeePayment = async function ({ loan_id }) {
-    return await window.Auth.api("/payments/init/", { method: "POST", auth: true, body: { loan_id } });
+    return await window.Auth.api("/payments/init/", { 
+      method: "POST", 
+      auth: true, 
+      body: { loan_id } 
+    });
   };
 
   Loan.verifyServiceFeePayment = async function ({ reference }) {
-    return await window.Auth.api("/payments/verify/", { method: "POST", auth: true, body: { reference } });
+    return await window.Auth.api("/payments/verify/", { 
+      method: "POST", 
+      auth: true, 
+      body: { reference } 
+    });
   };
 
   window.Loan = Loan;
