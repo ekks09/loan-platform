@@ -1,7 +1,18 @@
 from __future__ import annotations
 from django.conf import settings
 from django.db import models
-from users.models import User, normalize_ke_phone
+
+
+def normalize_ke_phone(phone: str) -> str:
+    """Normalize a Kenyan phone number to 2547XXXXXXXX format."""
+    phone = phone.strip().replace(" ", "").replace("-", "")
+    if phone.startswith("+"):
+        phone = phone[1:]
+    if phone.startswith("0"):
+        phone = "254" + phone[1:]
+    if phone.startswith("7"):
+        phone = "254" + phone
+    return phone
 
 
 class Loan(models.Model):
@@ -41,20 +52,22 @@ class Loan(models.Model):
 
     @staticmethod
     def compute_service_fee(amount: int) -> int:
+        """Compute service fee based on loan amount tiers."""
         a = int(amount)
         if a < 1000 or a > 60000:
             raise ValueError("Loan amount out of range.")
 
+        # Updated tiers to match frontend
         tiers = [
             (1000, 1000, 200),
             (2000, 2000, 290),
             (3000, 5000, 680),
             (6000, 11000, 1200),
             (12000, 22000, 2200),
-            (23000, 30000, 3200),
-            (31000, 40000, 4200),
-            (41000, 50000, 5200),
-            (51000, 60000, 6200),
+            (23000, 32000, 3200),
+            (33000, 42000, 4200),
+            (43000, 52000, 5200),
+            (53000, 60000, 6000),
         ]
         for mn, mx, fee in tiers:
             if mn <= a <= mx:
@@ -62,6 +75,9 @@ class Loan(models.Model):
         raise ValueError("Service fee not configured for this amount.")
 
     @classmethod
-    def user_has_active_loan(cls, user: User) -> bool:
-        # Returns True if the user has any loan not yet disbursed
+    def user_has_active_loan(cls, user) -> bool:
+        """Returns True if the user has any loan not yet disbursed."""
         return cls.objects.filter(user=user).exclude(status=cls.Status.DISBURSED).exists()
+
+    def __str__(self):
+        return f"Loan #{self.id} - {self.user} - KES {self.amount}"
