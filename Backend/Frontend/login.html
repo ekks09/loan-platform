@@ -5,11 +5,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Login - Loan Platform</title>
+  <!-- FAVICON LINK (Pointing to css/logo.png) -->
+  <link rel="icon" type="image/png" href="{% static 'css/logo.png' %}" />
   <link rel="stylesheet" href="{% static 'css/style.css' %}" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">Loan Platform</div>
+    <div class="brand">
+        <!-- HEADER LOGO (Pointing to css/logo.png) -->
+        <img src="{% static 'css/logo.png' %}" alt="Logo" class="brand-logo">
+        <span>Loan Platform</span>
+    </div>
     <nav class="topnav">
       <a class="link" href="{% url 'register' %}">Register</a>
     </nav>
@@ -46,12 +52,6 @@
     (function() {
       window.Auth.init();
       
-      // Check if already authenticated with valid token
-      /*if (window.Auth.isAuthenticated()) {
-        window.location.href = "{% url 'dashboard' %}";
-        return;
-      }*/
-
       const form = document.getElementById("loginForm");
       const msg = document.getElementById("msg");
       const loginBtn = document.getElementById("loginBtn");
@@ -78,7 +78,6 @@
         const phone = phoneInput.value.trim();
         const password = passwordInput.value;
 
-        // Client-side validation
         if (!phone) {
           showMessage("Please enter your phone number.", "error");
           phoneInput.focus();
@@ -97,7 +96,6 @@
           await window.Auth.login({ phone, password });
           showMessage("Login successful! Redirecting...", "success");
           
-          // Small delay to show success message
           setTimeout(function() {
             window.location.href = "{% url 'dashboard' %}";
           }, 500);
@@ -107,7 +105,6 @@
           showMessage(errorMessage, "error");
           setLoading(false);
           
-          // Focus on appropriate field based on error
           if (errorMessage.toLowerCase().includes("phone") || 
               errorMessage.toLowerCase().includes("account not found")) {
             phoneInput.focus();
@@ -118,17 +115,12 @@
         }
       });
 
-      // Clear error message when user starts typing
       phoneInput.addEventListener("input", function() {
-        if (msg.classList.contains("msg-error")) {
-          showMessage("", "");
-        }
+        if (msg.classList.contains("msg-error")) { showMessage("", ""); }
       });
 
       passwordInput.addEventListener("input", function() {
-        if (msg.classList.contains("msg-error")) {
-          showMessage("", "");
-        }
+        if (msg.classList.contains("msg-error")) { showMessage("", ""); }
       });
     })();
   </script>
