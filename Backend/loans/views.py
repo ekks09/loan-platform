@@ -1,3 +1,4 @@
+# loans/views.py
 from __future__ import annotations
 
 import secrets
@@ -14,7 +15,7 @@ from rest_framework import status
 from .models import Loan
 from .serializers import LoanApplySerializer
 from payments.paystack import PaystackClient, PaystackError
-from payments.views import ensure_payment_record_created
+from payments.models import Payment
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class ApplyLoanView(APIView):
         amount = serializer.validated_data["amount"]
         mpesa_phone = serializer.validated_data["mpesa_phone"]
 
-        # BLOCK ONLY REAL ACTIVE LOANS
+        # Block if user already has an active loan
         if Loan.user_has_active_loan(request.user):
             return Response(
                 {"error": "You already have an active loan."},
@@ -51,11 +52,11 @@ class ApplyLoanView(APIView):
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Generate reference before transaction
+        reference = "LPF_" + secrets.token_hex(12)
+
         try:
             with transaction.atomic():
-                # GENERATE PAYSTACK REFERENCE FIRST
-                reference = "LPF_" + secrets.token_hex(12)
-
                 loan = Loan.objects.create(
                     user=request.user,
                     amount=amount,
@@ -64,11 +65,16 @@ class ApplyLoanView(APIView):
                     status=Loan.Status.PENDING,
                     service_fee_paid=False,
                     last_event="Awaiting service fee payment",
-                    paystack_reference=reference,  # assign here
+                    paystack_reference=reference,
                 )
 
-                # ENSURE PAYMENT RECORD
-                ensure_payment_record_created(loan)
+                payment = Payment.objects.create(
+                    reference=reference,
+                    loan_id=loan.id,
+                    user_id=loan.user_id,
+                    amount_kes=loan.service_fee,
+                )
+                logger.info("Payment record created for loan %s", loan.id)
 
         except Exception:
             logger.exception("Loan creation failed")
@@ -77,7 +83,7 @@ class ApplyLoanView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        # INIT PAYSTACK (reference already generated)
+        # Initialize Paystack transaction
         try:
             client = PaystackClient()
             email = internal_email_for_phone(request.user.phone)
@@ -94,6 +100,21 @@ class ApplyLoanView(APIView):
                 },
             )
 
+            authorization_url = init.get("authorization_url")
+            access_code = init.get("access_code")
+
+            # Save to Payment record
+            payment.authorization_url = authorization_url
+            payment.access_code = access_code
+            payment.save(update_fields=["authorization_url", "access_code"])
+
+            # Also save to Loan record for convenience
+            loan.paystack_authorization_url = authorization_url
+            loan.paystack_access_code = access_code
+            loan.save(update_fields=["paystack_authorization_url", "paystack_access_code"])
+
+            logger.info("Paystack initialized for loan %s", loan.id)
+
             return Response(
                 {
                     "loan_id": loan.id,
@@ -101,8 +122,8 @@ class ApplyLoanView(APIView):
                     "service_fee": service_fee,
                     "amount_kobo": service_fee * 100,
                     "email": email,
-                    "paystack_authorization_url": init.get("authorization_url"),
-                    "paystack_access_code": init.get("access_code"),
+                    "paystack_authorization_url": authorization_url,
+                    "paystack_access_code": access_code,
                 },
                 status=status.HTTP_201_CREATED,
             )
@@ -113,7 +134,8 @@ class ApplyLoanView(APIView):
                 {
                     "loan_id": loan.id,
                     "service_fee": service_fee,
-                    "message": "Loan created. Payment initialization failed. Retry.",
+                    "payment_reference": reference,
+                    "message": "Loan created. Payment initialization failed. Retry via Pay Now.",
                 },
                 status=status.HTTP_201_CREATED,
             )
@@ -146,5 +168,8 @@ class CurrentLoanView(APIView):
                 "mpesa_phone": loan.mpesa_phone,
                 "created_at": loan.created_at.isoformat(),
                 "last_event": loan.last_event,
+                "paystack_reference": loan.paystack_reference,
+                "paystack_authorization_url": loan.paystack_authorization_url,
+                "paystack_access_code": loan.paystack_access_code,
             }
         )
