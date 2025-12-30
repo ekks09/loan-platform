@@ -1,6 +1,4 @@
 # loans/views.py
-from __future__ import annotations
-
 import secrets
 import logging
 
@@ -40,7 +38,6 @@ class ApplyLoanView(APIView):
         amount = serializer.validated_data["amount"]
         mpesa_phone = serializer.validated_data["mpesa_phone"]
 
-        # Block if user already has an active loan
         if Loan.user_has_active_loan(request.user):
             return Response(
                 {"error": "You already have an active loan."},
@@ -52,7 +49,6 @@ class ApplyLoanView(APIView):
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Generate reference before transaction
         reference = "LPF_" + secrets.token_hex(12)
 
         try:
@@ -83,7 +79,6 @@ class ApplyLoanView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        # Initialize Paystack transaction
         try:
             client = PaystackClient()
             email = internal_email_for_phone(request.user.phone)
@@ -103,12 +98,10 @@ class ApplyLoanView(APIView):
             authorization_url = init.get("authorization_url")
             access_code = init.get("access_code")
 
-            # Save to Payment record
             payment.authorization_url = authorization_url
             payment.access_code = access_code
             payment.save(update_fields=["authorization_url", "access_code"])
 
-            # Also save to Loan record for convenience
             loan.paystack_authorization_url = authorization_url
             loan.paystack_access_code = access_code
             loan.save(update_fields=["paystack_authorization_url", "paystack_access_code"])
@@ -142,6 +135,7 @@ class ApplyLoanView(APIView):
 
 
 class CurrentLoanView(APIView):
+    """Get current pending/approved loan for the user."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -173,3 +167,42 @@ class CurrentLoanView(APIView):
                 "paystack_access_code": loan.paystack_access_code,
             }
         )
+
+
+class ActiveLoanView(APIView):
+    """Check if user has an active loan - used by dashboard."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Get most recent non-disbursed loan
+        loan = (
+            Loan.objects.filter(
+                user=request.user,
+            )
+            .exclude(status=Loan.Status.DISBURSED)
+            .order_by("-created_at")
+            .first()
+        )
+
+        if not loan:
+            return Response({
+                "has_active_loan": False,
+                "loan": None,
+            })
+
+        return Response({
+            "has_active_loan": True,
+            "loan": {
+                "id": loan.id,
+                "amount": loan.amount,
+                "service_fee": loan.service_fee,
+                "service_fee_paid": loan.service_fee_paid,
+                "status": loan.status,
+                "mpesa_phone": loan.mpesa_phone,
+                "created_at": loan.created_at.isoformat(),
+                "last_event": loan.last_event,
+                "paystack_reference": loan.paystack_reference,
+                "paystack_authorization_url": loan.paystack_authorization_url,
+                "paystack_access_code": loan.paystack_access_code,
+            },
+        })
