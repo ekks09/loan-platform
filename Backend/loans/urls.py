@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import ApplyLoanView, CurrentLoanView
+from .views import ApplyLoanView, CurrentLoanView, ActiveLoanView
 
 urlpatterns = [
-    path("apply/", ApplyLoanView.as_view(), name="apply-loan"),
-    path("active/", CurrentLoanView.as_view(), name="current-loan"),  # unified to match frontend
+    path("apply/", ApplyLoanView.as_view(), name="loan-apply"),
+    path("current/", CurrentLoanView.as_view(), name="loan-current"),
+    path("active/", ActiveLoanView.as_view(), name="loan-active"),
 ]
