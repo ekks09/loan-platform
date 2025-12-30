@@ -1,20 +1,32 @@
 from __future__ import annotations
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
 def normalize_ke_phone(phone: str) -> str:
-    """Normalize a Kenyan phone number to 2547XXXXXXXX format."""
+    """
+    Normalize a Kenyan phone number to strict 2547XXXXXXXX format.
+    Raises ValidationError if invalid.
+    """
     if not phone:
-        return phone
+        raise ValidationError("Phone number is required.")
+
     phone = str(phone).strip().replace(" ", "").replace("-", "")
+
     if phone.startswith("+"):
         phone = phone[1:]
+
     if phone.startswith("0"):
         phone = "254" + phone[1:]
+
     if phone.startswith("7"):
         phone = "254" + phone
+
+    if not phone.startswith("2547") or len(phone) != 12:
+        raise ValidationError("Invalid Kenyan phone number format.")
+
     return phone
 
 
@@ -30,9 +42,16 @@ class Loan(models.Model):
         related_name="loans",
     )
 
-    amount = models.PositiveIntegerField()  # KES
-    service_fee = models.PositiveIntegerField()  # KES
-    mpesa_phone = models.CharField(max_length=12)  # 2547XXXXXXXX
+    amount = models.PositiveIntegerField(help_text="Loan amount in KES")
+    service_fee = models.PositiveIntegerField(
+        help_text="Service fee in KES",
+        editable=False,
+    )
+
+    mpesa_phone = models.CharField(
+        max_length=12,
+        help_text="Kenyan phone number in 2547XXXXXXXX format",
+    )
 
     status = models.CharField(
         max_length=16,
@@ -43,13 +62,13 @@ class Loan(models.Model):
     service_fee_paid = models.BooleanField(default=False)
 
     # NOTE:
-    # Paystack reference should ideally live on a Payment model.
-    # Kept here for backward compatibility, but NOT used to block retries.
+    # Paystack reference should live on a Payment model.
+    # NOT unique to avoid webhook retries breaking production.
     paystack_reference = models.CharField(
         max_length=64,
-        unique=True,
         blank=True,
         null=True,
+        db_index=True,
     )
 
     last_event = models.CharField(max_length=255, blank=True, default="")
@@ -61,9 +80,19 @@ class Loan(models.Model):
         indexes = [
             models.Index(fields=["user", "status"]),
         ]
+        ordering = ["-created_at"]
+
+    def clean(self):
+        if not self.amount:
+            raise ValidationError("Loan amount is required.")
+
+        self.mpesa_phone = normalize_ke_phone(self.mpesa_phone)
+
+        if self.amount < 1000 or self.amount > 60000:
+            raise ValidationError("Loan amount must be between 1,000 and 60,000 KES.")
 
     def save(self, *args, **kwargs):
-        self.mpesa_phone = normalize_ke_phone(self.mpesa_phone)
+        self.full_clean()
 
         if not self.service_fee:
             self.service_fee = self.compute_service_fee(self.amount)
@@ -72,12 +101,9 @@ class Loan(models.Model):
 
     @staticmethod
     def compute_service_fee(amount: int) -> int:
-        """Compute service fee based on loan amount tiers."""
-        a = int(amount)
-
-        if a < 1000 or a > 60000:
-            raise ValueError("Loan amount out of range.")
-
+        """
+        Compute service fee based on loan amount tiers.
+        """
         tiers = [
             (1000, 1000, 200),
             (2000, 2000, 290),
@@ -90,24 +116,24 @@ class Loan(models.Model):
             (53000, 60000, 6000),
         ]
 
-        for mn, mx, fee in tiers:
-            if mn <= a <= mx:
+        for minimum, maximum, fee in tiers:
+            if minimum <= amount <= maximum:
                 return fee
 
-        raise ValueError("Service fee not configured for this amount.")
+        raise ValidationError("Service fee not configured for this amount.")
 
     @classmethod
     def user_has_active_loan(cls, user) -> bool:
         """
-        A user is considered to have an ACTIVE loan ONLY if:
+        A user has an ACTIVE loan if:
         - service fee is paid
-        - loan is approved (or later)
+        - loan is approved or disbursed
         """
         return cls.objects.filter(
             user=user,
-            status__in=[cls.Status.APPROVED],
+            status__in=[cls.Status.APPROVED, cls.Status.DISBURSED],
             service_fee_paid=True,
         ).exists()
 
     def __str__(self):
-        return f"Loan #{self.id} - {self.user} - KES {self.amount}"
+        return f"Loan #{self.id} | {self.user} | KES {self.amount}"
