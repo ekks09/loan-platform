@@ -23,7 +23,7 @@
       <form id="loginForm" class="form">
         <label>
           Phone number
-          <input id="phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX or 2547XXXXXXXX" required />
+          <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX or 2547XXXXXXXX" required />
         </label>
 
         <label>
@@ -31,7 +31,7 @@
           <input id="password" name="password" type="password" autocomplete="current-password" required />
         </label>
 
-        <button class="btn btn-primary btn-block" type="submit">Login</button>
+        <button class="btn btn-primary btn-block" type="submit" id="loginBtn">Login</button>
         <div id="msg" class="msg" aria-live="polite"></div>
       </form>
 
@@ -43,28 +43,94 @@
   <script src="{% static 'js/loan.js' %}"></script>
   <script src="{% static 'js/paystack.js' %}"></script>
   <script>
-    window.Auth.init();
-    if (window.Auth.isAuthenticated()) {
-      window.location.href = "{% url 'dashboard' %}";
-    }
-
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const msg = document.getElementById("msg");
-      msg.textContent = "";
-      msg.className = "msg";
-
-      const phone = document.getElementById("phone").value.trim();
-      const password = document.getElementById("password").value;
-
-      try {
-        await window.Auth.login({ phone, password });
+    (function() {
+      window.Auth.init();
+      
+      // Check if already authenticated with valid token
+      if (window.Auth.isAuthenticated()) {
         window.location.href = "{% url 'dashboard' %}";
-      } catch (err) {
-        msg.textContent = err.message || "Login failed.";
-        msg.classList.add("msg-error");
+        return;
       }
-    });
+
+      const form = document.getElementById("loginForm");
+      const msg = document.getElementById("msg");
+      const loginBtn = document.getElementById("loginBtn");
+      const phoneInput = document.getElementById("phone");
+      const passwordInput = document.getElementById("password");
+
+      function showMessage(text, type) {
+        msg.textContent = text || "";
+        msg.className = "msg";
+        if (type === "error") msg.classList.add("msg-error");
+        if (type === "success") msg.classList.add("msg-success");
+        if (type === "info") msg.classList.add("msg-info");
+      }
+
+      function setLoading(loading) {
+        loginBtn.disabled = loading;
+        loginBtn.textContent = loading ? "Logging in..." : "Login";
+      }
+
+      form.addEventListener("submit", async function(e) {
+        e.preventDefault();
+        showMessage("", "");
+
+        const phone = phoneInput.value.trim();
+        const password = passwordInput.value;
+
+        // Client-side validation
+        if (!phone) {
+          showMessage("Please enter your phone number.", "error");
+          phoneInput.focus();
+          return;
+        }
+
+        if (!password) {
+          showMessage("Please enter your password.", "error");
+          passwordInput.focus();
+          return;
+        }
+
+        setLoading(true);
+
+        try {
+          await window.Auth.login({ phone, password });
+          showMessage("Login successful! Redirecting...", "success");
+          
+          // Small delay to show success message
+          setTimeout(function() {
+            window.location.href = "{% url 'dashboard' %}";
+          }, 500);
+          
+        } catch (err) {
+          const errorMessage = err.message || "Login failed. Please try again.";
+          showMessage(errorMessage, "error");
+          setLoading(false);
+          
+          // Focus on appropriate field based on error
+          if (errorMessage.toLowerCase().includes("phone") || 
+              errorMessage.toLowerCase().includes("account not found")) {
+            phoneInput.focus();
+          } else if (errorMessage.toLowerCase().includes("password")) {
+            passwordInput.focus();
+            passwordInput.select();
+          }
+        }
+      });
+
+      // Clear error message when user starts typing
+      phoneInput.addEventListener("input", function() {
+        if (msg.classList.contains("msg-error")) {
+          showMessage("", "");
+        }
+      });
+
+      passwordInput.addEventListener("input", function() {
+        if (msg.classList.contains("msg-error")) {
+          showMessage("", "");
+        }
+      });
+    })();
   </script>
 </body>
 </html>
