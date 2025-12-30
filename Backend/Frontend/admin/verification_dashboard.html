@@ -1,0 +1,427 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}User Verification - Admin{% endblock %}
+
+{% block content %}
+<style>
+  .verify-container {
+    padding: 20px;
+    max-width: 1400px;
+  }
+
+  .verify-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .verify-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+
+  .filter-tabs {
+    display: flex;
+    gap: 10px;
+  }
+
+  .filter-tab {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    text-decoration: none;
+    color: #333;
+    font-size: 0.9rem;
+  }
+
+  .filter-tab:hover {
+    background: #f5f5f5;
+  }
+
+  .filter-tab.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+  }
+
+  .filter-tab .count {
+    background: rgba(0,0,0,0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 5px;
+    font-size: 0.8rem;
+  }
+
+  .filter-tab.active .count {
+    background: rgba(255,255,255,0.2);
+  }
+
+  .user-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #eee;
+  }
+
+  .user-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .user-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+  }
+
+  .user-info-item {
+    font-size: 0.9rem;
+  }
+
+  .user-info-item strong {
+    color: #666;
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .status-pending {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  .status-verified {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  .status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  @media (max-width: 768px) {
+    .photo-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .photo-card {
+    text-align: center;
+  }
+
+  .photo-card img {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #eee;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .photo-card img:hover {
+    transform: scale(1.02);
+    border-color: #007bff;
+  }
+
+  .photo-card .photo-label {
+    display: block;
+    margin-top: 8px;
+    font-weight: 600;
+    color: #555;
+    font-size: 0.85rem;
+  }
+
+  .action-area {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+  }
+
+  .notes-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 60px;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-approve {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .btn-approve:hover {
+    background: #218838;
+  }
+
+  .btn-reject {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .btn-reject:hover {
+    background: #c82333;
+  }
+
+  .btn-approve:disabled,
+  .btn-reject:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 12px;
+    color: #666;
+  }
+
+  .empty-state .icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+  }
+
+  /* Image Modal */
+  .image-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .image-modal.active {
+    display: flex;
+  }
+
+  .image-modal img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+
+  .image-modal .close-btn {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+  }
+</style>
+
+<div class="verify-container">
+  <div class="verify-header">
+    <h1>👤 User Verification</h1>
+    <div class="filter-tabs">
+      <a href="?status=pending" class="filter-tab {% if current_filter == 'pending' %}active{% endif %}">
+        Pending <span class="count">{{ counts.pending }}</span>
+      </a>
+      <a href="?status=verified" class="filter-tab {% if current_filter == 'verified' %}active{% endif %}">
+        Verified <span class="count">{{ counts.verified }}</span>
+      </a>
+      <a href="?status=rejected" class="filter-tab {% if current_filter == 'rejected' %}active{% endif %}">
+        Rejected <span class="count">{{ counts.rejected }}</span>
+      </a>
+      <a href="?status=all" class="filter-tab {% if current_filter == 'all' %}active{% endif %}">
+        All
+      </a>
+    </div>
+  </div>
+
+  {% if users %}
+    {% for user in users %}
+    <div class="user-card" id="user-{{ user.id }}">
+      <div class="user-header">
+        <div class="user-info">
+          <div class="user-info-item">
+            <strong>Phone</strong>
+            {{ user.phone }}
+          </div>
+          <div class="user-info-item">
+            <strong>National ID</strong>
+            {{ user.national_id }}
+          </div>
+          <div class="user-info-item">
+            <strong>Registered</strong>
+            {{ user.created_at|date:"M d, Y H:i" }}
+          </div>
+        </div>
+        <span class="status-badge status-{{ user.verification_status }}">
+          {{ user.verification_status|title }}
+        </span>
+      </div>
+
+      <div class="photo-grid">
+        <div class="photo-card">
+          {% if user.id_front_url %}
+          <img src="{{ user.id_front_url }}" alt="ID Front" onclick="openModal(this.src)">
+          {% else %}
+          <div style="background:#f5f5f5;height:150px;display:flex;align-items:center;justify-content:center;border-radius:8px;">No Image</div>
+          {% endif %}
+          <span class="photo-label">ID Front</span>
+        </div>
+        <div class="photo-card">
+          {% if user.id_back_url %}
+          <img src="{{ user.id_back_url }}" alt="ID Back" onclick="openModal(this.src)">
+          {% else %}
+          <div style="background:#f5f5f5;height:150px;display:flex;align-items:center;justify-content:center;border-radius:8px;">No Image</div>
+          {% endif %}
+          <span class="photo-label">ID Back</span>
+        </div>
+        <div class="photo-card">
+          {% if user.selfie_url %}
+          <img src="{{ user.selfie_url }}" alt="Selfie" onclick="openModal(this.src)">
+          {% else %}
+          <div style="background:#f5f5f5;height:150px;display:flex;align-items:center;justify-content:center;border-radius:8px;">No Image</div>
+          {% endif %}
+          <span class="photo-label">Selfie</span>
+        </div>
+      </div>
+
+      {% if user.verification_status == 'pending' %}
+      <div class="action-area">
+        <textarea class="notes-input" id="notes-{{ user.id }}" placeholder="Add notes (optional)..."></textarea>
+        <div class="action-buttons">
+          <button class="btn-approve" onclick="verifyUser({{ user.id }}, 'approve')">✓ Approve</button>
+          <button class="btn-reject" onclick="verifyUser({{ user.id }}, 'reject')">✗ Reject</button>
+        </div>
+      </div>
+      {% elif user.verification_notes %}
+      <div class="action-area">
+        <strong>Notes:</strong> {{ user.verification_notes }}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="icon">🎉</div>
+      <h3>No {{ current_filter }} verifications</h3>
+      <p>{% if current_filter == 'pending' %}All caught up!{% else %}No users match this filter.{% endif %}</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Image Modal -->
+<div class="image-modal" id="imageModal" onclick="closeModal()">
+  <button class="close-btn" onclick="closeModal()">&times;</button>
+  <img id="modalImage" src="" alt="Full size">
+</div>
+
+<script>
+function openModal(src) {
+  document.getElementById('modalImage').src = src;
+  document.getElementById('imageModal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('imageModal').classList.remove('active');
+}
+
+async function verifyUser(userId, action) {
+  const notes = document.getElementById('notes-' + userId).value;
+  
+  if (action === 'reject' && !notes.trim()) {
+    if (!confirm('Reject without notes? The user won\'t know why.')) {
+      return;
+    }
+  }
+  
+  if (!confirm('Are you sure you want to ' + action + ' this user?')) {
+    return;
+  }
+
+  const card = document.getElementById('user-' + userId);
+  const buttons = card.querySelectorAll('button');
+  buttons.forEach(b => b.disabled = true);
+
+  try {
+    const response = await fetch('/api/users/admin/verify/' + userId + '/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ action, notes })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      card.style.opacity = '0.5';
+      card.innerHTML = '<div style="padding:20px;text-align:center;">✓ User ' + action + 'd successfully</div>';
+      setTimeout(() => card.remove(), 2000);
+    } else {
+      alert('Error: ' + (data.error || 'Unknown error'));
+      buttons.forEach(b => b.disabled = false);
+    }
+  } catch (err) {
+    alert('Network error: ' + err.message);
+    buttons.forEach(b => b.disabled = false);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+{% endblock %}
