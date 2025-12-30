@@ -24,7 +24,7 @@
 
   <main class="container">
     <section class="hero">
-      <h1>Fast service-fee based loan processing for Kenya</h1>
+      <h1>Mpesa service-fee based loan processing for Kenya</h1>
       <p class="muted">
         Apply in minutes using your phone number and National ID. Pay the required service fee to begin processing,
         then track your loan status on your dashboard. 
@@ -36,15 +36,17 @@
           <li>Create an account with your phone number, National ID, and password.</li>
           <li>Request a loan amount and confirm your M-Pesa number.</li>
           <li>Pay the service fee via Paystack (card / mobile money options supported by Paystack).</li>
-          <li>We verify payment server-side and, if approved, disburse via Paystack Transfer to M-Pesa.</li>
+          <li>We verify payment server-side and, if approved, disburse via Paystack then Transfered to your M-Pesa.</li>
         </ol>
+        
+        <div class="terms-notice">
+          <p class="tiny emphasized">
+            <strong>Important:</strong> By proceeding, you agree to provide accurate information. 
+            Keep your credentials secure. PesaFix will never ask for your password via phone call or SMS.
+          </p>
+        </div>
+        
         <a class="btn btn-primary btn-block" href="{% url 'register' %}">Get Started</a>
-        <p></p>
-        <p></p>
-
-        <p class="tiny muted">
-          By proceeding you agree to provide accurate information. Keep your credentials secure.
-        </p>
       </div>
     </section>
   </main>
@@ -52,6 +54,9 @@
   <footer class="footer">
     <div class="container">
       <div class="muted tiny">© <span id="y"></span> PesaFix.KE. All rights reserved.</div>
+      <div class="muted tiny" style="margin-top: 5px;">
+        Licensed and regulated in accordance with Kenyan financial regulations.
+      </div>
     </div>
   </footer>
 
