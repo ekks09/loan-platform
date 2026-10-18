@@ -447,11 +447,12 @@
             window.location.assign("/dashboard/");
           }, 900);
         } catch (loginError) {
-          const note = success.querySelector(".banner");
-          if (note) {
-            note.innerHTML =
-              "<span><strong>Account created.</strong> Sign in with the password you just chose to continue.</span>";
-          }
+          // `success` IS the banner element (it lives outside the form):
+          // querySelector searched its descendants and always found nothing,
+          // silently swallowing this fallback. Speak straight to the banner.
+          success.innerHTML =
+            "<span><strong>Account created.</strong> " +
+            '<a href="/login/">Sign in</a> with the password you just chose to continue.</span>';
         }
       } catch (error) {
         showStep(2);
