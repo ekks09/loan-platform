@@ -1,5 +1,13 @@
 # M-Biashara — redesign, PWA and fee repricing report
 
+> **Historical snapshot (2026-10).** This document records the state of the
+> repository at a specific point. For the CURRENT engineering state —
+> tests, gates, environments and remaining work — see
+> `docs/RELEASE_ASSESSMENT.md` and `docs/ISSUE_REGISTER.csv` (reconciled).
+
+> The platform's published brand is now PesaFix (settings PLATFORM_NAME); the redesign system itself remains.
+
+
 **Branch:** `arena/f463a275-loan-platform`
 **Date:** 17 October 2026
 **Status:** implemented in the repository; **not deployed**. Fee collection and

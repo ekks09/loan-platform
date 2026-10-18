@@ -25,6 +25,22 @@ class Command(BaseCommand):
         errors: list[str] = []
         warnings: list[str] = []
 
+        # Staging must mirror production. DEBUG=off, secure cookies and —
+        # once the storage bucket exists — document upload mandatory, or the
+        # rehearsal deploy stops meaning anything.
+        if settings.DEPLOY_ENVIRONMENT == "staging":
+            if settings.DEBUG:
+                errors.append("Staging must run DJANGO_DEBUG=false.")
+            if not settings.SESSION_COOKIE_SECURE or not settings.CSRF_COOKIE_SECURE:
+                errors.append("Staging must run secure cookies.")
+            if not settings.REQUIRE_DOCUMENT_STORAGE:
+                errors.append(
+                    "Staging must run REQUIRE_DOCUMENT_STORAGE=true so the "
+                    "bucket is exercised end to end."
+                )
+            if settings.PAYMENTS_LIVE_MODE:
+                errors.append("Staging can never run PAYMENTS_LIVE_MODE=true.")
+
         # Fee schedule must be contiguous and cover the full supported range.
         for problem in Loan.validate_schedule():
             errors.append(f"Fee schedule: {problem}")
@@ -61,10 +77,21 @@ class Command(BaseCommand):
                 errors.append("Upfront fees require FEE_COLLECTION_APPROVED=true.")
             warnings.append("Upfront fee collection is enabled; confirm legal approval.")
 
-        if settings.REQUIRE_DOCUMENT_STORAGE and not (
-            settings.SUPABASE_URL and settings.SUPABASE_SERVICE_KEY
-        ):
-            errors.append("Document storage is required but Supabase is not configured.")
+        if settings.REQUIRE_DOCUMENT_STORAGE:
+            # Store-agnostic: validate the adapter selected by DOCUMENT_STORE
+            # via the same registry the app uses (Supabase or S3-compatible),
+            # exactly like the core.E005 Django system check.
+            try:
+                from core.storage import document_storage_configured
+
+                storage_ok = document_storage_configured()
+            except Exception:
+                storage_ok = False
+            if not storage_ok:
+                errors.append(
+                    "Document storage is required but the selected "
+                    "DOCUMENT_STORE is not configured."
+                )
 
         if settings.SMS_BACKEND == "none" and not settings.DEBUG:
             warnings.append("SMS_BACKEND=none: users will not receive notifications.")

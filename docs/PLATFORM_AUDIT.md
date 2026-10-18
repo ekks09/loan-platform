@@ -1,5 +1,13 @@
 # PesaFix / Loan Platform — Full Platform Review
 
+> **Historical snapshot (2026-10 (pre-hardening)).** This document records the state of the
+> repository at a specific point. For the CURRENT engineering state —
+> tests, gates, environments and remaining work — see
+> `docs/RELEASE_ASSESSMENT.md` and `docs/ISSUE_REGISTER.csv` (reconciled).
+
+> All 93 findings have since been reconciled; see docs/ISSUE_REGISTER.csv for current statuses.
+
+
 **Review date:** 17 October 2026  
 **Repository:** `ekks09/loan-platform` @ `e0e95b8` (single commit, "Update register.html", 30 Dec 2025)  
 **Scope:** every tracked file — Django backend (`users`, `loans`, `payments`, `core`), static frontend, migrations, deployment config, and local-run scripts  

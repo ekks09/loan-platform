@@ -174,7 +174,7 @@
               {% else %}
                 <p class="tiny muted" style="margin: 0;">
                   No manual Paybill or Till is published. The fee is collected by the
-                  M-Pesa prompt Paystack sends to your phone.
+                  M-Pesa prompt our payment partner sends to your phone.
                 </p>
               {% endif %}
               <div class="copy-row">
@@ -199,6 +199,24 @@
           <h3 style="margin-top: 24px; font-size: 1rem;">Activity</h3>
           <ul class="timeline" id="timeline"></ul>
         </div>
+      </section>
+
+      <section class="card" id="notifyCard" aria-labelledby="notifyTitle" data-reveal>
+        <div class="card-head">
+          <div>
+            <h2 id="notifyTitle">Updates</h2>
+            <p class="hint">Account messages from the team and the system.</p>
+          </div>
+          <span class="chip chip-gold" id="notifyBadge" hidden>0 new</span>
+        </div>
+        <ul class="notify-list" id="notifyList"></ul>
+        <p class="muted tiny" id="notifyEmpty">
+          Nothing yet. When your documents are reviewed or your loan status
+          changes, you will see it here — even if the SMS could not reach you.
+        </p>
+        <button class="link-button" type="button" id="notifyReadAll" hidden>
+          Mark all as read
+        </button>
       </section>
 
       <section class="card" id="history" aria-labelledby="historyTitle" data-reveal>
@@ -235,7 +253,7 @@
       <section class="card loyalty-card" id="loyaltyCard" aria-labelledby="loyaltyTitle" data-reveal hidden>
         <div class="card-head">
           <div>
-            <h2 id="loyaltyTitle">M-Biashara credit health</h2>
+            <h2 id="loyaltyTitle">{{ PLATFORM_NAME }} credit health</h2>
             <p class="hint">Built from your activity here, and only here.</p>
           </div>
           <span class="chip chip-neutral" id="loyaltyTier">Base</span>
@@ -261,7 +279,7 @@
           <ul id="loyaltyFactors"></ul>
         </div>
         <p class="tiny muted" id="loyaltyPortability">
-          Your score is built from activity recorded on M-Biashara only. It is not shared
+          Your score is built from activity recorded on {{ PLATFORM_NAME }} only. It is not shared
           with other lenders and cannot be transferred to another provider.
         </p>
 
@@ -468,7 +486,7 @@
         </h2>
         <span class="chip chip-neutral" id="payDialogStatus">Not started</span>
       </div>
-      <p class="hint">Paystack requests the prompt. The provider confirms the result.</p>
+      <p class="hint">The payment provider requests the prompt and confirms the result.</p>
     </div>
 
     <div class="dialog-body">
@@ -522,7 +540,7 @@
       </p>
 
       <dl class="pay-refs" id="payRefs" hidden>
-        <dt>Paystack reference</dt><dd class="mono" id="payProviderRef">—</dd>
+        <dt>Provider reference</dt><dd class="mono" id="payProviderRef">—</dd>
         <dt>M-Pesa code</dt><dd class="mono" id="payMpesaRef">—</dd>
       </dl>
 
@@ -531,7 +549,7 @@
       <details class="pay-help">
         <summary>What happens after I enter my PIN?</summary>
         <div>
-          <p>Paystack forwards the result to this application. This page reads the saved
+          <p>The payment provider forwards the result to this application. This page reads the saved
           payment record and shows it. If the prompt does not arrive, check that the SIM is
           in the phone, that the line is registered for M-Pesa and that you have signal.</p>
           <p>A cancelled prompt, an insufficient balance or a timeout leaves the fee unpaid.
@@ -576,7 +594,7 @@
         <dt>Application</dt><dd id="receiptLoan">—</dd>
         <dt>Loan principal</dt><dd id="receiptPrincipal">—</dd>
         <dt>Processing fee</dt><dd id="receiptFee">—</dd>
-        <dt>Paystack reference</dt><dd class="mono" id="receiptReference">—</dd>
+        <dt>Provider reference</dt><dd class="mono" id="receiptReference">—</dd>
         <dt>M-Pesa code</dt><dd class="mono" id="receiptMpesa">—</dd>
         <dt>Channel</dt><dd id="receiptChannel">—</dd>
         <dt>Paid at</dt><dd id="receiptDate">—</dd>
@@ -599,7 +617,7 @@
   <div class="sheet-fab-wrap">
     <button class="sheet-fab" type="button" data-sheet-open="expressSheet" aria-haspopup="dialog">
       <span class="sheet-fab-dot" aria-hidden="true"></span>
-      Paystack Mobile Express
+      Payment Express
     </button>
   </div>
 
@@ -608,7 +626,7 @@
     <div class="sheet-panel" role="document">
       <span class="sheet-grab" aria-hidden="true"></span>
       <div class="row row-between">
-        <h2 id="expressTitle">Paystack Mobile Express</h2>
+        <h2 id="expressTitle">Payment Express</h2>
         <button class="icon-button" type="button" data-sheet-close aria-label="Close">×</button>
       </div>
       <p class="muted tiny">One tap to the action you need. Nothing here moves money without your confirmation.</p>
@@ -644,7 +662,7 @@
       </ul>
 
       <p class="tiny muted">
-        M-Pesa prompts are delivered by Paystack. M-Biashara never asks for your PIN
+        M-Pesa prompts are delivered by our payment provider. {{ PLATFORM_NAME }} never asks for your PIN
         and never stores it.
       </p>
     </div>
@@ -658,6 +676,5 @@
 <script src="{% static 'js/auth.js' %}" defer></script>
 <script src="{% static 'js/loan.js' %}" defer></script>
 <script src="{% static 'js/loyalty.js' %}" defer></script>
-<script src="{% static 'js/paystack.js' %}" defer></script>
 <script src="{% static 'js/page-dashboard.js' %}" defer></script>
 {% endblock %}

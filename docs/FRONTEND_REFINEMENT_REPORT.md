@@ -1,5 +1,13 @@
 # M-Biashara — frontend refinement report
 
+> **Historical snapshot (2026-10).** This document records the state of the
+> repository at a specific point. For the CURRENT engineering state —
+> tests, gates, environments and remaining work — see
+> `docs/RELEASE_ASSESSMENT.md` and `docs/ISSUE_REGISTER.csv` (reconciled).
+
+> Frontend has since received mobile, PWA and copy updates; treat component inventories as dated.
+
+
 Scope: refine the existing M-Biashara frontend in place. No backend business
 rule, loan calculation, payment path, authentication rule or database schema
 was changed. Backend-adjacent edits are limited to PWA settings, a context-

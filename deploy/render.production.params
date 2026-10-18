@@ -1,0 +1,11 @@
+# Parameters for render.production.yaml — edit here, then run scripts/render_blueprints.py --write (CI asserts no drift).
+NAME: loan-platform-backend
+PLAN: free
+BRANCH: main
+AUTODEPLOY: false
+DEPLOY_ENVIRONMENT: production
+REQUIRE_DOCUMENT_STORAGE: false
+DOCUMENT_RETENTION_DAYS: 90
+SMS_BACKEND: none
+THROTTLE_ANON: 30/min
+THROTTLE_USER: 120/min

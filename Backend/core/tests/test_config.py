@@ -150,8 +150,70 @@ class CheckConfigCommandTests(TestCase):
                 self._run()
 
     def test_missing_storage_when_required_fails(self):
+        unset = dict(
+            S3_ENDPOINT_URL="", S3_ACCESS_KEY="", S3_SECRET_KEY="", S3_BUCKET=""
+        )
         with override_settings(
-            REQUIRE_DOCUMENT_STORAGE=True, SUPABASE_URL="", SUPABASE_SERVICE_KEY=""
+            REQUIRE_DOCUMENT_STORAGE=True, SUPABASE_URL="", SUPABASE_SERVICE_KEY="",
+            DOCUMENT_STORE="supabase", **unset,
         ):
             with self.assertRaises(CommandError):
                 self._run()
+        # Same posture against the S3 adapter must fail too.
+        with override_settings(
+            REQUIRE_DOCUMENT_STORAGE=True, DOCUMENT_STORE="s3", **unset,
+        ):
+            with self.assertRaises(CommandError):
+                self._run()
+        # And the S3 adapter, fully configured, satisfies the requirement.
+        with override_settings(
+            REQUIRE_DOCUMENT_STORAGE=True,
+            DOCUMENT_STORE="s3",
+            S3_ENDPOINT_URL="http://minio.test:9000",
+            S3_ACCESS_KEY="a",
+            S3_SECRET_KEY="b",
+            S3_BUCKET="docs",
+        ):
+            self._run()
+
+
+class StagingPostureTests(TestCase):
+    def _run(self):
+        call_command("check_config", "--allow-test-mode", stdout=StringIO())
+
+    def test_staging_with_live_mode_is_fatal(self):
+        with override_settings(
+            DEPLOY_ENVIRONMENT="staging", PAYMENTS_LIVE_MODE=True
+        ):
+            with self.assertRaises(CommandError):
+                self._run()
+
+    def test_staging_with_debug_is_fatal(self):
+        with override_settings(DEPLOY_ENVIRONMENT="staging", DEBUG=True):
+            with self.assertRaises(CommandError):
+                self._run()
+
+    def test_staging_requires_secure_cookies_and_storage(self):
+        with override_settings(
+            DEPLOY_ENVIRONMENT="staging",
+            DEBUG=False,
+            SESSION_COOKIE_SECURE=False,
+            REQUIRE_DOCUMENT_STORAGE=False,
+        ):
+            with self.assertRaises(CommandError):
+                self._run()
+
+    def test_staging_mirroring_production_passes(self):
+        with override_settings(
+            DEPLOY_ENVIRONMENT="staging",
+            DEBUG=False,
+            SESSION_COOKIE_SECURE=True,
+            CSRF_COOKIE_SECURE=True,
+            REQUIRE_DOCUMENT_STORAGE=True,
+            DOCUMENT_STORE="s3",
+            S3_ENDPOINT_URL="http://minio.test:9000",
+            S3_ACCESS_KEY="a",
+            S3_SECRET_KEY="b",
+            S3_BUCKET="docs",
+        ):
+            self._run()

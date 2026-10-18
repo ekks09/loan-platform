@@ -426,7 +426,7 @@
       try {
         await Auth.register({
           phone: phone.value,
-          nationalId: nationalId.value,
+          national_id: nationalId.value,
           password: password.value,
           consent: true,
           consentVersion: consentVersion,
@@ -447,19 +447,47 @@
             window.location.assign("/dashboard/");
           }, 900);
         } catch (loginError) {
-          const note = success.querySelector(".banner");
-          if (note) {
-            note.innerHTML =
-              "<span><strong>Account created.</strong> Sign in with the password you just chose to continue.</span>";
-          }
+          // `success` IS the banner element (it lives outside the form):
+          // querySelector searched its descendants and always found nothing,
+          // silently swallowing this fallback. Speak straight to the banner.
+          success.innerHTML =
+            "<span><strong>Account created.</strong> " +
+            '<a href="/login/">Sign in</a> with the password you just chose to continue.</span>';
         }
       } catch (error) {
         showStep(2);
         const details = error.details || {};
-        const phoneError = MB.firstError(details, "phone");
-        const idError = MB.firstError(details, "national_id");
-        const passwordError = MB.firstError(details, "password");
-        const consentError = MB.firstError(details, "consent");
+        // Server strings from DRF are field-agnostic ("This field may not be
+        // blank."). Re-anchor each one to the field it belongs to so the
+        // message under the input actually tells the user what to do.
+        function friendly(field, raw) {
+          if (!raw) return "";
+          const text = String(raw);
+          const blank = /may not be blank|This field is required/i.test(text);
+          const taken = /already (exists|in use|registered)|unique/i.test(text);
+          const invalid = /not valid|invalid/i.test(text);
+          if (field === "phone") {
+            if (taken) return "An account already exists for this phone. Try signing in instead.";
+            if (blank || invalid) return "Enter a valid mobile number, e.g. 0712 345 678 or +254 712 345 678.";
+          }
+          if (field === "national_id") {
+            if (taken) return "This National ID is already linked to an account. Try signing in instead.";
+            if (blank || invalid) return "Enter your National ID number: 6–10 digits.";
+          }
+          if (field === "password") {
+            if (blank) return "Choose a password of at least 8 characters.";
+            if (/too short|at least 8/i.test(text)) return "Use at least 8 characters.";
+            if (/too common|entirely numeric/i.test(text)) return "That password is too easy to guess — mix letters, numbers and symbols.";
+          }
+          if (field === "consent") {
+            return "Record your consent by ticking the box above.";
+          }
+          return text;
+        }
+        const phoneError = friendly("phone", MB.firstError(details, "phone"));
+        const idError = friendly("national_id", MB.firstError(details, "national_id"));
+        const passwordError = friendly("password", MB.firstError(details, "password"));
+        const consentError = friendly("consent", MB.firstError(details, "consent"));
         if (phoneError) MB.fieldError("err-regPhone", phoneError);
         if (idError) MB.fieldError("err-regNationalId", idError);
         if (passwordError) MB.fieldError("err-regPassword", passwordError);

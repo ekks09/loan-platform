@@ -29,7 +29,7 @@ from core.notifications import send_sms, sms_available
 from users.models import PasswordResetCode, SmsAuditLog, User
 from users.phone import mask_phone
 
-PASSWORD_RESET = "password_reset"
+PASSWORD_RESET = "password_reset"  # nosec B105 -- message purpose label, not a credential
 
 
 @dataclass(frozen=True)
@@ -111,6 +111,23 @@ def _audit(
     )
 
 
+def seconds_since_last_send(phone_hash: str) -> int | None:
+    """Age of the most recent successful send for the number, in seconds."""
+    last = (
+        SmsAuditLog.objects.filter(
+            phone_hash=phone_hash,
+            purpose=PASSWORD_RESET,
+            status=SmsAuditLog.Status.SENT,
+        )
+        .order_by("-created_at")
+        .values_list("created_at", flat=True)
+        .first()
+    )
+    if last is None:
+        return None
+    return int((timezone.now() - last).total_seconds())
+
+
 def issue_password_reset(user: User | None, phone: str, request) -> OtpResult:
     """Issue a reset code for ``user`` when the limits allow it.
 
@@ -134,6 +151,18 @@ def issue_password_reset(user: User | None, phone: str, request) -> OtpResult:
             sent=False,
             retry_after=settings.OTP_WINDOW_MINUTES * 60,
             reason="ip_limit",
+        )
+
+    # Resend cooldown: blocks rapid-fire resend loops *between* the windowed
+    # limits above and applies to the number, so per-IP rotation cannot beat it.
+    age = seconds_since_last_send(phone_hash)
+    cooldown = settings.OTP_RESEND_COOLDOWN_SECONDS
+    if age is not None and age < cooldown:
+        _audit(user=user, phone=phone, status=SmsAuditLog.Status.RATE_LIMITED, request=request)
+        return OtpResult(
+            sent=False,
+            retry_after=cooldown - age,
+            reason="cooldown",
         )
 
     if user is None:

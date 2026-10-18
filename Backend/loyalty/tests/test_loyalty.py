@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from django.conf import settings
+
 from datetime import date, timedelta
 
 from django.test import TestCase
@@ -206,7 +208,7 @@ class LoyaltyApiTests(APITestCase):
         body = response.json()
         self.assertEqual(body["tier"], Tier.BASE)
         self.assertFalse(body["credit"]["portable"])
-        self.assertIn("M-Biashara", body["credit"]["disclosure"])
+        self.assertIn(settings.PLATFORM_NAME, body["credit"]["disclosure"])
         self.assertEqual(body["vault"]["yield_bps"], 0)
         self.assertEqual(body["max_limit_kes"], 20000)
 

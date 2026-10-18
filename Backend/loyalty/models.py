@@ -1,4 +1,4 @@
-"""Loyalty, savings vault and the M-Biashara credit health score.
+"""Loyalty, savings vault and the platform credit health score.
 
 Design rules enforced here:
 

@@ -1,5 +1,5 @@
 /*
- * M-Biashara service worker.
+ * Service worker for the loan platform PWA.
  *
  * Privacy rules enforced here:
  *   - never cache /api/ responses (accounts, loans, payments, uploads)
@@ -25,7 +25,6 @@ const PRECACHE = [
   "/static/js/pwa.js",
   "/static/js/auth.js",
   "/static/js/loan.js",
-  "/static/js/paystack.js",
   "/static/js/phone.js",
   "/static/js/loyalty.js",
   "/static/js/page-auth.js",

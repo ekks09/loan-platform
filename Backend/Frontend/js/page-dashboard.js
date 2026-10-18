@@ -657,16 +657,16 @@
     const bodies = {
       idle: "Nothing has been charged. The fee is only collected after an accepted offer.",
       stk: "A prompt was sent to your phone. Enter your M-Pesa PIN, or re-trigger the prompt below.",
-      verifying: "Paystack is confirming the charge. This can take a few seconds.",
-      success: "Paystack confirmed the charge. The reference below is on your receipt.",
-      failed: opts.body || "Paystack declined the charge. Nothing was confirmed.",
+      verifying: "The payment provider is confirming the charge. This can take a few seconds.",
+      success: "The payment provider confirmed the charge. The reference below is on your receipt.",
+      failed: opts.body || "The payment provider declined the charge. Nothing was confirmed.",
       timeout: opts.body || "The prompt was not confirmed within the window. Retry if you did not complete it.",
     };
 
     const copies = {
       idle: "This window tracks the prompt; it does not prove a payment.",
       stk: "Approve the M-Pesa prompt on your handset. The ring is the prompt window, not a guarantee.",
-      verifying: "Paystack is checking the charge now. Keep this window open for a moment.",
+      verifying: "The payment provider is checking the charge now. Keep this window open for a moment.",
       success: "Provider confirmation received. The references below are saved on your receipt.",
       failed: "No prompt is open. Retry when you are ready; nothing has been charged twice.",
       timeout: "The prompt window has closed. If you completed it, the record will still update.",
@@ -714,7 +714,7 @@
         : state === "timeout"
         ? "The prompt was not confirmed in time. Check status or retry."
         : state === "verifying"
-        ? "Verifying with Paystack…"
+        ? "Verifying with the payment provider…"
         : state === "stk"
         ? "Prompt sent. Approve it on your phone; this page updates when the provider confirms."
         : "The provider confirms this payment, not the page. Keep your phone nearby."
@@ -760,7 +760,7 @@
       applyPayState("failed", {
         title: code ? "Payment failed — " + code : "The payment did not go through",
         body:
-          (payment.failure_reason || payment.gateway_response || "Paystack declined the charge.") +
+          (payment.failure_reason || payment.gateway_response || "The payment provider declined the charge.") +
           " Nothing was confirmed; you can retry.",
       });
     } else if (payment.status === "ABANDONED") {
@@ -806,7 +806,7 @@
     pay.pollAttempts = 0;
     MB.setText(
       $("payDialogMessage"),
-      "Choose “Pay with M-Pesa” to start. Paystack asks for the M-Pesa number and sends the prompt to it."
+      "Choose “Pay with M-Pesa” to start. You are taken to the secure payment page, which asks for the M-Pesa number and sends the prompt to it."
     );
     const error = $("payDialogError");
     if (error) {
@@ -934,19 +934,12 @@
     document.dispatchEvent(new CustomEvent("mb:loyalty-refresh"));
   }
 
-  function loadPaystack() {
-    if (window.PaystackPop) return Promise.resolve();
-    return new Promise(function (resolve, reject) {
-      const script = document.createElement("script");
-      script.src = "https://js.paystack.co/v1/inline.js";
-      script.async = true;
-      script.onload = resolve;
-      script.onerror = function () {
-        reject(new Error("Could not load the payment window."));
-      };
-      document.head.appendChild(script);
-    });
-  }
+  // The checkout runs entirely on the provider's hosted page: the server
+  // returns one provider-neutral authorization_url and we redirect to it. No
+  // provider JavaScript SDK is loaded, so nothing here depends on a specific
+  // processor, and a blocked third-party CDN can never break checkout.
+  // Fulfilment never depends on the redirect returning — the signed webhook
+  // (and the explicit verify action) confirm the payment server-side.
 
   async function startPrompt(options) {
     if (!activeLoan || pay.busy) return;
@@ -969,10 +962,10 @@
     pay.pollAttempts = 0;
     applyPayState("verifying", {
       title: "Requesting the STK push",
-      body: "Asking Paystack to send the M-Pesa prompt.",
+      body: "Asking the payment provider to send the M-Pesa prompt.",
       copy: "Keep this window open while the prompt is requested.",
     });
-    MB.setText(message, "Requesting a prompt from Paystack…");
+    MB.setText(message, "Requesting a checkout from the payment provider…");
 
     let init;
     try {
@@ -1000,48 +993,27 @@
     applyPayState("stk", {});
     startCountdown();
     startPolling(pay.reference, false, false);
+
+    if (!init.authorization_url) {
+      // The provider did not hand us a checkout page. Nothing was charged;
+      // say so plainly and let the user retry.
+      pay.busy = false;
+      applyPayState("failed", {
+        title: "Checkout could not be started",
+        body: "The payment provider did not offer a checkout page. No money was taken; please retry.",
+      });
+      MB.setText(message, "No checkout link was returned. You can retry.");
+      if (start) start.disabled = false;
+      return;
+    }
+
     MB.setText(
       message,
-      "Checkout requested. Enter the M-Pesa number and your PIN in the Paystack window; this page updates when the provider confirms."
+      "Checkout ready. Taking you to the secure payment page; enter the M-Pesa prompt and your PIN there. This page updates when the provider confirms."
     );
-    MB.announce("M-Pesa prompt requested. Enter your PIN on your phone.");
-
-    try {
-      try {
-        await loadPaystack();
-      } catch (error) {
-        // Paystack.checkout falls back to the authorization URL.
-      }
-      await window.Paystack.checkout({
-        publicKey: init.paystack_public_key,
-        email: init.email,
-        amountKes: init.amount_kes,
-        reference: init.reference,
-        authorizationUrl: init.authorization_url,
-        channels: ["mobile_money"],
-        provider: "mpesa",
-        currency: "KES",
-        metadata: {
-          loan_id: activeLoan.id,
-          provider: "mpesa",
-          purpose: "service_fee",
-          phone: Auth.normalizeKenyanPhone((profile && profile.phone) || ""),
-        },
-      });
-    } catch (error) {
-      // Closing the inline window is not a failure: the prompt may already be
-      // on the handset. Keep polling the saved record and say so plainly.
-      MB.setText(
-        message,
-        "The checkout window closed. If you entered a PIN, the provider may still confirm it — status below is authoritative."
-      );
-    } finally {
-      pay.busy = false;
-      if (!pay.terminal) {
-        applyPayState("stk", {});
-        startPolling(pay.reference, opts.slow === true, true);
-      }
-    }
+    MB.announce("Opening the secure payment page.");
+    pay.busy = false;
+    window.location.assign(init.authorization_url);
   }
 
   function bindPayment() {
@@ -1162,6 +1134,7 @@
         MB.setMessage(message, "Documents uploaded. Review is manual; this is not an approval.", "success");
         form.reset();
         await Promise.all([loadProfile(), loadLoan()]);
+        loadNotifications();
       } catch (error) {
         MB.setMessage(message, error.message || "Upload failed. Try again.", "error");
       } finally {
@@ -1179,6 +1152,7 @@
       try {
         await Auth.grantConsent(CONSENT_VERSION);
         await Promise.all([loadProfile(), loadLoan()]);
+        loadNotifications();
         MB.toast("Consent recorded.", { kind: "success" });
       } catch (error) {
         MB.toast(error.message || "Could not record consent.", { kind: "error" });
@@ -1679,6 +1653,93 @@
     }
   }
 
+  // ------------------------------------------------------------- updates
+
+  const PURPOSE_LABEL = {
+    verification: "Identity verification",
+    disbursed: "Loan disbursed",
+    disbursement_failed: "Disbursement issue",
+    repayment: "Repayment",
+    general: "Account update",
+  };
+
+  function formatWhen(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString("en-KE", {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  async function loadNotifications() {
+    const list = $("notifyList");
+    if (!list || !Auth.api) return;
+    let payload;
+    try {
+      payload = await Auth.api("/users/notifications/");
+    } catch (error) {
+      return; // panel keeps its polite empty state
+    }
+    const rows = (payload && payload.results) || [];
+    const unread = (payload && payload.unread) || 0;
+    const badge = $("notifyBadge");
+    if (badge) {
+      badge.hidden = unread === 0;
+      badge.textContent = unread + " new";
+    }
+    const readAll = $("notifyReadAll");
+    if (readAll) readAll.hidden = unread === 0;
+    const empty = $("notifyEmpty");
+    if (empty) empty.hidden = rows.length !== 0;
+    list.innerHTML = "";
+    rows.slice(0, 6).forEach(function (row) {
+      const li = document.createElement("li");
+      li.className =
+        "notify-item" + (row.status === "unread" ? " is-unread" : "");
+      const dot = document.createElement("span");
+      dot.className = "notify-dot";
+      dot.setAttribute("aria-hidden", "true");
+      const box = document.createElement("div");
+      box.className = "notify-body";
+      const label = document.createElement("strong");
+      label.textContent = PURPOSE_LABEL[row.purpose] || "Account update";
+      const when = document.createElement("span");
+      when.className = "notify-when muted tiny";
+      when.textContent = formatWhen(row.created_at);
+      const text = document.createElement("p");
+      text.className = "tiny";
+      text.textContent = row.body || "";
+      box.appendChild(label);
+      box.appendChild(when);
+      box.appendChild(text);
+      li.appendChild(dot);
+      li.appendChild(box);
+      list.appendChild(li);
+    });
+  }
+
+  function bindNotifications() {
+    const readAll = $("notifyReadAll");
+    if (!readAll || !Auth.api) return;
+    readAll.addEventListener("click", function () {
+      readAll.disabled = true;
+      Auth.api("/users/notifications/read-all/", { method: "POST", body: {} })
+        .then(loadNotifications)
+        .catch(function (error) {
+          MB.toast(error.message || "Could not update notifications.", {
+            kind: "error",
+          });
+        })
+        .finally(function () {
+          readAll.disabled = false;
+        });
+    });
+  }
+
   async function init() {
     if (!Auth.isAuthenticated()) {
       window.location.assign("/login/");
@@ -1695,6 +1756,7 @@
     bindLedgerTabs();
     bindCopy();
     bindSheet();
+    bindNotifications();
 
     const phoneInput = $("mpesa_phone");
     if (phoneInput && window.KEPhone) {
@@ -1730,6 +1792,7 @@
     }
     loadHistory(1);
     loadPayments();
+    loadNotifications();
     syncExpress();
     applyPayState("idle", {});
   }

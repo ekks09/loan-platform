@@ -24,7 +24,11 @@ class PasswordResetRateLimitTests(APITestCase):
             REMOTE_ADDR=ip,
         )
 
+    @override_settings(OTP_RESEND_COOLDOWN_SECONDS=0)
     def test_three_codes_per_number_then_429_with_retry_after(self):
+        # Cooldown disabled here on purpose: this test pins the *windowed*
+        # per-number limit. Cooldown behaviour has its own dedicated tests
+        # (core.tests.test_notifications.OtpCooldownTests).
         for _ in range(3):
             self.assertEqual(self.request().status_code, 200)
         blocked = self.request()

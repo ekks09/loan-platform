@@ -270,7 +270,7 @@ class DisburseLoanView(StaffLoanMixin, APIView):
             raise InvalidTransition(
                 "This loan cannot be disbursed yet. Check acceptance, expiry and fee status."
             )
-        from payments.paystack import ProviderError
+        from payments.providers import ProviderError
 
         try:
             transfer = start_disbursement(loan, actor=request.user)
@@ -297,7 +297,7 @@ class RetryDisbursementView(StaffLoanMixin, APIView):
         from payments.services import retry_disbursement
 
         loan = _get_loan_for_user(request, loan_id)
-        from payments.paystack import ProviderError
+        from payments.providers import ProviderError
 
         try:
             transfer = retry_disbursement(loan, actor=request.user)

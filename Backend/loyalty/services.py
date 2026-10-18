@@ -7,6 +7,8 @@ or a score. Anything the user sees can be recomputed from
 """
 from __future__ import annotations
 
+from django.conf import settings
+
 from dataclasses import dataclass
 
 from django.db import transaction
@@ -298,7 +300,7 @@ def credit_factors(user, account: LoyaltyAccount | None = None) -> list[CreditFa
         key="tenure",
         label="Account age",
         points=tenure_points,
-        detail=f"{tenure_days} day(s) with M-Biashara.",
+        detail=f"{tenure_days} day(s) with {settings.PLATFORM_NAME}.",
     )
 
     base = SCORE_MIN
@@ -308,7 +310,8 @@ def credit_factors(user, account: LoyaltyAccount | None = None) -> list[CreditFa
     factors.append(
         CreditFactor(key="base", label="Starting score", points=base, detail="Every new account starts at 300.")
     )
-    assert base + capped_total <= SCORE_MAX
+    if base + capped_total > SCORE_MAX:
+        raise RuntimeError("credit score factor arithmetic invariant violated")
     return factors
 
 

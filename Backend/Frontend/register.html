@@ -120,10 +120,14 @@
         </div>
 
         <div class="msg" id="registerMsg" role="status"></div>
-        <div class="banner banner-success" id="registerSuccess" role="status" hidden style="margin-top: 14px;">
-          Account created. Continue to your dashboard to add identity documents.
-        </div>
       </form>
+
+      {# Kept OUTSIDE the form: the JS hides the whole form on success. #}
+      {# A banner inside the form would be hidden along with it. #}
+      {# NOTE: Django hash-comments are single-line only — never stretch one. #}
+      <div class="banner banner-success" id="registerSuccess" role="status" hidden style="margin-top: 14px;">
+        Account created. Continue to your dashboard to add identity documents.
+      </div>
 
       <p class="auth-switch">Already registered? <a href="{% url 'login_view' %}">Sign in</a></p>
     </section>

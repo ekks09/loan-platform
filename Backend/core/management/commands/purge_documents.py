@@ -16,8 +16,8 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from loans.models import Loan
+from core.storage import get_document_store
 from users.models import User
-from users.storage import SupabaseStorage
 
 
 class Command(BaseCommand):
@@ -50,8 +50,9 @@ class Command(BaseCommand):
                 self.stdout.write(f"would purge documents for user {user.pk}")
                 deleted += 1
                 continue
+            store = get_document_store()
             for path in paths:
-                SupabaseStorage.delete_file(path)
+                store.delete(path)
             user.id_front_path = user.id_back_path = user.selfie_path = ""
             user.save(update_fields=["id_front_path", "id_back_path", "selfie_path"])
             deleted += 1

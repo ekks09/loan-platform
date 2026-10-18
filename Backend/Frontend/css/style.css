@@ -47,6 +47,9 @@
 
   --sidebar-w: 292px;
   --topbar-h: 66px;
+  /* Standalone on notched devices draws under the status bar. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
   --container: 1180px;
 
   /* ---- Light palette ---------------------------------------------------- */
@@ -102,6 +105,18 @@
   --shadow-gold: 0 18px 44px -26px rgba(184, 134, 11, 0.55);
   --ring: 0 0 0 3px rgba(184, 134, 11, 0.32);
   --focus-ring: #7a5b10;
+
+  /* ---- Premium polish tokens -------------------------------------------
+     The "high-end SaaS" treatment lives on these values so each component
+     stays theme-consistent instead of owning magic numbers. */
+  --shadow-card: 0 1px 2px rgba(11, 31, 51, 0.06), 0 12px 32px -20px rgba(11, 31, 51, 0.4);
+  --shadow-card-hover: 0 2px 4px rgba(11, 31, 51, 0.06), 0 24px 48px -24px rgba(11, 31, 51, 0.5);
+  --shadow-glow: 0 20px 50px -24px rgba(184, 134, 11, 0.65), 0 0 0 1px rgba(184, 134, 11, 0.12);
+  --ring-soft: 0 0 0 4px rgba(184, 134, 11, 0.16);
+  --hairline: color-mix(in srgb, var(--ink) 8%, transparent);
+  --glass-border: color-mix(in srgb, var(--ink) 10%, transparent);
+  --press-scale: 0.975;
+  --lift: -2px;
 
   /* Sidebar is navy in both themes: the constant brand surface. */
   --sidebar-bg: linear-gradient(178deg, #0b1f33 0%, #071320 100%);
@@ -202,6 +217,15 @@
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+/* The one attribute that must always win. Component rules set explicit
+   displays (.btn, .banner, .sheet, .field ...) which OUTRANK the UA
+   stylesheet's [hidden]{display:none}, silently un-hiding anything JS
+   toggles. This guard restores the intended semantics everywhere; it is
+   why a specific .sheet[hidden] patch used to exist below. */
+[hidden] {
+  display: none !important;
 }
 
 html {
@@ -678,8 +702,8 @@ textarea {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: var(--topbar-h);
-  padding: 10px clamp(16px, 3vw, 34px);
+  min-height: calc(var(--topbar-h) + var(--safe-top));
+  padding: calc(10px + var(--safe-top)) clamp(16px, 3vw, 34px) 10px;
   background: var(--topbar-bg);
   border-bottom: 1px solid var(--line);
   backdrop-filter: saturate(140%) blur(18px);
@@ -921,10 +945,18 @@ body.is-nav-open {
 .card {
   position: relative;
   padding: clamp(18px, 2.2vw, 26px);
-  border: 1px solid var(--line);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
+  /* premium: soft elevation response instead of a stark hairline */
+  transition: box-shadow var(--dur-med) ease, transform var(--dur-med) ease,
+    border-color var(--dur-med) ease;
+}
+
+.card:hover {
+  border-color: var(--glass-border);
+  box-shadow: var(--shadow-card-hover);
 }
 
 [data-theme="dark"] .card {
@@ -1040,6 +1072,7 @@ body.is-nav-open {
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
+  will-change: transform;
   transition: transform var(--dur-fast) ease, box-shadow var(--dur-fast) ease,
     background var(--dur-fast) ease, border-color var(--dur-fast) ease,
     color var(--dur-fast) ease, opacity var(--dur-fast) ease;
@@ -1047,8 +1080,19 @@ body.is-nav-open {
 }
 
 .btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(var(--lift));
   box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+  transform: translateY(0) scale(var(--press-scale));
+  box-shadow: var(--shadow-sm);
+  transition-duration: calc(var(--dur-fast) / 2);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-sm), var(--ring);
 }
 
 .btn:active {
@@ -1072,19 +1116,32 @@ body.is-nav-open {
 }
 
 .btn-primary {
-  --btn-bg: var(--gold-wash);
+  --btn-bg: linear-gradient(135deg, #f8eec8 0%, var(--gold-bright) 45%, var(--gold) 100%);
   --btn-fg: var(--gold-ink);
-  --btn-border: rgba(184, 134, 11, 0.55);
+  --btn-border: rgba(184, 134, 11, 0.45);
   box-shadow: var(--shadow-gold);
-  background-image: var(--gold-wash);
+  background-image: linear-gradient(135deg, #f8eec8 0%, var(--gold-bright) 45%, var(--gold) 100%);
 }
 
 .btn-primary:hover {
-  --btn-bg: var(--gold-bright);
+  --btn-fg: var(--gold-ink);
+  background: var(--btn-bg);
   border-color: var(--gold-bright);
-  background: var(--gold-wash);
-  filter: brightness(1.03);
+  filter: brightness(1.05);
+  box-shadow: var(--shadow-glow), var(--shadow-md);
 }
+
+[data-theme="dark"] .btn-primary:hover {
+  --btn-fg: #140e02;
+}
+
+[data-theme="dark"] .btn-primary {
+  --btn-bg: linear-gradient(135deg, #f0d98a 0%, #d4af37 45%, #a3841a 100%);
+  background-image: linear-gradient(135deg, #f0d98a 0%, #d4af37 45%, #a3841a 100%);
+  --btn-fg: #1c1403;
+}
+
+
 
 .btn-secondary {
   --btn-bg: var(--emerald);
@@ -1117,6 +1174,12 @@ body.is-nav-open {
 .btn-ghost:hover {
   --btn-border: var(--gold);
   color: var(--gold-deep);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+
+[data-theme="dark"] .btn-ghost:hover {
+  color: var(--gold-bright);
+  background: rgba(212, 175, 55, 0.08);
 }
 
 .btn-quiet {
@@ -1212,14 +1275,14 @@ body.is-nav-open {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 4px 11px;
+  padding: 4px 12px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--line);
-  background: var(--chip-bg);
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
   color: var(--ink-2);
   font-size: 0.72rem;
   font-weight: 650;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.015em;
   line-height: 1.5;
   white-space: nowrap;
 }
@@ -1431,7 +1494,9 @@ textarea {
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: 0.94rem;
+  /* 16px minimum: iOS zooms the page when a focused input is smaller, and
+     never zooms back, leaving the layout clipped on mobile (demo-found). */
+  font-size: max(0.94rem, 16px);
   transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease,
     background var(--dur-fast) ease;
 }
@@ -2089,6 +2154,26 @@ select {
   height: 12px;
   border-radius: 6px;
   background: var(--surface-2);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--surface) 70%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1.4s var(--ease-out) infinite;
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .skeleton + .skeleton {
@@ -3152,6 +3237,56 @@ dialog.dialog::backdrop {
   color: var(--muted);
 }
 
+.notify-list {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+}
+
+.notify-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.notify-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+}
+
+.notify-item.is-unread .notify-dot {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+
+.notify-body {
+  min-width: 0;
+}
+
+.notify-body strong {
+  display: block;
+  font-size: 0.86rem;
+}
+
+.notify-body .tiny {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  margin: 2px 0 0;
+}
+
+.notify-when {
+  display: inline-block;
+  margin-left: 8px;
+}
+
 .toast-region {
   position: fixed;
   right: 16px;
@@ -3444,7 +3579,7 @@ body.is-offline .toast-region {
   }
 
   .topbar {
-    padding: 8px 14px;
+    padding: calc(8px + var(--safe-top)) 14px 8px;
     gap: 8px;
   }
 
@@ -5339,5 +5474,230 @@ body.sheet-open {
   .credit-dial-progress,
   .streak-dot {
     transition: none;
+  }
+}
+
+
+/* =========================================================================
+   PREMIUM POLISH LAYER (2026-10 high-end SaaS treatment)
+   -------------------------------------------------------------------------
+   Elevation instead of hairlines, glass edges, gradient accents, and
+   micro-interactions on every actionable element. Everything is token-fed,
+   so both themes inherit the same behaviour; the reduced-motion guard is
+   repeated here because these rules are declared later in the cascade.
+   ========================================================================= */
+
+/* ---- Typography hierarchy ---------------------------------------------- */
+.card-head h2,
+.review-card h3,
+.sheet-panel h2 {
+  letter-spacing: -0.02em;
+}
+
+.hint,
+.lead,
+p.muted {
+  color: color-mix(in srgb, var(--muted) 92%, var(--surface));
+}
+
+/* ---- Gradient accent text ---------------------------------------------- */
+.hero h1 em,
+.eyebrow {
+  background-image: var(--gold-wash);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.hero h1 em {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Key money metric gets the same gradient-light treatment. */
+[data-theme="dark"] .loan-amount {
+  color: var(--emerald-bright);
+}
+
+/* ---- Ambient hero glow -------------------------------------------------- */
+.hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -8% -12% auto auto;
+  width: min(46vw, 620px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--gold-bright) 24%, transparent) 0%,
+    transparent 72%
+  );
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+[data-theme="dark"] .hero::before {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--gold-bright) 16%, transparent) 0%,
+    transparent 72%
+  );
+}
+
+/* ---- Glass surfaces (topbar / bars / dialogs) --------------------------- */
+.topbar {
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  border-bottom-color: var(--glass-border);
+  backdrop-filter: saturate(160%) blur(20px);
+  -webkit-backdrop-filter: saturate(160%) blur(20px);
+}
+
+.bottom-bar {
+  border-top-color: var(--glass-border);
+  box-shadow: 0 -18px 36px -30px rgba(0, 0, 0, 0.5);
+}
+
+dialog.dialog {
+  border-color: var(--glass-border);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+}
+
+.sheet-panel {
+  border-color: var(--glass-border);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+/* ---- Micro-interactions on small actions -------------------------------- */
+.link-button {
+  transition: color var(--dur-fast) ease, text-decoration-color var(--dur-fast) ease;
+}
+
+.link-button:hover {
+  color: var(--gold-deep);
+  text-decoration-color: var(--gold);
+}
+
+[data-theme="dark"] .link-button:hover {
+  color: var(--gold-bright);
+  text-decoration-color: var(--gold-bright);
+}
+
+.copy-button:active,
+.side-link:active,
+.bottom-bar a:active,
+.bottom-bar button:active {
+  transform: scale(var(--press-scale));
+  transition-duration: calc(var(--dur-fast) / 2);
+}
+
+.side-link,
+.tab-button {
+  transition: transform var(--dur-fast) ease, background var(--dur-fast) ease,
+    color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.side-link:hover {
+  transform: translateX(2px);
+}
+
+/* ---- Pills with meaning: soft gradient fills per state ------------------- */
+.chip-success {
+  border-color: color-mix(in srgb, var(--success) 32%, transparent);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  color: var(--success);
+}
+
+.chip-warn {
+  border-color: color-mix(in srgb, var(--warning) 34%, transparent);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  color: var(--warning);
+}
+
+.chip-danger {
+  border-color: color-mix(in srgb, var(--danger) 34%, transparent);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+
+.chip-info {
+  border-color: color-mix(in srgb, var(--info) 34%, transparent);
+  background: color-mix(in srgb, var(--info) 12%, transparent);
+  color: var(--info);
+}
+
+.chip-gold {
+  border-color: color-mix(in srgb, var(--gold) 42%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--gold-bright) 22%, transparent),
+    color-mix(in srgb, var(--gold) 10%, transparent)
+  );
+  color: var(--gold-deep);
+}
+
+[data-theme="dark"] .chip-gold {
+  color: var(--gold-bright);
+}
+
+/* ---- Inputs premium focus ------------------------------------------------ */
+input[type="text"]:focus-visible,
+input[type="tel"]:focus-visible,
+input[type="email"]:focus-visible,
+input[type="password"]:focus-visible,
+input[type="number"]:focus-visible,
+input[type="search"]:focus-visible,
+input[type="file"]:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: var(--ring-soft);
+  background: var(--surface);
+}
+
+/* ---- Hero points: gradient bullets with a hairline halo ------------------ */
+.hero-points li::before {
+  background: var(--gold-wash);
+  border-color: transparent;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+
+/* ---- Action rows, pager and tabs get the same active physics ------------- */
+.pager-button:active,
+.tab-button:active {
+  transform: scale(var(--press-scale));
+}
+
+/* ---- Dark-theme depth parity: lights vanish on navy, deepen instead ------ */
+[data-theme="dark"] {
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 34px -22px rgba(0, 0, 0, 0.6);
+  --shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.4), 0 28px 52px -26px rgba(0, 0, 0, 0.72);
+  --shadow-glow: 0 20px 50px -24px rgba(212, 175, 55, 0.3), 0 0 0 1px rgba(212, 175, 55, 0.16);
+}
+
+/* ---- Reduced motion: static premium, no physics -------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+
+  .btn:hover,
+  .side-link:hover {
+    transform: none;
+  }
+
+  .btn:active,
+  .copy-button:active,
+  .side-link:active,
+  .tab-button:active,
+  .pager-button:active {
+    transform: none;
   }
 }

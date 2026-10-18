@@ -31,7 +31,8 @@ from users.serializers import (
     PasswordResetRequestSerializer,
     RegisterSerializer,
 )
-from users.storage import SupabaseStorage
+from core.errors import StorageUnavailable
+from core.storage import document_storage_configured, get_document_store
 
 logger = logging.getLogger(__name__)
 
@@ -103,13 +104,14 @@ class RegisterView(APIView):
                     "Please upload all three documents: ID front, ID back and selfie.",
                     details={"missing": missing},
                 )
-            if not SupabaseStorage.configured():
+            store = get_document_store()
+            if not store.configured():
                 raise StorageUnavailable(
                     "Document uploads are not available right now. "
                     "You can create your account and upload documents later."
                 )
             for file in files.values():
-                SupabaseStorage.validate_file(file)
+                store.validate_file(file)
 
         uploaded_paths: list[str] = []
         try:
@@ -119,10 +121,19 @@ class RegisterView(APIView):
                 import uuid as _uuid
 
                 staging_id = _uuid.uuid4().hex
+                store = get_document_store()
                 for name, file in files.items():
-                    result = SupabaseStorage.upload_file(file, name, user_identifier=staging_id)
-                    uploaded_paths.append(result["path"])
-                    paths[DOCUMENT_PATH_FIELDS[name]] = result["path"]
+                    try:
+                        stored = store.upload(file, folder=name, user_identifier=staging_id)
+                    except StorageUnavailable as exc:
+                        # Ambiguous remote outcome: attempt a compensating
+                        # delete of the exact server-generated key.
+                        ambiguous = (exc.details or {}).get("path")
+                        if ambiguous:
+                            _cleanup([ambiguous])
+                        raise
+                    uploaded_paths.append(stored.path)
+                    paths[DOCUMENT_PATH_FIELDS[name]] = stored.path
 
             with transaction.atomic():
                 user = User.objects.create_user(
@@ -174,8 +185,12 @@ class RegisterView(APIView):
 
 
 def _cleanup(paths: list[str]) -> None:
-    if paths:
-        SupabaseStorage.delete_user_files(*paths)
+    if not paths:
+        return
+    store = get_document_store()
+    for path in paths:
+        if path:
+            store.delete(path)
 
 
 class LoginView(APIView):
@@ -192,7 +207,7 @@ class LoginView(APIView):
         return Response(
             {
                 "access": token,
-                "token_type": "Bearer",
+                "token_type": "Bearer",  # nosec B105 -- RFC 6750 token type, not a credential
                 "expires_in": settings.JWT_ACCESS_TTL_MINUTES * 60,
                 "verification_status": user.verification_status,
                 "is_verified": user.is_verified,
@@ -239,7 +254,8 @@ class DocumentsUploadView(APIView):
     throttle_scope = "documents"
 
     def post(self, request):
-        if not SupabaseStorage.configured():
+        store = get_document_store()
+        if not store.configured():
             raise StorageUnavailable(
                 "Document uploads are not configured on this deployment."
             )
@@ -251,7 +267,7 @@ class DocumentsUploadView(APIView):
                 details={"missing": missing},
             )
         for file in files.values():
-            SupabaseStorage.validate_file(file)
+            store.validate_file(file)
 
         user = request.user
         new_paths: list[str] = []
@@ -259,9 +275,15 @@ class DocumentsUploadView(APIView):
         try:
             uploaded = {}
             for name, file in files.items():
-                result = SupabaseStorage.upload_file(file, name, user_identifier=user.pk)
-                new_paths.append(result["path"])
-                uploaded[DOCUMENT_PATH_FIELDS[name]] = result["path"]
+                try:
+                    stored = store.upload(file, folder=name, user_identifier=user.pk)
+                except StorageUnavailable as exc:
+                    ambiguous = (exc.details or {}).get("path")
+                    if ambiguous:
+                        _cleanup([ambiguous])
+                    raise
+                new_paths.append(stored.path)
+                uploaded[DOCUMENT_PATH_FIELDS[name]] = stored.path
 
             with transaction.atomic():
                 for field, path in uploaded.items():
@@ -345,6 +367,7 @@ class PasswordResetRequestView(APIView):
         result = issue_password_reset(user, phone or "", request)
 
         if result.retry_after:
+            retry_minutes = max(1, (result.retry_after + 59) // 60)
             response = Response(
                 {
                     "ok": False,
@@ -352,7 +375,7 @@ class PasswordResetRequestView(APIView):
                         "code": "too_many_requests",
                         "message": (
                             "Too many codes were requested for this number. "
-                            "Try again in 15 minutes."
+                            f"Try again in {retry_minutes} minute(s)."
                         ),
                         "details": {"retry_after_seconds": result.retry_after},
                         "request_id": getattr(request, "request_id", ""),
@@ -368,7 +391,7 @@ class PasswordResetRequestView(APIView):
                 "ok": True,
                 "message": "If the number is registered, a reset code has been sent by SMS.",
                 "expires_in_seconds": settings.OTP_TTL_MINUTES * 60,
-                "resend_after_seconds": 60,
+                "resend_after_seconds": settings.OTP_RESEND_COOLDOWN_SECONDS,
             }
         )
 
@@ -425,3 +448,46 @@ __all__ = [
     "PasswordResetConfirmView",
     "GENERIC_LOGIN_ERROR",
 ]
+
+
+class NotificationListView(APIView):
+    """Owner-scoped in-app notifications (the SMS fallback channel)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from core.models import InAppNotification
+
+        rows = InAppNotification.objects.filter(user=request.user)[:50]
+        unread = InAppNotification.objects.filter(
+            user=request.user, status=InAppNotification.Status.UNREAD
+        ).count()
+        return Response(
+            {
+                "results": [
+                    {
+                        "id": row.pk,
+                        "purpose": row.purpose,
+                        "body": row.body,
+                        "status": row.status,
+                        "created_at": row.created_at,
+                    }
+                    for row in rows
+                ],
+                "unread": unread,
+            }
+        )
+
+
+class NotificationReadAllView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from django.utils import timezone as _tz
+
+        from core.models import InAppNotification
+
+        updated = InAppNotification.objects.filter(
+            user=request.user, status=InAppNotification.Status.UNREAD
+        ).update(status=InAppNotification.Status.READ, read_at=_tz.now())
+        return Response({"ok": True, "marked_read": updated})

@@ -1,0 +1,18 @@
+# Build context for the backend image: source only, no workspaces/state.
+.git
+.venv
+.venv-*
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+.coverage.*
+Backend/dev.sqlite3
+Backend/staticfiles
+Backend/media
+.env
+.env.*
+!.env.example
+docs
+*.md

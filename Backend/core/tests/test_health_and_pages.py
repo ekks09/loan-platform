@@ -92,6 +92,19 @@ class PublicPageTests(TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertIn("Draft", response.content.decode())
 
+    def test_rendered_pages_never_leak_template_syntax(self):
+        # Django {# #} comments are single-line only; a stretched one leaks
+        # its raw text into the page (this regressed on the register page).
+        for name in ("index", "register", "login_view", "dashboard", "privacy", "terms", "offline"):
+            with self.subTest(page=name):
+                response = self.client.get(reverse(name))
+                self.assertEqual(response.status_code, 200)
+                content = response.content.decode()
+                self.assertNotIn("{#", content)
+                self.assertNotIn("#}", content)
+                self.assertNotIn("{%", content)
+                self.assertNotIn("%}", content)
+
     def test_dashboard_page_consumes_the_active_loan_contract(self):
         response = self.client.get(reverse("dashboard"))
         content = response.content.decode()
@@ -262,8 +275,8 @@ class PWATests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/manifest+json")
         body = response.json()
-        self.assertEqual(body["name"], "M-Biashara")
-        self.assertEqual(body["short_name"], "M-Biashara")
+        self.assertEqual(body["name"], settings.PLATFORM_NAME)
+        self.assertEqual(body["short_name"], settings.PLATFORM_NAME)
         self.assertEqual(body["id"], "/")
         self.assertEqual(body["start_url"], "/dashboard/")
         self.assertEqual(body["scope"], "/")

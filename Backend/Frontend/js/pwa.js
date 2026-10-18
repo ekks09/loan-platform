@@ -67,7 +67,7 @@
         if (choice && choice.outcome === "accepted") {
           installed = true;
           refreshInstallButtons();
-          MB.toast("M-Biashara is being installed.", { kind: "success" });
+          MB.toast("The app is being installed.", { kind: "success" });
         }
       } catch (error) {
         showManualInstructions();
@@ -115,7 +115,7 @@
     deferredPrompt = null;
     refreshInstallButtons();
     MB.closeDialog(installDialog);
-    MB.toast("M-Biashara has been installed.", { kind: "success" });
+    MB.toast("The app has been installed.", { kind: "success" });
   });
 
   refreshInstallButtons();

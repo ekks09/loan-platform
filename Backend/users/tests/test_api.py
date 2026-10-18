@@ -11,6 +11,7 @@ from rest_framework.test import APITestCase
 from core.tests.helpers import (
     attach_documents,
     auth_client,
+    fake_document_store,
     make_staff,
     make_user,
     make_verified_user,
@@ -126,17 +127,15 @@ class RegistrationApiTests(APITestCase):
         self.assertEqual(response.json()["error"]["code"], "storage_unavailable")
         self.assertFalse(User.objects.exists())
 
-    @patch("users.storage.SupabaseStorage.configured", return_value=True)
-    @patch("users.storage.SupabaseStorage.validate_file", return_value=None)
-    @patch("users.storage.SupabaseStorage.upload_file")
-    def test_multipart_registration_stores_private_paths(
-        self, upload_file, _validate, _configured
-    ):
-        upload_file.side_effect = [
-            {"path": "users/staging/id_front/a.jpg"},
-            {"path": "users/staging/id_back/b.jpg"},
-            {"path": "users/staging/selfie/c.jpg"},
-        ]
+    @patch("users.views.get_document_store")
+    def test_multipart_registration_stores_private_paths(self, get_store):
+        get_store.return_value = fake_document_store(
+            upload_effects=[
+                "users/staging/id_front/a1234567890abcdef1234567890abcd.jpg",
+                "users/staging/id_back/b1234567890abcdef1234567890abcd.jpg",
+                "users/staging/selfie/c1234567890abcdef1234567890abcd.jpg",
+            ]
+        )
         response = self.client.post(
             "/api/users/register/",
             {
@@ -154,19 +153,17 @@ class RegistrationApiTests(APITestCase):
         self.assertNotIn("http://", user.id_front_path)
         self.assertNotIn("https://", user.id_front_path)
 
-    @patch("users.storage.SupabaseStorage.configured", return_value=True)
-    @patch("users.storage.SupabaseStorage.validate_file", return_value=None)
-    @patch("users.storage.SupabaseStorage.upload_file")
-    @patch("users.storage.SupabaseStorage.delete_user_files")
-    def test_storage_failure_during_upload_rolls_back_account(
-        self, delete_files, upload_file, _validate, _configured
-    ):
+    @patch("users.views.get_document_store")
+    def test_storage_failure_during_upload_rolls_back_account(self, get_store):
         from core.errors import StorageUnavailable
 
-        upload_file.side_effect = [
-            {"path": "users/staging/id_front/a.jpg"},
-            StorageUnavailable("provider down"),
-        ]
+        store = fake_document_store(
+            upload_effects=[
+                "users/staging/id_front/a1234567890abcdef1234567890abcd.jpg",
+                StorageUnavailable("provider down"),
+            ]
+        )
+        get_store.return_value = store
         response = self.client.post(
             "/api/users/register/",
             {
@@ -179,7 +176,8 @@ class RegistrationApiTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertFalse(User.objects.exists())
-        delete_files.assert_called_once()
+        # The uploaded file that did succeed must be compensated for.
+        self.assertEqual(store.delete.call_count, 1)
 
     def test_partial_document_upload_is_rejected(self):
         response = self.client.post(
@@ -283,8 +281,9 @@ class DocumentUploadApiTests(APITestCase):
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.json()["error"]["code"], "storage_unavailable")
 
-    @patch("users.storage.SupabaseStorage.configured", return_value=True)
-    def test_upload_rejects_missing_files(self, _configured):
+    @patch("users.views.get_document_store")
+    def test_upload_rejects_missing_files(self, get_store):
+        get_store.return_value = fake_document_store()
         client = auth_client(self.user)
         response = client.post(
             "/api/users/documents/", {"id_front": png_file()}, format="multipart"
@@ -295,8 +294,9 @@ class DocumentUploadApiTests(APITestCase):
             set(response.json()["error"]["details"]["missing"]), {"id_back", "selfie"}
         )
 
-    @patch("users.storage.SupabaseStorage.configured", return_value=True)
-    def test_upload_validation_rejects_content_that_is_not_an_image(self, _configured):
+    @patch("users.views.get_document_store")
+    def test_upload_validation_rejects_content_that_is_not_an_image(self, get_store):
+        get_store.return_value = fake_document_store()
         bad = SimpleUploadedFile("id.png", b"not-an-image", content_type="image/png")
         client = auth_client(self.user)
         response = client.post(
@@ -307,16 +307,15 @@ class DocumentUploadApiTests(APITestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("content", response.content.decode())
 
-    @patch("users.storage.SupabaseStorage.configured", return_value=True)
-    @patch("users.storage.SupabaseStorage.upload_file")
-    def test_upload_resets_verification_and_replaces_paths(
-        self, upload_file, _configured
-    ):
-        upload_file.side_effect = [
-            {"path": "users/1/id_front/new.jpg"},
-            {"path": "users/1/id_back/new.jpg"},
-            {"path": "users/1/selfie/new.jpg"},
-        ]
+    @patch("users.views.get_document_store")
+    def test_upload_resets_verification_and_replaces_paths(self, get_store):
+        get_store.return_value = fake_document_store(
+            upload_effects=[
+                "users/1/id_front/new.jpg",
+                "users/1/id_back/new.jpg",
+                "users/1/selfie/new.jpg",
+            ]
+        )
         client = auth_client(self.user)
         response = client.post(
             "/api/users/documents/",
@@ -446,8 +445,9 @@ class StaffVerificationQueueTests(APITestCase):
         response = self.client.get("/api/users/admin/verification/")
         self.assertEqual(response.status_code, 302)
 
-    @patch("users.storage.SupabaseStorage.create_signed_url", return_value="https://signed.test/doc")
-    def test_staff_dashboard_renders_rows_and_audits_each_document(self, _signed):
+    @patch("users.admin_views.get_document_store")
+    def test_staff_dashboard_renders_rows_and_audits_each_document(self, get_store):
+        get_store.return_value = fake_document_store(signed_url="https://signed.test/doc")
         self.client.force_login(self.staff)
         response = self.client.get("/api/users/admin/verification/")
         self.assertEqual(response.status_code, 200)
@@ -457,15 +457,17 @@ class StaffVerificationQueueTests(APITestCase):
             self.subject.document_access_events.count(), 3
         )
 
-    @patch("users.storage.SupabaseStorage.create_signed_url", return_value="https://signed.test/doc")
-    def test_verification_api_never_returns_full_national_id(self, _signed):
+    @patch("users.admin_views.get_document_store")
+    def test_verification_api_never_returns_full_national_id(self, get_store):
+        get_store.return_value = fake_document_store(signed_url="https://signed.test/doc")
         self.client.force_login(self.staff)
         response = self.client.get("/api/users/admin/verification/api/")
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("44444444", response.content.decode())
 
-    @patch("users.storage.SupabaseStorage.create_signed_url", return_value="https://signed.test/doc")
-    def test_staff_can_approve_verification(self, _signed):
+    @patch("users.admin_views.get_document_store")
+    def test_staff_can_approve_verification(self, get_store):
+        get_store.return_value = fake_document_store(signed_url="https://signed.test/doc")
         self.client.force_login(self.staff)
         response = self.client.post(
             f"/api/users/admin/verify/{self.subject.pk}/",
