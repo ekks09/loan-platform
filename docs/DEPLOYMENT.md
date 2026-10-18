@@ -65,8 +65,8 @@ Secrets must be set in the platform's secret manager, never committed. The
 | `FEE_COLLECTION_MODE` | `disabled` | No upfront fee |
 | `FEE_COLLECTION_APPROVED` | `false` | Must be true together with `upfront` |
 | `LEGAL_TERMS_APPROVED` | `false` | Blocks live mode at boot |
-| `REQUIRE_DOCUMENT_STORAGE` | `false` initially | Set `true` once the bucket exists |
-| `SMS_BACKEND` | `none` | Set `africastalking` only with approved sender ID |
+| `REQUIRE_DOCUMENT_STORAGE` | `true` (staging blueprint) | `/health/ready/` fails until the private bucket is reachable; production flips it to `true` once its bucket exists |
+| `SMS_BACKEND` | `console` | Log lines only, zero spend; set `africastalking` only with approved sender ID |
 | `DJANGO_HSTS_SECONDS` | `0` | Raise only after the final domain is stable |
 
 Notes:
@@ -88,17 +88,28 @@ Notes:
    - `pip install -r Backend/requirements.txt`
    - `python Backend/manage.py collectstatic --noinput`
 3. Fill every `sync: false` variable in the Render dashboard. There are no
-   secret values in the repository.
+   secret values in the repository. To validate the dashboard values locally
+   before deploying (same environment reconstruction, same gate), use
+   `python scripts/render_preflight.py` - see
+   `docs/RENDER_STAGING_RECOVERY.md`.
 4. Deploy. The start command is:
 
    ```bash
+   python Backend/manage.py check_config --allow-test-mode
    python Backend/manage.py migrate --noinput
    gunicorn core.wsgi:application --chdir Backend \
      --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 60
    ```
 
-   Migrations run at start, not during the build, so a failed migration stops
-   the service instead of leaving a half-deployed instance.
+   `check_config` prints the resolved posture and refuses to boot a broken or
+   unsafe configuration. Migrations run at start, not during the build, so a
+   failed migration stops the service instead of leaving a half-deployed
+   instance.
+
+   If the service was created by hand rather than from the blueprint, recreate
+   it: Render preserves variables a blueprint does not declare, so a stray
+   Paystack key survives a sync and fails the boot. The full procedure is in
+   `docs/RENDER_STAGING_RECOVERY.md`.
 5. Confirm:
    - `GET /health/` → `{"status":"ok"}`
    - `GET /health/ready/` → 200 with `database: ok`
@@ -118,6 +129,27 @@ If `DJANGO_ALLOWED_HOSTS` is empty, settings use
 `RENDER_EXTERNAL_HOSTNAME`. Likewise, CSRF origins default to
 `https://RENDER_EXTERNAL_HOSTNAME`. Set the explicit variables when using a
 custom domain; wildcards are rejected outside DEBUG.
+
+### Blueprint sync semantics
+
+Render treats the two kinds of variables differently, and the difference has
+already caused one failed deploy:
+
+| Kind | In the blueprint | On a later sync |
+| --- | --- | --- |
+| Managed | `- key: X` + `value:` | The file value overwrites any dashboard change |
+| Dashboard-owned | `- key: X` + `sync: false` | Ignored; the dashboard value is kept |
+| Undeclared | absent | **Preserved on existing services**; absent on a newly created one |
+
+The payment switches (`PAYMENTS_ENABLED`, `PAYMENTS_LIVE_MODE`,
+`PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY`, `FEE_COLLECTION_MODE`,
+`FEE_COLLECTION_APPROVED`) are dashboard-owned on purpose: pinning
+`PAYMENTS_ENABLED=false` in the file would revert a demo posture on the next
+sync while the dashboard-only keys stayed behind - which is exactly the
+"Paystack keys are set while PAYMENTS_ENABLED is false" boot failure. Unset is
+safe: the settings defaults are payments off, live mode off, fees disabled and
+unapproved, and ambiguous combinations are startup-fatal. Choose the posture in
+`docs/RENDER_STAGING_RECOVERY.md`, section 4.
 
 ## 5. Row Level Security (not enabled)
 
@@ -258,7 +290,8 @@ signed off outside engineering:
 | --- | --- | --- |
 | Boot fails: `DJANGO_ALLOWED_HOSTS` | No hosts and no `RENDER_EXTERNAL_HOSTNAME` | Set hosts explicitly |
 | Boot fails: placeholder secret | Secret still `<...>` or too short | Set a real ≥32-char key |
-| Boot fails: payments configuration | Keys present while disabled, or live/test mismatch | Make the flags and keys consistent |
+| Boot fails: payments configuration | Keys present while disabled, or live/test mismatch | Make the flags and keys consistent; see `docs/RENDER_STAGING_RECOVERY.md` |
+| Build fails: `Paystack keys are set while PAYMENTS_ENABLED is false` | Hand-configured service kept stray keys | Recreate from `render.staging.yaml`; choose posture A or B in the dashboard |
 | 503 on `/health/ready/` | DB, storage or legal gate failing | Read the `checks` object |
 | `DisallowedHost` | Proxy host not allowlisted | Add the host; do not use `*` |
 | Webhook 401 | Signature computed with the wrong key or body altered | Use the Paystack secret key and raw body |

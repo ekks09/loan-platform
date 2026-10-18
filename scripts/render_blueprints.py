@@ -26,12 +26,20 @@ HEADER = """\
 # Render blueprint for the Django backend.
 #
 # Safety posture of this blueprint:
-#   * payments disabled, fee collection disabled, legal terms unapproved;
 #   * no secret values committed — Render generates the Django key and every
-#     credential is marked `sync: false`, so it must be entered in the Render
-#     dashboard and is never readable from the repository.
-# Do not flip PAYMENTS_ENABLED / PAYMENTS_LIVE_MODE or LEGAL_TERMS_APPROVED
-# until the compliance, product and legal gates are signed off.
+#     credential (including the Paystack pair) is marked `sync: false`, so it
+#     lives in the Render dashboard and is never readable from the repository;
+#   * the payment posture is a dashboard decision, one of:
+#       A) payments off — no Paystack keys, PAYMENTS_ENABLED=false; or
+#       B) payments on in TEST mode — sk_test_/pk_test_ keys,
+#          PAYMENTS_ENABLED=true, PAYMENTS_LIVE_MODE=false (staging refuses
+#          live mode at startup);
+#     unset is the safe default: payments off, live mode off, fee collection
+#     disabled and unapproved;
+#   * the start command runs `check_config` before `migrate`, so a bad posture
+#     fails the boot with the gate report instead of serving traffic.
+# Do not set PAYMENTS_LIVE_MODE or LEGAL_TERMS_APPROVED until the compliance,
+# product and legal gates are signed off.
 
 # THIS FILE IS GENERATED from deploy/render.common.yaml.j2 +
 # deploy/render.{staging,production}.params. Do not edit directly;

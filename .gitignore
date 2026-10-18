@@ -17,6 +17,8 @@ ENV/
 !.env.example
 !.env.compose.example
 !.env.demo.example
+# Render preflight: local copy of the dashboard's sync:false values
+deploy/*.env
 *.pem
 *.key
 

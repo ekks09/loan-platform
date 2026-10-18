@@ -444,9 +444,23 @@ if PAYMENTS_ENABLED:
                 "live key."
             )
 elif PAYMENT_PROVIDER == "paystack" and (PAYSTACK_SECRET_KEY or PAYSTACK_PUBLIC_KEY):
+    configured = ", ".join(
+        name
+        for name, value in (
+            ("PAYSTACK_SECRET_KEY", PAYSTACK_SECRET_KEY),
+            ("PAYSTACK_PUBLIC_KEY", PAYSTACK_PUBLIC_KEY),
+        )
+        if value
+    )
     raise ImproperlyConfigured(
-        "Paystack keys are set while PAYMENTS_ENABLED is false. Remove the keys "
-        "or enable payments to avoid ambiguous configuration."
+        f"Paystack keys are set ({configured}) while PAYMENTS_ENABLED is false; "
+        "ambiguous payment configuration is refused. Choose exactly one posture: "
+        "(A) payments off - remove PAYSTACK_SECRET_KEY and PAYSTACK_PUBLIC_KEY and "
+        "keep PAYMENTS_ENABLED=false; or (B) payments on in test mode - set "
+        "PAYMENTS_ENABLED=true, PAYMENTS_LIVE_MODE=false, provide sk_test_/pk_test_ "
+        "keys, and collect fees only with FEE_COLLECTION_MODE=upfront plus "
+        "FEE_COLLECTION_APPROVED=true. "
+        "See docs/RENDER_STAGING_RECOVERY.md."
     )
 
 # =========================================================================
