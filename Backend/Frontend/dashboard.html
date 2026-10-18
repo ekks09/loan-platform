@@ -9,24 +9,226 @@
 {% block topbar %}{% include "partials/topbar.html" with title="Overview" section_label="Your account" %}{% endblock %}
 
 {% block content %}
-<div class="page page--wide">
-  <div class="page-head" data-reveal>
-    <div>
-      <span class="eyebrow">Your account</span>
-      <h1>Good to see you.</h1>
-      <p id="headerHint">Loading your account…</p>
+<div class="page page--wide funnel-page">
+
+  <div class="funnel">
+
+  <!-- MODULE 1 · Identity & quick profile standing -->
+  <section class="funnel-module funnel-module--identity" id="overview"
+           aria-labelledby="funnelProfileLabel" data-reveal>
+    <h2 class="visually-hidden" id="funnelProfileLabel">Profile standing</h2>
+    <p class="funnel-status">
+      <span class="funnel-emoji" aria-hidden="true">👤</span>
+      <span class="funnel-status-key">Profile Status:</span>
+      <strong class="funnel-status-value" id="funnelProfileState">Loading…</strong>
+    </p>
+  </section>
+
+  <!-- MODULE 2 · Credit limit & borrowing capacity (the hook) -->
+  <section class="funnel-module funnel-module--limit" id="limit"
+           aria-labelledby="funnelLimitLabel" data-reveal>
+    <h2 class="visually-hidden" id="funnelLimitLabel">Borrowing capacity</h2>
+    <div class="funnel-limit-grid">
+      <div class="credit-dial credit-dial--compact">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="credit-dial-track" cx="60" cy="60" r="46"></circle>
+          <circle class="credit-dial-progress" id="loyaltyRing" cx="60" cy="60" r="46"></circle>
+        </svg>
+        <div class="credit-dial-value">
+          <strong id="loyaltyScore">—</strong>
+          <span id="loyaltyScoreBand">Loading…</span>
+        </div>
+      </div>
+      <div class="funnel-limit-copy">
+        <p class="funnel-eyebrow">
+          <span class="funnel-emoji" aria-hidden="true">💹</span> Max Limit
+        </p>
+        <p class="funnel-money" id="limitValue">KES {{ max_amount|intcomma }}</p>
+        <p class="funnel-sub">
+          <span class="funnel-emoji" aria-hidden="true">💱</span>
+          <span id="limitNote">Unlock your limit</span>
+        </p>
+      </div>
     </div>
-    <span class="env-note">Fees disabled · no live credit</span>
+  </section>
+
+  <!-- MODULE 3 · Direct action application card -->
+  <section class="funnel-module funnel-module--cta" id="borrow"
+           aria-labelledby="funnelBorrowLabel" data-reveal>
+    <h2 class="visually-hidden" id="funnelBorrowLabel">Borrow now</h2>
+    <p class="funnel-cta-title">
+      <span class="funnel-emoji" aria-hidden="true">💱</span>
+      Need Instant Cash?
+      <span class="funnel-emoji" aria-hidden="true">💸</span>
+    </p>
+    <button class="btn btn-borrow btn-block" type="button" id="borrowNow" data-requires-network>
+      <span class="btn-glyph" aria-hidden="true">⚡</span> BORROW NOW
+    </button>
+    <p class="funnel-note" id="borrowNote"></p>
+  </section>
+
+  <!-- MODULE 4 · Simple repayment & activity -->
+  <section class="funnel-module funnel-module--repay" id="repay"
+           aria-labelledby="funnelRepayLabel" data-reveal>
+    <h2 class="visually-hidden" id="funnelRepayLabel">Repayment</h2>
+    <div class="funnel-repay-grid">
+      <p class="funnel-due">
+        <span class="funnel-due-key">Amount Due:</span>
+        <strong class="funnel-due-money" id="dueAmount">KES 0</strong>
+      </p>
+      <p class="funnel-due">
+        <span class="funnel-due-key">Due Date:</span>
+        <strong class="funnel-due-date" id="dueDate">—</strong>
+      </p>
+    </div>
+    <button class="btn btn-pay btn-block" type="button" id="funnelPayNow" data-requires-network>
+      <span class="btn-glyph" aria-hidden="true">💳</span> PAY NOW
+    </button>
+    <ul class="funnel-recent" id="funnelRecent" aria-label="Recent activity"></ul>
+    <details class="funnel-history" id="txHistory">
+      <summary class="funnel-history-summary">
+        <span class="funnel-emoji" aria-hidden="true">💰</span>
+        View Transaction History
+      </summary>
+      <div class="funnel-history-body">
+        <section class="card" id="payments" aria-labelledby="paymentsTitle">
+          <div class="card-head">
+            <div>
+              <h2 id="paymentsTitle">Payments</h2>
+              <p class="hint">Provider references, receipts and the state recorded on the server.</p>
+            </div>
+            <span class="chip chip-neutral">Server record</span>
+          </div>
+
+          <div class="ledger-tabs" role="group" aria-label="Filter activity">
+            <button class="ledger-tab is-active" type="button" data-ledger-filter="all" aria-pressed="true">All</button>
+            <button class="ledger-tab" type="button" data-ledger-filter="disbursement" aria-pressed="false">Disbursements</button>
+            <button class="ledger-tab" type="button" data-ledger-filter="repayment" aria-pressed="false">Repayments</button>
+          </div>
+          <p class="tiny muted" id="ledgerNote" hidden></p>
+
+          <div class="table-wrap">
+            <table class="table table--cards">
+              <caption class="visually-hidden">Your payments</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Reference</th>
+                  <th scope="col">Amount (KES)</th>
+                  <th scope="col">Status</th>
+                  <th scope="col"><span class="visually-hidden">Receipt</span></th>
+                </tr>
+              </thead>
+              <tbody id="paymentsBody">
+                <tr><td colspan="5" class="muted">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="tiny muted" id="repaymentNote" hidden>
+            Repayments are not implemented in this environment, so this view is intentionally
+            empty. When repayment exists it will appear here; nothing is simulated.
+          </p>
+        </section>
+        <section class="card" id="history" aria-labelledby="historyTitle">
+          <div class="card-head">
+            <div>
+              <h2 id="historyTitle">Application history</h2>
+              <p class="hint">Every application you have submitted, including closed ones.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table table--cards">
+              <caption class="visually-hidden">Your loan applications</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Amount (KES)</th>
+                  <th scope="col">Fee (KES)</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Last update</th>
+                </tr>
+              </thead>
+              <tbody id="historyBody">
+                <tr><td colspan="5" class="muted">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="row row-between" id="historyPager" hidden>
+            <button class="btn btn-ghost btn-sm" type="button" id="prevPage">Previous</button>
+            <span class="muted tiny" id="pageInfo"></span>
+            <button class="btn btn-ghost btn-sm" type="button" id="nextPage">Next</button>
+          </div>
+        </section>
+      </div>
+    </details>
+  </section>
+
   </div>
 
-  <div class="banner banner-warning" role="note" data-reveal>
-    <span><strong>Operating environment.</strong> Applications are reviewed manually. Fee
-    collection and live disbursement are disabled until the required approvals are complete.
-    You can create an account, verify your identity and follow the flow end to end.</span>
-  </div>
+  <div class="funnel-stack">
+      <section class="card" aria-labelledby="verifyTitle" data-reveal>
+        <div class="card-head">
+          <div>
+            <h2 id="verifyTitle">Identity verification</h2>
+            <p class="hint">Manual review by staff.</p>
+          </div>
+          <span class="chip" id="verifyChip">Loading…</span>
+        </div>
 
-  <div class="dash-grid" style="margin-top: var(--space-4);">
-    <div class="dash-main">
+        <p class="muted tiny" id="verifyHint"></p>
+        <div class="banner banner-error" id="verifyNotes" hidden></div>
+
+        <div id="consentBlock" hidden>
+          <div class="banner banner-warning">
+            The privacy notice has been updated. Review it and record consent again before applying.
+          </div>
+          <a class="link" href="{% url 'privacy' %}" target="_blank" rel="noopener">Read the privacy notice</a>
+          <button class="btn btn-ghost btn-block" type="button" id="consentBtn" data-requires-network>
+            I agree
+          </button>
+        </div>
+
+        <div id="uploadBlock" hidden>
+          <p class="tiny muted">
+            Upload the front and back of your National ID and a selfie. Maximum 5 MB each
+            (JPEG, PNG or WebP). Images are stored privately.
+          </p>
+          <form class="upload-form" id="docForm" novalidate>
+            <div class="doc-inputs">
+              <div class="doc-input">
+                <label for="doc_front">ID front</label>
+                <input type="file" id="doc_front" accept="image/jpeg,image/png,image/webp" required />
+                <p class="hint">Photograph the whole document in good light.</p>
+              </div>
+              <div class="doc-input">
+                <label for="doc_back">ID back</label>
+                <input type="file" id="doc_back" accept="image/jpeg,image/png,image/webp" required />
+              </div>
+              <div class="doc-input">
+                <label for="doc_selfie">Selfie</label>
+                <input type="file" id="doc_selfie" accept="image/jpeg,image/png,image/webp" required />
+                <p class="hint">Face the camera without a hat or filter.</p>
+              </div>
+            </div>
+            <div class="progress-container" id="docProgressWrap" hidden>
+              <div class="progress-bar-wrap"><div class="progress-bar-fill" id="docProgressFill"></div></div>
+              <div class="progress-label" id="docProgressLabel">Uploading…</div>
+            </div>
+            <button class="btn btn-primary btn-block" type="submit" id="docSubmit" data-requires-network>
+              Upload documents
+            </button>
+            <div class="msg" id="docMsg" role="status"></div>
+          </form>
+        </div>
+
+        <div id="verifiedBlock" hidden>
+          <div class="banner banner-success">
+            <span>Your identity is verified. You can apply for a loan.</span>
+          </div>
+        </div>
+      </section>
+
       <section class="card" id="loanCard" aria-labelledby="loanTitle" data-reveal>
         <div class="card-head">
           <div>
@@ -219,257 +421,108 @@
         </button>
       </section>
 
-      <section class="card" id="history" aria-labelledby="historyTitle" data-reveal>
-        <div class="card-head">
-          <div>
-            <h2 id="historyTitle">Application history</h2>
-            <p class="hint">Every application you have submitted, including closed ones.</p>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table class="table table--cards">
-            <caption class="visually-hidden">Your loan applications</caption>
-            <thead>
-              <tr>
-                <th scope="col">Date</th>
-                <th scope="col">Amount (KES)</th>
-                <th scope="col">Fee (KES)</th>
-                <th scope="col">Status</th>
-                <th scope="col">Last update</th>
-              </tr>
-            </thead>
-            <tbody id="historyBody">
-              <tr><td colspan="5" class="muted">Loading…</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="row row-between" id="historyPager" hidden>
-          <button class="btn btn-ghost btn-sm" type="button" id="prevPage">Previous</button>
-          <span class="muted tiny" id="pageInfo"></span>
-          <button class="btn btn-ghost btn-sm" type="button" id="nextPage">Next</button>
-        </div>
-      </section>
-
-      <section class="card loyalty-card" id="loyaltyCard" aria-labelledby="loyaltyTitle" data-reveal hidden>
-        <div class="card-head">
-          <div>
-            <h2 id="loyaltyTitle">{{ PLATFORM_NAME }} credit health</h2>
-            <p class="hint">Built from your activity here, and only here.</p>
-          </div>
-          <span class="chip chip-neutral" id="loyaltyTier">Base</span>
-        </div>
-
-        <div class="credit-dial">
-          <svg viewBox="0 0 120 120" aria-hidden="true">
-            <circle class="credit-dial-track" cx="60" cy="60" r="46"></circle>
-            <circle class="credit-dial-progress" id="loyaltyRing" cx="60" cy="60" r="46"></circle>
-          </svg>
-          <div class="credit-dial-value">
-            <strong id="loyaltyScore">—</strong>
-            <span id="loyaltyScoreBand">Loading…</span>
-          </div>
-        </div>
-        <p class="tiny muted" style="margin: 4px 0 0;">
-          Score scale <span id="loyaltyScoreScale">300 – 850</span>. This is not a credit
-          bureau score.
-        </p>
-
-        <div class="credit-factors">
-          <h3>What moves your score</h3>
-          <ul id="loyaltyFactors"></ul>
-        </div>
-        <p class="tiny muted" id="loyaltyPortability">
-          Your score is built from activity recorded on {{ PLATFORM_NAME }} only. It is not shared
-          with other lenders and cannot be transferred to another provider.
-        </p>
-
-        <div class="streak-block">
-          <div class="row row-between">
-            <h3>Tier progress</h3>
-            <span class="tiny muted" id="loyaltyTierSince"></span>
-          </div>
-          <div class="streak-dots" id="loyaltyStreak" aria-hidden="true"></div>
-          <p class="tiny" id="loyaltyStreakLabel">Loading…</p>
-          <p class="tiny muted" id="loyaltyBenefit"></p>
-          <dl class="definition-list">
-            <dt>Borrowing limit</dt><dd id="loyaltyLimit">—</dd>
-          </dl>
-        </div>
-
-        <div class="vault-block">
-          <div class="row row-between">
-            <h3>Savings vault</h3>
-            <span class="chip chip-neutral">Cash-back only</span>
-          </div>
-          <div class="vault-balances">
+    <details class="funnel-disclosure" id="creditPanel">
+      <summary class="funnel-disclosure-summary">
+        <span class="funnel-emoji" aria-hidden="true">💹</span>
+        {{ PLATFORM_NAME }} credit health
+      </summary>
+      <div class="funnel-disclosure-body">
+        <section class="card loyalty-card" id="loyaltyCard" aria-labelledby="loyaltyTitle" hidden>
+          <div class="card-head">
             <div>
-              <span class="tiny muted">Cash-back</span>
-              <strong id="loyaltyCashback">—</strong>
+              <h2 id="loyaltyTitle">{{ PLATFORM_NAME }} credit health</h2>
+              <p class="hint">Built from your activity here, and only here.</p>
             </div>
-            <div>
-              <span class="tiny muted">In the vault</span>
-              <strong id="loyaltyVault">—</strong>
-            </div>
+            <span class="chip chip-neutral" id="loyaltyTier">Base</span>
           </div>
-          <div class="field" style="margin-bottom: 8px;">
-            <label for="vaultAmount">Amount (KES)</label>
-            <input id="vaultAmount" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 100" />
-          </div>
-          <div class="row">
-            <button class="btn btn-secondary btn-sm" type="button" id="vaultLockBtn" data-requires-network>
-              Lock in vault
-            </button>
-            <button class="btn btn-ghost btn-sm" type="button" id="vaultReleaseBtn" data-requires-network>
-              Release
-            </button>
-          </div>
-          <div class="msg" id="vaultMsg" role="status"></div>
-          <p class="tiny muted" id="vaultHint"></p>
-        </div>
 
-        <h3 style="margin-top: 18px; font-size: 0.95rem;">Loyalty activity</h3>
-        <ul class="timeline" id="loyaltyEvents"></ul>
-        <p class="alert alert-error" id="loyaltyError" role="alert" hidden></p>
-      </section>
-
-      <section class="card" id="payments" aria-labelledby="paymentsTitle" data-reveal>
-        <div class="card-head">
-          <div>
-            <h2 id="paymentsTitle">Payments</h2>
-            <p class="hint">Provider references, receipts and the state recorded on the server.</p>
-          </div>
-          <span class="chip chip-neutral">Server record</span>
-        </div>
-
-        <div class="ledger-tabs" role="group" aria-label="Filter activity">
-          <button class="ledger-tab is-active" type="button" data-ledger-filter="all" aria-pressed="true">All</button>
-          <button class="ledger-tab" type="button" data-ledger-filter="disbursement" aria-pressed="false">Disbursements</button>
-          <button class="ledger-tab" type="button" data-ledger-filter="repayment" aria-pressed="false">Repayments</button>
-        </div>
-        <p class="tiny muted" id="ledgerNote" hidden></p>
-
-        <div class="table-wrap">
-          <table class="table table--cards">
-            <caption class="visually-hidden">Your payments</caption>
-            <thead>
-              <tr>
-                <th scope="col">Date</th>
-                <th scope="col">Reference</th>
-                <th scope="col">Amount (KES)</th>
-                <th scope="col">Status</th>
-                <th scope="col"><span class="visually-hidden">Receipt</span></th>
-              </tr>
-            </thead>
-            <tbody id="paymentsBody">
-              <tr><td colspan="5" class="muted">Loading…</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <p class="tiny muted" id="repaymentNote" hidden>
-          Repayments are not implemented in this environment, so this view is intentionally
-          empty. When repayment exists it will appear here; nothing is simulated.
-        </p>
-      </section>
-    </div>
-
-    <aside class="dash-side">
-      <section class="card" aria-labelledby="verifyTitle" data-reveal>
-        <div class="card-head">
-          <div>
-            <h2 id="verifyTitle">Identity verification</h2>
-            <p class="hint">Manual review by staff.</p>
-          </div>
-          <span class="chip" id="verifyChip">Loading…</span>
-        </div>
-
-        <p class="muted tiny" id="verifyHint"></p>
-        <div class="banner banner-error" id="verifyNotes" hidden></div>
-
-        <div id="consentBlock" hidden>
-          <div class="banner banner-warning">
-            The privacy notice has been updated. Review it and record consent again before applying.
-          </div>
-          <a class="link" href="{% url 'privacy' %}" target="_blank" rel="noopener">Read the privacy notice</a>
-          <button class="btn btn-ghost btn-block" type="button" id="consentBtn" data-requires-network>
-            I agree
-          </button>
-        </div>
-
-        <div id="uploadBlock" hidden>
-          <p class="tiny muted">
-            Upload the front and back of your National ID and a selfie. Maximum 5 MB each
-            (JPEG, PNG or WebP). Images are stored privately.
+          <p class="tiny muted" style="margin: 4px 0 0;">
+            Score scale <span id="loyaltyScoreScale">300 – 850</span>. This is not a credit
+            bureau score.
           </p>
-          <form class="upload-form" id="docForm" novalidate>
-            <div class="doc-inputs">
-              <div class="doc-input">
-                <label for="doc_front">ID front</label>
-                <input type="file" id="doc_front" accept="image/jpeg,image/png,image/webp" required />
-                <p class="hint">Photograph the whole document in good light.</p>
-              </div>
-              <div class="doc-input">
-                <label for="doc_back">ID back</label>
-                <input type="file" id="doc_back" accept="image/jpeg,image/png,image/webp" required />
-              </div>
-              <div class="doc-input">
-                <label for="doc_selfie">Selfie</label>
-                <input type="file" id="doc_selfie" accept="image/jpeg,image/png,image/webp" required />
-                <p class="hint">Face the camera without a hat or filter.</p>
-              </div>
-            </div>
-            <div class="progress-container" id="docProgressWrap" hidden>
-              <div class="progress-bar-wrap"><div class="progress-bar-fill" id="docProgressFill"></div></div>
-              <div class="progress-label" id="docProgressLabel">Uploading…</div>
-            </div>
-            <button class="btn btn-primary btn-block" type="submit" id="docSubmit" data-requires-network>
-              Upload documents
-            </button>
-            <div class="msg" id="docMsg" role="status"></div>
-          </form>
-        </div>
 
-        <div id="verifiedBlock" hidden>
-          <div class="banner banner-success">
-            <span>Your identity is verified. You can apply for a loan.</span>
+          <div class="credit-factors">
+            <h3>What moves your score</h3>
+            <ul id="loyaltyFactors"></ul>
           </div>
-        </div>
-      </section>
+          <p class="tiny muted" id="loyaltyPortability">
+            Your score is built from activity recorded on {{ PLATFORM_NAME }} only. It is not shared
+            with other lenders and cannot be transferred to another provider.
+          </p>
 
-      <section class="card" aria-labelledby="accountTitle" data-reveal data-reveal-delay="1">
-        <div class="card-head">
-          <div><h2 id="accountTitle">Account</h2></div>
-        </div>
-        <dl class="definition-list">
-          <dt>Phone</dt><dd id="accountPhone">—</dd>
-          <dt>National ID</dt><dd id="accountId">—</dd>
-          <dt>Member since</dt><dd id="memberSince">—</dd>
-        </dl>
-        <p class="tiny muted" style="margin-top: 16px;">
-          Your session expires after 30 minutes. Sign out on a shared device.
+          <div class="streak-block">
+            <div class="row row-between">
+              <h3>Tier progress</h3>
+              <span class="tiny muted" id="loyaltyTierSince"></span>
+            </div>
+            <div class="streak-dots" id="loyaltyStreak" aria-hidden="true"></div>
+            <p class="tiny" id="loyaltyStreakLabel">Loading…</p>
+            <p class="tiny muted" id="loyaltyBenefit"></p>
+            <dl class="definition-list">
+              <dt>Borrowing limit</dt><dd id="loyaltyLimit">—</dd>
+            </dl>
+          </div>
+
+          <div class="vault-block">
+            <div class="row row-between">
+              <h3>Savings vault</h3>
+              <span class="chip chip-neutral">Cash-back only</span>
+            </div>
+            <div class="vault-balances">
+              <div>
+                <span class="tiny muted">Cash-back</span>
+                <strong id="loyaltyCashback">—</strong>
+              </div>
+              <div>
+                <span class="tiny muted">In the vault</span>
+                <strong id="loyaltyVault">—</strong>
+              </div>
+            </div>
+            <div class="field" style="margin-bottom: 8px;">
+              <label for="vaultAmount">Amount (KES)</label>
+              <input id="vaultAmount" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 100" />
+            </div>
+            <div class="row">
+              <button class="btn btn-secondary btn-sm" type="button" id="vaultLockBtn" data-requires-network>
+                Lock in vault
+              </button>
+              <button class="btn btn-ghost btn-sm" type="button" id="vaultReleaseBtn" data-requires-network>
+                Release
+              </button>
+            </div>
+            <div class="msg" id="vaultMsg" role="status"></div>
+            <p class="tiny muted" id="vaultHint"></p>
+          </div>
+
+          <h3 style="margin-top: 18px; font-size: 0.95rem;">Loyalty activity</h3>
+          <ul class="timeline" id="loyaltyEvents"></ul>
+          <p class="alert alert-error" id="loyaltyError" role="alert" hidden></p>
+        </section>
+      </div>
+    </details>
+
+    <details class="funnel-disclosure" id="noticesPanel">
+      <summary class="funnel-disclosure-summary">
+        <span class="funnel-emoji" aria-hidden="true">🔒</span>
+        Notices &amp; support
+      </summary>
+      <div class="funnel-disclosure-body">
+        <p class="tiny muted">
+          Applications are reviewed manually. Fee collection and live disbursement
+          stay disabled until the required approvals are complete.
         </p>
-        <button class="btn btn-ghost btn-block" type="button" id="accountLogout">Sign out</button>
-      </section>
-
-      <section class="card" aria-labelledby="supportTitle" data-reveal data-reveal-delay="2">
-        <div class="card-head">
-          <div><h2 id="supportTitle">Support</h2></div>
-        </div>
-        {% if PLATFORM_SUPPORT_EMAIL or PLATFORM_SUPPORT_PHONE %}
-          <p class="muted tiny">Have your registered phone number and any request ID ready.</p>
-          {% if PLATFORM_SUPPORT_EMAIL %}
-            <a class="btn btn-ghost btn-block" href="mailto:{{ PLATFORM_SUPPORT_EMAIL }}">{{ PLATFORM_SUPPORT_EMAIL }}</a>
-          {% endif %}
-          {% if PLATFORM_SUPPORT_PHONE %}
-            <a class="btn btn-ghost btn-block" href="tel:{{ PLATFORM_SUPPORT_PHONE }}" style="margin-top: 8px;">{{ PLATFORM_SUPPORT_PHONE }}</a>
-          {% endif %}
-        {% else %}
-          <p class="muted tiny">Support channels are being finalised. Privacy requests can use the route in the
-          <a href="{% url 'privacy' %}#rights">privacy notice</a>.</p>
-        {% endif %}
-        <p class="tiny muted" style="margin-top: 12px;">Never share your password or one-time code with anyone.</p>
-      </section>
-    </aside>
+        <p class="tiny muted">
+          Your session expires after 30 minutes — sign out on a shared device and never
+          share your password or one-time code with anyone.
+        </p>
+        <p class="funnel-disclosure-links">
+          <a class="link-button" href="{% url 'privacy' %}">Privacy notice</a>
+          <a class="link-button" href="{% url 'terms' %}">Terms of use</a>
+          {% if PLATFORM_SUPPORT_EMAIL %}<a class="link-button" href="mailto:{{ PLATFORM_SUPPORT_EMAIL }}">{{ PLATFORM_SUPPORT_EMAIL }}</a>{% endif %}
+          {% if PLATFORM_SUPPORT_PHONE %}<a class="link-button" href="tel:{{ PLATFORM_SUPPORT_PHONE }}">{{ PLATFORM_SUPPORT_PHONE }}</a>{% endif %}
+        </p>
+      </div>
+    </details>
   </div>
 
   <div class="visually-hidden" id="statusAnnouncer" role="status" aria-live="polite"></div>

@@ -344,10 +344,16 @@
 
       if (open && !wasOpen) {
         lastFocus = document.activeElement;
-        const first = sidebar.querySelector("a[href], button:not([disabled])");
+        // An opener can point the drawer at one panel (the mobile footer
+        // "Account" tab opens the drawer on the account details, for example).
+        let target = opts.focus ? document.getElementById(String(opts.focus)) : null;
+        if (target && !sidebar.contains(target)) target = null;
+        const first = target || sidebar.querySelector("a[href], button:not([disabled])");
+        if (target && target.tagName === "DETAILS") target.open = true;
         if (first) {
           window.requestAnimationFrame(function () {
             first.focus({ preventScroll: true });
+            if (target) target.scrollIntoView({ block: "nearest" });
           });
         }
       }
@@ -357,8 +363,8 @@
       if (!open) lastFocus = null;
     }
 
-    MB.openMenu = function () {
-      setOpen(true);
+    MB.openMenu = function (options) {
+      setOpen(true, options);
     };
     MB.closeMenu = function (options) {
       if (!document.body.classList.contains("is-nav-open")) return;
@@ -370,7 +376,7 @@
         if (document.body.classList.contains("is-nav-open")) {
           MB.closeMenu({ restoreFocus: true });
         } else {
-          MB.openMenu();
+          MB.openMenu({ focus: button.getAttribute("data-nav-focus") });
         }
       });
     });

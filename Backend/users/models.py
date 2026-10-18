@@ -20,7 +20,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
 
-from users.phone import mask_phone, normalize_msisdn
+from users.phone import InvalidPhoneNumber, mask_phone, normalize_msisdn
 
 # Supported markets: Kenya (254) and DR Congo (243). Stored without a "+".
 MSISDN_REGEX = r"^(254(7|1)\d{8}|243[89]\d{8})$"
@@ -36,9 +36,47 @@ national_id_validator = RegexValidator(
     message="National ID must be 6-10 digits.",
 )
 
+# Operators sign in to the back office with a display name ("Ken Admin"), so
+# the name may contain spaces. Every other character is restricted to the set
+# Django allows, which keeps the value safe in URLs, logs and headers.
+username_validator = RegexValidator(
+    regex=r"^[\w.@+\- ]+$",
+    message=(
+        "Username may only contain letters, numbers, spaces and . @ + - _ characters."
+    ),
+    flags=0,
+)
+
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
+
+    def normalize_username(self, username: str | None) -> str:
+        """Trim surrounding whitespace; lookups are case-insensitive."""
+        return (username or "").strip()
+
+    def get_by_natural_key(self, username: str):
+        """Resolve a sign-in identifier that may be a username or a phone.
+
+        Borrowers authenticate with their MSISDN (``USERNAME_FIELD``) while
+        staff sign in to the back office with a display name. Both paths end
+        here, so one password check serves the app and Django admin.
+        """
+        identifier = self.normalize_username(username)
+        if not identifier:
+            raise self.model.DoesNotExist("No sign-in identifier supplied.")
+
+        # The name wins over a phone-shaped value so an operator account can
+        # never be shadowed by a borrower whose number matches the name.
+        user = self.filter(username__iexact=identifier).first()
+        if user is not None:
+            return user
+
+        try:
+            phone = normalize_msisdn(identifier)
+        except InvalidPhoneNumber as exc:
+            raise self.model.DoesNotExist("No user matches this identifier.") from exc
+        return self.get(phone=phone)
 
     def create_user(
         self,
@@ -56,6 +94,14 @@ class UserManager(BaseUserManager):
         national_id = str(national_id).strip()
         national_id_validator(national_id)
         phone_validator(phone)
+
+        if "username" in extra_fields:
+            name = self.normalize_username(extra_fields["username"])
+            if name:
+                username_validator(name)
+            # Store "no name" as NULL, never as an empty string, so the
+            # unique constraint cannot be exhausted by one borrower.
+            extra_fields["username"] = name or None
 
         user = self.model(phone=phone, national_id=national_id, **extra_fields)
         user.set_password(password)
@@ -82,6 +128,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         REJECTED = "rejected", "Rejected"
 
     phone = models.CharField(max_length=12, unique=True, validators=[phone_validator])
+    # Back-office sign-in name ("Ken Admin"). Borrowers keep signing in with
+    # their phone number, so the column stays nullable for existing rows and
+    # is only ever set for operators.
+    username = models.CharField(
+        max_length=150,
+        unique=True,
+        null=True,
+        blank=True,
+        validators=[username_validator],
+        help_text="Operator sign-in name. Borrowers sign in with their phone number.",
+    )
     national_id = models.CharField(max_length=10, validators=[national_id_validator])
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -153,6 +210,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         ]
 
     def __str__(self) -> str:
+        return self.display_name
+
+    @property
+    def display_name(self) -> str:
+        """Operator name when set, otherwise the masked phone number."""
+        if self.username:
+            return self.username
         return mask_phone(self.phone)
 
     @property
