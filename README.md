@@ -114,6 +114,7 @@ CI runs the same commands in `.github/workflows/backend-tests.yml`.
 - `docs/ISSUE_REGISTER.csv` — 93 tracked findings
 - `docs/RESOLUTION_MATRIX.md` — finding-by-finding disposition
 - `docs/DEPLOYMENT.md` — migration, Render, storage, backup and rollback guide
+- `docs/RENDER_STAGING_RECOVERY.md` — recreate the staging service and pick one payment posture
 - `docs/PAYMENT_VERIFICATION.md` — Paystack test/live, webhook and reconciliation runbook
 - `docs/CREDIT_PRODUCT_SPEC.md` — Phase 3 product decisions (no invented terms)
 - `docs/REMEDIATION_REPORT.md` — remediation verdict, test report, blockers, readiness

@@ -1,12 +1,20 @@
 # Render blueprint for the Django backend.
 #
 # Safety posture of this blueprint:
-#   * payments disabled, fee collection disabled, legal terms unapproved;
 #   * no secret values committed — Render generates the Django key and every
-#     credential is marked `sync: false`, so it must be entered in the Render
-#     dashboard and is never readable from the repository.
-# Do not flip PAYMENTS_ENABLED / PAYMENTS_LIVE_MODE or LEGAL_TERMS_APPROVED
-# until the compliance, product and legal gates are signed off.
+#     credential (including the Paystack pair) is marked `sync: false`, so it
+#     lives in the Render dashboard and is never readable from the repository;
+#   * the payment posture is a dashboard decision, one of:
+#       A) payments off — no Paystack keys, PAYMENTS_ENABLED=false; or
+#       B) payments on in TEST mode — sk_test_/pk_test_ keys,
+#          PAYMENTS_ENABLED=true, PAYMENTS_LIVE_MODE=false (staging refuses
+#          live mode at startup);
+#     unset is the safe default: payments off, live mode off, fee collection
+#     disabled and unapproved;
+#   * the start command runs `check_config` before `migrate`, so a bad posture
+#     fails the boot with the gate report instead of serving traffic.
+# Do not set PAYMENTS_LIVE_MODE or LEGAL_TERMS_APPROVED until the compliance,
+# product and legal gates are signed off.
 
 # THIS FILE IS GENERATED from deploy/render.common.yaml.j2 +
 # deploy/render.{staging,production}.params. Do not edit directly;
@@ -25,6 +33,7 @@ services:
       pip install -r Backend/requirements.txt
       python Backend/manage.py collectstatic --noinput
     startCommand: |
+      python Backend/manage.py check_config --allow-test-mode
       python Backend/manage.py migrate --noinput
       gunicorn core.wsgi:application \
         --chdir Backend \
@@ -36,6 +45,8 @@ services:
         --error-logfile -
     autoDeploy: false
     envVars:
+      # Pinned to the interpreter CI tests (3.11.x). The deploy that failed ran
+      # 3.13.4 because its environment had been configured by hand.
       - key: PYTHON_VERSION
         value: 3.11.9
 
@@ -111,17 +122,41 @@ services:
       - key: DOCUMENT_RETENTION_DAYS
         value: "90"
 
-      # --- Payments: disabled by default ---------------------------------
-      # Enabling requires PAYSTACK_SECRET_KEY / PAYSTACK_PUBLIC_KEY and an
-      # explicit business decision. Never commit live keys.
+      # --- Payments: posture is a dashboard decision ----------------------
+      # These six keys are `sync: false` ON PURPOSE. If the blueprint pinned
+      # PAYMENTS_ENABLED=false, a later Blueprint sync would reset a dashboard
+      # "true" back to false while the dashboard-only Paystack keys stayed
+      # behind - the exact "keys set while payments are disabled" boot failure.
+      # Unset is safe: settings default to payments off, live mode off, fee
+      # collection disabled and unapproved, and the app refuses ambiguous
+      # combinations at startup.
+      #
+      # Choose exactly ONE posture in Render -> Environment:
+      #
+      #   A) Payments OFF (fastest green deploy)
+      #        remove PAYSTACK_SECRET_KEY and PAYSTACK_PUBLIC_KEY;
+      #        PAYMENTS_ENABLED=false, PAYMENTS_LIVE_MODE=false,
+      #        FEE_COLLECTION_MODE=disabled, FEE_COLLECTION_APPROVED=false.
+      #
+      #   B) Payments ON in TEST mode (full demo, no real money can move)
+      #        PAYMENTS_ENABLED=true, PAYMENTS_LIVE_MODE=false,
+      #        PAYSTACK_SECRET_KEY=sk_test_..., PAYSTACK_PUBLIC_KEY=pk_test_...,
+      #        FEE_COLLECTION_MODE=upfront, FEE_COLLECTION_APPROVED=true.
+      #
+      # Never set PAYMENTS_LIVE_MODE=true on staging: settings refuse to boot.
+      # Never commit a key: both Paystack values are sync: false.
       - key: PAYMENTS_ENABLED
-        value: "false"
+        sync: false
       - key: PAYMENTS_LIVE_MODE
-        value: "false"
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
       - key: FEE_COLLECTION_MODE
-        value: "disabled"
+        sync: false
       - key: FEE_COLLECTION_APPROVED
-        value: "false"
+        sync: false
 
       # --- Legal / display ----------------------------------------------
       - key: LEGAL_TERMS_APPROVED
