@@ -69,6 +69,17 @@ class RenderBlueprintTests(SimpleTestCase):
             python = self.env(filename)["PYTHON_VERSION"]
             self.assertRegex(python.value, r"^3\.11\.\d+$", filename)
 
+    def test_python_version_file_matches_the_blueprints(self):
+        # Render reads a repo-root .python-version for services the blueprint
+        # does not manage (PYTHON_VERSION absent), which is exactly how the
+        # hand-created staging service ended up on 3.13.4. The file must stay
+        # identical to the blueprint pin or the two creation paths diverge.
+        path = ROOT / ".python-version"
+        self.assertTrue(path.exists(), "repo-root .python-version is missing")
+        lines = path.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(lines, [self.env(STAGING)["PYTHON_VERSION"].value])
+        self.assertEqual(lines, [self.env(PRODUCTION)["PYTHON_VERSION"].value])
+
     def test_no_secret_material_is_committed(self):
         secretish = re.compile(
             r"(sk_live_|sk_test_|pk_live_|pk_test_|-----BEGIN|eyJ[A-Za-z0-9_-]{20,})"
