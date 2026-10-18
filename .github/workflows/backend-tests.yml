@@ -47,9 +47,19 @@ jobs:
           pip-compile --version
           cp Backend/requirements.txt /tmp/committed.txt
           pip-compile --generate-hashes Backend/requirements.in
-          diff -u /tmp/committed.txt Backend/requirements.txt
+          set +e
+          diff -u /tmp/committed.txt Backend/requirements.txt > /tmp/lockdiff.txt
+          rc=$?
+          set -e
+          if [ $rc -ne 0 ]; then
+            # Surface the drift in run annotations (reachable from the API,
+            # unlike raw logs behind the results-receiver host).
+            head -120 /tmp/lockdiff.txt | sed -e 's/%/%25/g' -e 's/\r/%0D/g' -e 's/$/%0A/' | tr -d '\n' \
+              | xargs -0 echo "::error title=lockfile-drift::"
+          fi
           git checkout -- Backend/requirements.txt
           grep -c -- "--hash=sha256:" Backend/requirements.txt
+          exit $rc
 
       - name: Vulnerability scan (pip-audit)
         # Gate, not advisor: fails on ANY advisory beyond the deliberate,
@@ -192,5 +202,13 @@ jobs:
       - name: Full test suite (PostgreSQL)
         run: |
           set -o pipefail
-          python manage.py test --settings=core.pg_test_settings --verbosity 1 | tee /tmp/pg-tests.log
+          rc=0
+          python manage.py test --settings=core.pg_test_settings --verbosity 2 | tee /tmp/pg-tests.log || rc=$?
+          if [ $rc -ne 0 ]; then
+            # Surface the failure tail in run annotations (API-readable).
+            grep -E "^(FAIL|ERROR|SUBFAIL|AssertionError|Traceback|django\.|psycopg|[A-Za-z.]+Error)" /tmp/pg-tests.log \
+              | tail -40 | sed -e 's/%/%25/g' -e 's/\r/%0D/g' -e 's/$/%0A/' | tr -d '\n' \
+              | xargs -0 echo "::error title=postgres-suite::"
+            exit $rc
+          fi
           grep -Eq "^Ran [1-9][0-9]* tests? " /tmp/pg-tests.log || { tail -200 /tmp/pg-tests.log; exit 1; }
