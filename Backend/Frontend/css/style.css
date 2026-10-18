@@ -6355,3 +6355,242 @@ textarea:focus-visible {
     padding-inline: 12px;
   }
 }
+
+/* =========================================================================
+   Landing page — marketable, hustler-first marketing surface.
+
+   The funnel hides the operational detail (fee table, full process, licence
+   notes) inside disclosures so the page reads as three promises and three
+   steps. Emoji carry tone only; every claim still has a text label beside it.
+   ========================================================================= */
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 10px;
+  padding: 5px 12px;
+  border: 1px solid var(--gold-line);
+  border-radius: var(--radius-pill);
+  background: var(--gold-soft);
+  color: var(--gold-deep);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Emoji points replace the dot markers: drop the bullet and its indent. */
+.hero-points--emoji li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 0;
+}
+
+.hero-points--emoji li::before {
+  display: none;
+}
+
+/* ---- Social proof band -------------------------------------------------- */
+
+.proof-band {
+  padding: 4px 0 0;
+}
+
+.proof-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 14px clamp(12px, 2vw, 20px);
+  list-style: none;
+  border: 1px solid var(--gold-line-soft);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--gold-bright) 8%, var(--surface)) 0%,
+    var(--surface) 60%
+  );
+}
+
+.proof-stat {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  text-align: center;
+}
+
+.proof-stat strong {
+  font-size: clamp(1.1rem, 4vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.proof-stat span {
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+/* ---- Key feature pitches ------------------------------------------------ */
+
+.pitch-card {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.pitch-emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+  filter: saturate(1.15) contrast(1.05);
+}
+
+.pitch-card h3 {
+  margin: 0;
+  font-size: 1.02rem;
+}
+
+/* ---- Three-step flow ---------------------------------------------------- */
+
+.steps--three {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+}
+
+.step-emoji {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 1.35rem;
+  line-height: 1;
+  filter: saturate(1.15) contrast(1.05);
+}
+
+.mini-steps--plain li {
+  color: var(--ink-2);
+  font-size: 0.82rem;
+}
+
+.mini-steps--plain li::before {
+  border-color: var(--line-strong);
+}
+
+/* ---- Disclosures (fee table, full process) ------------------------------ */
+
+.flow-details,
+.fee-details {
+  margin-top: var(--space-5);
+  padding: 12px clamp(12px, 2vw, 18px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.flow-details-summary,
+.fee-details-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.flow-details-summary::-webkit-details-marker,
+.fee-details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.flow-details-summary::after,
+.fee-details-summary::after {
+  content: "▾";
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform var(--dur-fast) ease;
+}
+
+.flow-details[open] > .flow-details-summary::after,
+.fee-details[open] > .fee-details-summary::after {
+  transform: rotate(180deg);
+}
+
+.flow-details-body,
+.fee-details-body {
+  margin-top: 12px;
+}
+
+/* ---- Testimonials ------------------------------------------------------- */
+
+.testimonials {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+}
+
+.testimonial {
+  margin: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.testimonial blockquote {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.testimonial blockquote::before {
+  content: "“";
+  color: var(--gold);
+  font-size: 1.6rem;
+  line-height: 0;
+  vertical-align: -0.25em;
+  margin-right: 2px;
+}
+
+.testimonial figcaption {
+  display: grid;
+  gap: 1px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.testimonial figcaption strong {
+  font-size: 0.82rem;
+}
+
+.testimonial figcaption span {
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+@media (max-width: 430px) {
+  .proof-stats {
+    gap: 8px;
+    padding: 12px 10px;
+  }
+
+  .proof-stat span {
+    font-size: 0.7rem;
+  }
+
+  .step-emoji {
+    top: 14px;
+    right: 14px;
+    font-size: 1.2rem;
+  }
+
+  .testimonial {
+    padding: 14px;
+  }
+}
