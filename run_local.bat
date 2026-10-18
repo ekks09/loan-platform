@@ -1,15 +1,40 @@
 @echo off
-ECHO "Setting up environment and starting servers..."
+setlocal
+REM Local development launcher for Windows.
+REM Django serves both the API and the HTML pages, so only one server is needed.
 
-REM Activate virtual environment
-CALL env\Scripts\activate.bat
+cd /d "%~dp0"
 
-REM Start Django backend server in a new window
-ECHO "Starting Django backend server in a new window. Go to http://127.0.0.1:8000"
-START "Backend" cmd /k "cd Backend && python manage.py runserver"
+if not exist .venv (
+  echo Creating virtual environment...
+  python -m venv .venv || goto :error
+)
 
-REM Start frontend static file server in a new window
-ECHO "Starting frontend server in a new window. Go to http://127.0.0.1:8001"
-START "Frontend" cmd /k "cd Frontend && python -m http.server 8001"
+call .venv\Scripts\activate.bat || goto :error
 
-ECHO "Both servers have been started in separate windows."
+echo Installing dependencies...
+python -m pip install --quiet --upgrade pip || goto :error
+pip install --quiet -r Backend\requirements.txt || goto :error
+
+if "%DJANGO_SECRET_KEY%"=="" set DJANGO_SECRET_KEY=dev-only-secret-key-that-is-not-used-in-any-deployment-0001
+set DJANGO_DEBUG=1
+set DJANGO_ALLOW_INSECURE_SECRETS=1
+set DJANGO_DEV_SQLITE=1
+set DJANGO_SQLITE_PATH=dev.sqlite3
+set PAYMENTS_ENABLED=false
+set SMS_BACKEND=console
+
+cd Backend
+echo Applying migrations...
+python manage.py migrate --noinput || goto :error
+
+echo.
+echo Starting the platform at http://127.0.0.1:8000
+echo Press Ctrl+C to stop.
+python manage.py runserver 127.0.0.1:8000
+goto :eof
+
+:error
+echo.
+echo Setup failed. Check the messages above.
+exit /b 1

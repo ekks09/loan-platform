@@ -1,0 +1,9 @@
+{% load static %}
+<figure class="art{% if modifier %} {{ modifier }}{% endif %}" aria-hidden="true">
+  <picture>
+    <source srcset="{% static file|add:'.webp' %}" type="image/webp" />
+    <img src="{% static file|add:'.jpg' %}" alt=""
+         width="{{ w|default:1120 }}" height="{{ h|default:747 }}"
+         loading="lazy" decoding="async" />
+  </picture>
+</figure>

@@ -1,132 +1,215 @@
-"""
-Admin views for user verification.
+"""Staff identity-verification queue.
+
+Documents are never linked publicly. Each rendered page creates short-lived
+signed URLs and writes an access-audit row for every document viewed.
 """
 from __future__ import annotations
 
+import json
 import logging
-from django.shortcuts import render
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-from django.contrib.admin.views.decorators import staff_member_required
-from django.views.decorators.csrf import csrf_protect
-from django.utils import timezone
 
-from .models import User
+from django.conf import settings
+from django.contrib.admin.views.decorators import staff_member_required
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_http_methods
+
+from core.notifications import send_sms
+from users.models import DocumentAccessLog, User
+from users.storage import SupabaseStorage
 
 logger = logging.getLogger(__name__)
+
+PAGE_SIZE = 20
+
+
+def _client_ip(request) -> str | None:
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip() or None
+    return request.META.get("REMOTE_ADDR")
+
+
+def _signed_documents(request, user: User) -> dict:
+    """Build signed URLs for the three documents and audit each generated link."""
+    urls = {}
+    for name, path_field in (
+        ("id_front", "id_front_path"),
+        ("id_back", "id_back_path"),
+        ("selfie", "selfie_path"),
+    ):
+        path = getattr(user, path_field, "")
+        url = SupabaseStorage.create_signed_url(path) if path else None
+        if url:
+            DocumentAccessLog.objects.create(
+                staff_user=request.user,
+                subject_user=user,
+                document=name,
+                purpose="verification_review",
+                ip_address=_client_ip(request),
+            )
+        urls[name] = url
+    return urls
+
+
+def _base_queryset(status_filter: str, query: str):
+    qs = User.objects.all()
+    if status_filter in {
+        User.VerificationStatus.PENDING,
+        User.VerificationStatus.VERIFIED,
+        User.VerificationStatus.REJECTED,
+    }:
+        # Accounts without documents are not reviewable; the dashboard shows
+        # them only as the "awaiting documents" counter.
+        qs = qs.filter(verification_status=status_filter).exclude(id_front_path="")
+    if query:
+        qs = qs.filter(Q(phone__icontains=query) | Q(national_id__icontains=query))
+    return qs.order_by("-created_at")
+
+
+def _counts() -> dict:
+    with_docs = User.objects.exclude(id_front_path="")
+    return {
+        "pending": with_docs.filter(
+            verification_status=User.VerificationStatus.PENDING
+        ).count(),
+        "verified": with_docs.filter(
+            verification_status=User.VerificationStatus.VERIFIED
+        ).count(),
+        "rejected": with_docs.filter(
+            verification_status=User.VerificationStatus.REJECTED
+        ).count(),
+        "awaiting_documents": User.objects.filter(id_front_path="").count(),
+    }
 
 
 @staff_member_required
 def verification_dashboard(request):
-    """
-    Admin dashboard for reviewing user verification documents.
-    """
-    # Get filter from query params
-    status_filter = request.GET.get('status', 'pending')
-    
-    # Query users based on filter
-    if status_filter == 'all':
-        users = User.objects.exclude(
-            id_front_url__isnull=True
-        ).exclude(
-            id_front_url=''
-        ).order_by('-created_at')[:50]
-    else:
-        users = User.objects.filter(
-            verification_status=status_filter
-        ).exclude(
-            id_front_url__isnull=True
-        ).exclude(
-            id_front_url=''
-        ).order_by('-created_at')[:50]
+    status_filter = request.GET.get("status", "pending")
+    query = (request.GET.get("q") or "").strip()[:64]
+    queryset = _base_queryset(status_filter, query)
+    paginator = Paginator(queryset, PAGE_SIZE)
+    page = paginator.get_page(request.GET.get("page"))
 
-    # Count by status
-    counts = {
-        'pending': User.objects.filter(verification_status='pending').exclude(id_front_url__isnull=True).exclude(id_front_url='').count(),
-        'verified': User.objects.filter(verification_status='verified').count(),
-        'rejected': User.objects.filter(verification_status='rejected').count(),
-    }
+    rows = [
+        {"user": user, "documents": _signed_documents(request, user)}
+        for user in page.object_list
+    ]
 
-    return render(request, 'admin/verification_dashboard.html', {
-        'users': users,
-        'current_filter': status_filter,
-        'counts': counts,
-    })
+    return render(
+        request,
+        "admin/verification_dashboard.html",
+        {
+            "rows": rows,
+            "current_filter": status_filter,
+            "query": query,
+            "counts": _counts(),
+            "page": page,
+            "page_size": PAGE_SIZE,
+            "signed_url_ttl": settings.DOCUMENT_SIGNED_URL_TTL,
+        },
+    )
 
 
 @staff_member_required
 @csrf_protect
 @require_http_methods(["POST"])
 def verify_user(request, user_id):
-    """
-    Approve or reject a user's verification.
-    """
-    import json
-
     try:
-        data = json.loads(request.body)
-        action = data.get('action')  # 'approve' or 'reject'
-        notes = data.get('notes', '')
-
-        if action not in ['approve', 'reject']:
-            return JsonResponse({'error': 'Invalid action. Must be "approve" or "reject".'}, status=400)
-
-        try:
-            user = User.objects.get(pk=user_id)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found.'}, status=404)
-
-        # Update user verification status
-        if action == 'approve':
-            user.verification_status = User.VerificationStatus.VERIFIED
-            user.verified_at = timezone.now()
-            user.verified_by = request.user
-            user.verification_notes = notes or "Verification approved."
-        else:
-            user.verification_status = User.VerificationStatus.REJECTED
-            user.verification_notes = notes or "Verification rejected. Please upload clearer photos."
-
-        user.save()
-
-        logger.info(f"User {user.phone} verification {action}d by {request.user.phone}")
-
-        return JsonResponse({
-            'success': True,
-            'message': f'User verification {action}d successfully.',
-            'new_status': user.verification_status,
-        })
-
+        data = json.loads(request.body or "{}")
     except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON data.'}, status=400)
-    except Exception as e:
-        logger.exception(f"Verification error: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({"error": "Invalid JSON body."}, status=400)
+
+    action = data.get("action")
+    notes = (data.get("notes") or "").strip()[:2000]
+    if action not in {"approve", "reject"}:
+        return JsonResponse(
+            {"error": "Action must be 'approve' or 'reject'."}, status=400
+        )
+
+    user = User.objects.filter(pk=user_id).first()
+    if user is None:
+        return JsonResponse({"error": "User not found."}, status=404)
+    if not user.has_uploaded_documents:
+        return JsonResponse(
+            {"error": "This user has not uploaded all required documents."}, status=400
+        )
+
+    if action == "approve":
+        user.verification_status = User.VerificationStatus.VERIFIED
+        user.verified_at = timezone.now()
+        user.verified_by = request.user
+        user.verification_notes = notes or "Verification approved."
+        message = (
+            f"Your {settings.PLATFORM_NAME} identity has been verified. "
+            "You can now apply for a loan."
+        )
+    else:
+        user.verification_status = User.VerificationStatus.REJECTED
+        user.verified_at = None
+        user.verified_by = request.user
+        user.verification_notes = notes or (
+            "We could not verify your documents. Please upload clear photos."
+        )
+        message = (
+            f"Your {settings.PLATFORM_NAME} verification was not successful. "
+            "Open the app to see the reason and upload new photos."
+        )
+
+    user.save(
+        update_fields=[
+            "verification_status",
+            "verified_at",
+            "verified_by",
+            "verification_notes",
+        ]
+    )
+    send_sms(user.phone, message, purpose="verification")
+    logger.info(
+        "Verification %s for user id=%s by staff id=%s", action, user.pk, request.user.pk
+    )
+
+    return JsonResponse(
+        {
+            "success": True,
+            "new_status": user.verification_status,
+            "message": f"User verification {action}d.",
+        }
+    )
 
 
 @staff_member_required
 def verification_api(request):
-    """
-    API endpoint to get pending verifications as JSON.
-    """
-    status_filter = request.GET.get('status', 'pending')
-    
-    users = User.objects.filter(
-        verification_status=status_filter
-    ).exclude(
-        id_front_url__isnull=True
-    ).exclude(
-        id_front_url=''
-    ).order_by('-created_at')[:50]
+    status_filter = request.GET.get("status", "pending")
+    queryset = _base_queryset(status_filter, (request.GET.get("q") or "").strip()[:64])
+    paginator = Paginator(queryset, PAGE_SIZE)
+    page = paginator.get_page(request.GET.get("page"))
 
-    data = [{
-        'id': user.id,
-        'phone': user.phone,
-        'national_id': user.national_id,
-        'id_front_url': user.id_front_url,
-        'id_back_url': user.id_back_url,
-        'selfie_url': user.selfie_url,
-        'verification_status': user.verification_status,
-        'created_at': user.created_at.isoformat(),
-    } for user in users]
+    users = []
+    for user in page.object_list:
+        documents = _signed_documents(request, user)
+        users.append(
+            {
+                "id": user.id,
+                "phone": user.phone,
+                # The reviewer compares the document image; the API does not
+                # need to repeat the full identifier outside the admin console.
+                "national_id_masked": user.national_id_masked,
+                "documents": documents,
+                "verification_status": user.verification_status,
+                "created_at": user.created_at.isoformat(),
+            }
+        )
 
-    return JsonResponse({'users': data})
+    return JsonResponse(
+        {
+            "users": users,
+            "page": page.number,
+            "pages": paginator.num_pages,
+            "count": paginator.count,
+        }
+    )

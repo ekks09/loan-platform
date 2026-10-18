@@ -1,53 +1,100 @@
+"""Paystack webhook endpoint.
+
+Paystack signs the raw request body with HMAC-SHA512 using the account's
+**secret key** and sends the hex digest in ``X-Paystack-Signature``. The raw
+bytes are verified before parsing, every delivery is persisted exactly once,
+and processing is idempotent so provider retries are safe.
+
+The endpoint answers 200 only when the event was processed or deliberately
+ignored. Processing errors return 500 so Paystack retries; the stored event can
+also be replayed with ``manage.py replay_webhooks``.
+"""
 from __future__ import annotations
 
-import hmac
 import hashlib
+import hmac
 import json
+import logging
 
 from django.conf import settings
-from django.http import HttpRequest, JsonResponse, HttpResponseBadRequest
+from django.http import HttpRequest, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.db import transaction
+from django.views.decorators.http import require_POST
 
-from loans.models import Loan
-from .views import mark_transfer_event  # function defined in payments/views.py
+from payments.models import WebhookEvent
+from payments.services import process_webhook_event, record_webhook_event
+
+logger = logging.getLogger(__name__)
+
+MAX_BODY_BYTES = 256 * 1024
 
 
-def _valid_signature(request: HttpRequest) -> bool:
+def _signature_is_valid(request: HttpRequest) -> bool:
+    if not settings.PAYSTACK_SECRET_KEY:
+        return False
     signature = request.headers.get("X-Paystack-Signature", "")
-    computed = hmac.new(
-        key=settings.PAYSTACK_WEBHOOK_SECRET.encode("utf-8"),
+    if not signature:
+        return False
+    digest = hmac.new(
+        settings.PAYSTACK_SECRET_KEY.encode("utf-8"),
         msg=request.body,
         digestmod=hashlib.sha512,
     ).hexdigest()
-    return hmac.compare_digest(signature, computed)
+    return hmac.compare_digest(digest, signature.strip())
 
 
 @csrf_exempt
+@require_POST
 def paystack_webhook(request: HttpRequest):
-    if request.method != "POST":
-        return HttpResponseBadRequest("Invalid method")
+    if not settings.PAYMENTS_ENABLED:
+        return JsonResponse(
+            {"status": "payments disabled"}, status=503
+        )
 
-    if not _valid_signature(request):
-        return JsonResponse({"ok": False, "error": "Invalid signature"}, status=400)
+    if len(request.body) > MAX_BODY_BYTES:
+        logger.warning("Rejected oversized webhook body (%s bytes)", len(request.body))
+        return JsonResponse({"status": "payload too large"}, status=413)
+
+    if not _signature_is_valid(request):
+        logger.warning("Rejected webhook with invalid signature")
+        return JsonResponse({"status": "invalid signature"}, status=401)
 
     try:
         payload = json.loads(request.body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        logger.warning("Rejected webhook with invalid JSON")
+        return JsonResponse({"status": "invalid json"}, status=400)
+
+    if not isinstance(payload, dict):
+        return JsonResponse({"status": "invalid payload"}, status=400)
+
+    event_type = str(payload.get("event", ""))[:64]
+    data = payload.get("data") or {}
+    reference = str(data.get("reference", "")) if isinstance(data, dict) else ""
+
+    # Paystack does not send an event id; the body digest is stable across
+    # retries of the same delivery and unique per event.
+    event_id = hashlib.sha256(request.body).hexdigest()
+
+    event, created = record_webhook_event(
+        event_id=event_id,
+        event_type=event_type,
+        payload=payload,
+        reference=reference,
+    )
+    if not created and event.status in {
+        WebhookEvent.Status.PROCESSED,
+        WebhookEvent.Status.IGNORED,
+    }:
+        logger.info("Duplicate webhook delivery %s ignored", event.event_type)
+        return JsonResponse({"status": "duplicate"})
+
+    try:
+        outcome = process_webhook_event(event)
     except Exception:
-        return JsonResponse({"ok": False, "error": "Invalid JSON"}, status=400)
+        logger.exception(
+            "Webhook processing failed for %s reference=%s", event_type, reference
+        )
+        return JsonResponse({"status": "processing failed"}, status=500)
 
-    event = payload.get("event", "")
-    data = payload.get("data", {}) or {}
-
-    # Handle transfer events to keep loan state consistent.
-    # Paystack transfer events commonly include:
-    # - transfer.success
-    # - transfer.failed
-    # - transfer.reversed
-    transfer_ref = data.get("reference") or ""
-    if event.startswith("transfer.") and transfer_ref:
-        with transaction.atomic():
-            mark_transfer_event(event=event, transfer_reference=transfer_ref, raw=data)
-        return JsonResponse({"ok": True})
-
-    return JsonResponse({"ok": True})
+    return JsonResponse({"status": outcome})

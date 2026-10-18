@@ -1,0 +1,31 @@
+{% load static %}
+<header class="topbar" data-header>
+  <button class="nav-open" type="button" data-nav-open aria-controls="appSidebar" aria-expanded="false">
+    <span class="visually-hidden">Open navigation</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false">
+      <path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"></path>
+    </svg>
+  </button>
+
+  <div class="topbar-title">
+    <span>{{ section_label|default:"M-Biashara" }}</span>
+    <strong>{{ title|default:"Overview" }}</strong>
+  </div>
+
+  <div class="topbar-actions">
+    <button class="btn btn-quiet btn-sm install-trigger" type="button" data-install hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false">
+        <path d="M12 4v10m0 0 4-4m-4 4-4-4"></path>
+        <path d="M5 18h14" stroke-linecap="round"></path>
+      </svg>
+      <span class="btn-label">Install</span>
+    </button>
+
+    <button class="theme-toggle" type="button" data-theme-toggle
+            role="switch" aria-checked="false" aria-label="Dark theme" title="Dark theme">
+      {% include "partials/theme_icons.html" %}
+    </button>
+
+    {% block topbar_actions %}{% endblock %}
+  </div>
+</header>

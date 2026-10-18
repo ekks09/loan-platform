@@ -1,0 +1,97 @@
+{% load static %}<!doctype html>
+<html lang="en-KE" class="no-js">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{% block title %}{{ PLATFORM_NAME }} — {{ PLATFORM_TAGLINE }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ PLATFORM_NAME }} helps you prepare a Kenyan shilling application, complete identity verification and follow verified updates from one account.{% endblock %}" />
+  <meta name="theme-color" content="{{ PWA_THEME_COLOR }}" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="api-base" content="{{ API_BASE_URL }}" />
+  <link rel="manifest" href="{% url 'manifest' %}" />
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'icons/favicon-32.png' %}" />
+  <link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="{{ PLATFORM_NAME }}" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta property="og:site_name" content="{{ PLATFORM_NAME }}" />
+  <meta property="og:title" content="{% block og_title %}{{ PLATFORM_NAME }}{% endblock %}" />
+  <meta property="og:description" content="{% block og_description %}Clear steps, private identity review and provider-confirmed updates.{% endblock %}" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="{% static 'icons/icon-512.png' %}" />
+  <meta name="twitter:card" content="summary" />
+  <script src="{% static 'js/theme-init.js' %}"></script>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  {% block head %}{% endblock %}
+</head>
+<body
+  class="{% block body_class %}{% endblock %}"
+  data-platform="{{ PLATFORM_NAME }}"
+  data-consent-version="{{ CONSENT_VERSION }}"
+  data-terms-version="{{ TERMS_VERSION }}"
+  data-fee-mode="{{ FEE_COLLECTION_MODE }}"
+  data-min-amount="{{ min_amount|default:100 }}"
+  data-max-amount="{{ max_amount|default:60000 }}"
+>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="offline-banner" id="offlineBanner" role="status" hidden>
+    You are offline. Pages you already visited may still open, but applications, uploads and payments cannot be submitted.
+  </div>
+
+  <div class="app-shell">
+    {% block sidebar %}{% include "partials/sidebar.html" with active="public" %}{% endblock %}
+
+    <div class="app-main">
+      {% block topbar %}{% include "partials/topbar.html" with title="Overview" %}{% endblock %}
+
+      <main id="main" tabindex="-1">
+        <noscript>
+          <div class="page" style="padding-bottom: 0;">
+            <div class="banner banner-info" role="note">
+              JavaScript is required to submit applications, upload documents and manage your account. Information pages remain readable without it.
+            </div>
+          </div>
+        </noscript>
+        {% block content %}{% endblock %}
+      </main>
+
+      {% block footer %}{% endblock %}
+    </div>
+  </div>
+
+  <div class="drawer-scrim" data-nav-close hidden></div>
+
+  {% block bottom_nav %}{% endblock %}
+
+  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="false"></div>
+
+  <dialog class="dialog" id="installDialog" aria-labelledby="installTitle">
+    <div class="dialog-head">
+      <h2 id="installTitle">Install {{ PLATFORM_NAME }}</h2>
+      <p class="hint">Open your account from the home screen, without a browser address bar.</p>
+    </div>
+    <div class="dialog-body">
+      <div class="icon-pwa-standard pwa-tile" aria-hidden="true">
+        {% include "partials/brand_mark.svg" %}
+      </div>
+      <p id="installBody">Installing keeps the sign-in page and public information one tap away. Financial data is never stored for offline use.</p>
+      <ol class="install-steps" id="iosSteps" hidden>
+        <li>Open this page in Safari.</li>
+        <li>Tap the Share button.</li>
+        <li>Choose “Add to Home Screen”, then tap Add.</li>
+      </ol>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-ghost" type="button" data-dialog-close>Not now</button>
+      <button class="btn btn-primary" type="button" id="installConfirm">Install</button>
+    </div>
+  </dialog>
+
+  {% block dialogs %}{% endblock %}
+
+  <script src="{% static 'js/core.js' %}" defer></script>
+  <script src="{% static 'js/pwa.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

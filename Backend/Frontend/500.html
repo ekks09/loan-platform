@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Something went wrong — {{ PLATFORM_NAME }}{% endblock %}
+{% block description %}The service could not complete your request.{% endblock %}
+
+{% block topbar %}{% include "partials/topbar.html" with title="Something went wrong" section_label="500" %}{% endblock %}
+
+{% block content %}
+<div class="page error-page">
+  <div class="card">
+    <div class="error-code">500</div>
+    <h1>Something went wrong</h1>
+    <p class="muted">The request could not be completed. Nothing was charged. If you were submitting an application or payment, check your dashboard before retrying.</p>
+    <div class="row" style="justify-content: center;">
+      <a class="btn btn-primary" href="/dashboard/">Check your dashboard</a>
+      <a class="btn btn-ghost" href="/">Go to the homepage</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

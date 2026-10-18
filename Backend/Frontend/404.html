@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Page not found — {{ PLATFORM_NAME }}{% endblock %}
+{% block description %}The page you requested was not found.{% endblock %}
+
+{% block topbar %}{% include "partials/topbar.html" with title="Page not found" section_label="404" %}{% endblock %}
+
+{% block content %}
+<div class="page error-page">
+  <div class="card">
+    <div class="error-code">404</div>
+    <h1>That page is not here</h1>
+    <p class="muted">The link may be outdated, or the page may have moved. Your account is unaffected.</p>
+    <div class="row" style="justify-content: center;">
+      <a class="btn btn-primary" href="/">Go to the homepage</a>
+      <a class="btn btn-ghost" href="/dashboard/">Open dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

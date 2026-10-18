@@ -1,128 +1,142 @@
-<!doctype html>
+{% extends "base.html" %}
 {% load static %}
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login - Loan Platform</title>
-  <!-- FAVICON LINK (Pointing to css/logo.png) -->
-  <link rel="icon" type="image/png" href="{% static 'css/logo.png' %}" />
-  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
-</head>
-<body>
-  <header class="topbar">
-    <div class="brand">
-        <!-- HEADER LOGO (Pointing to css/logo.png) -->
-        <img src="{% static 'css/logo.png' %}" alt="Logo" class="brand-logo">
-        <span>Loan Platform</span>
-    </div>
-    <nav class="topnav">
-      <a class="link" href="{% url 'register' %}">Register</a>
-    </nav>
-  </header>
 
-  <main class="container">
-    <section class="card">
-      <h1>Login</h1>
-      <p class="muted">Access your dashboard to apply and track status.</p>
+{% block title %}Sign in — {{ PLATFORM_NAME }}{% endblock %}
+{% block description %}Sign in to your {{ PLATFORM_NAME }} account to check your application, verification status and offer.{% endblock %}
+{% block body_class %}auth-page has-bottom-bar-off{% endblock %}
 
-      <form id="loginForm" class="form">
-        <label>
-          Phone number
-          <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX or 2547XXXXXXXX" required />
-        </label>
+{% block sidebar %}{% include "partials/sidebar.html" with active="auth" active_page="login" %}{% endblock %}
+{% block topbar %}{% include "partials/topbar.html" with title="Sign in" section_label="Your account" %}{% endblock %}
 
-        <label>
-          Password
-          <input id="password" name="password" type="password" autocomplete="current-password" required />
-        </label>
+{% block content %}
+<div class="page page--wide">
+  <div class="auth-layout">
+    <aside class="auth-aside" data-reveal>
+      {% include "partials/brand_lockup.html" %}
+      <span class="eyebrow">Your account</span>
+      <h2>Come back to a clear picture.</h2>
+      <p>Your dashboard shows the real state of your application, not an estimate.</p>
+      <ul>
+        <li>Verification status and reviewer notes</li>
+        <li>Offer terms, fee and expiry</li>
+        <li>Provider-confirmed disbursement status</li>
+        <li>Application and payment history</li>
+      </ul>
+      <p class="tiny" style="margin-top: 18px;">Sessions expire after 30 minutes. Sign in again to continue where you left off.</p>
+      {% include "partials/art.html" with file="img/identity-plate" modifier="art--aside" w=750 h=1000 %}
+    </aside>
 
-        <button class="btn btn-primary btn-block" type="submit" id="loginBtn">Login</button>
-        <div id="msg" class="msg" aria-live="polite"></div>
+    <section class="card auth-card" data-reveal data-reveal-delay="1" aria-labelledby="loginTitle">
+      <h1 id="loginTitle">Welcome back</h1>
+      <p>Use the phone number you registered with.</p>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="loginPhone">Phone number</label>
+          <div class="phone-field">
+            <span class="phone-prefix" aria-hidden="true">KE</span>
+            <input id="loginPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
+                   placeholder="0712 345 678 or +254 712 345 678" required
+                   aria-describedby="loginPhoneHint" />
+          </div>
+          <p class="hint" id="loginPhoneHint">
+            Any Kenyan number (07…, 01…, +254…) or DR Congo number (08…, 09…, +243…).
+          </p>
+          <p class="carrier-badge" id="loginCarrier" aria-live="polite" hidden></p>
+          <p class="carrier-note" id="loginCarrierNote" hidden></p>
+          <p class="field-error" id="err-loginPhone" role="alert" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <div class="input-wrap">
+            <input id="loginPassword" name="password" type="password"
+                   autocomplete="current-password" required minlength="8" />
+            <button class="password-toggle" type="button" data-password-toggle="loginPassword"
+                    aria-label="Show password">Show</button>
+          </div>
+          <p class="field-error" id="err-loginPassword" role="alert" hidden></p>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit" id="loginBtn">
+          Sign in
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="alert alert-error" id="loginMsg" role="alert" hidden></div>
+        <p class="form-foot">
+          <button class="link-button" type="button" id="showReset">Forgot your password?</button>
+        </p>
       </form>
 
-      <p class="tiny muted">No account? <a class="link" href="{% url 'register' %}">Create one</a></p>
+      <form id="resetForm" hidden novalidate>
+        <h2 style="font-size: 1.15rem;">Reset your password</h2>
+        <p class="muted tiny">We will send a one-time code if the number is registered. The response is the same either way.</p>
+
+        <div id="resetStep1">
+          <div class="field">
+            <label for="resetPhone">Phone number</label>
+            <div class="phone-field">
+              <span class="phone-prefix" aria-hidden="true">+</span>
+              <input id="resetPhone" type="tel" inputmode="tel" autocomplete="tel"
+                     placeholder="0712 345 678" required
+                     aria-describedby="resetPhoneHint" />
+            </div>
+            <p class="hint" id="resetPhoneHint">
+              Kenya: 07…, 01… or +254…. DR Congo: 08…, 09… or +243….
+            </p>
+            <p class="carrier-badge" id="resetCarrier" aria-live="polite" hidden></p>
+            <p class="carrier-note" id="resetCarrierNote" hidden></p>
+          </div>
+          <button class="btn btn-secondary btn-block" type="button" id="requestResetBtn">Send code</button>
+        </div>
+
+        <div id="resetStep2" hidden>
+          <div class="field">
+            <label for="resetCode">6-digit SMS code</label>
+            <input id="resetCode" class="otp-input" inputmode="numeric" pattern="[0-9]*"
+                   autocomplete="one-time-code" maxlength="6" placeholder="••••••"
+                   aria-describedby="resetCodeHint" required />
+            <p class="hint" id="resetCodeHint">The code expires 10 minutes after it was sent.</p>
+          </div>
+          <button class="link-button" type="button" id="resendResetBtn" disabled>
+            Resend code
+          </button>
+          <p class="hint" id="resendHint" role="status" aria-live="polite"></p>
+          <div class="field">
+            <label for="resetPassword">New password</label>
+            <div class="input-wrap">
+              <input id="resetPassword" type="password" autocomplete="new-password" minlength="8" required />
+              <button class="password-toggle" type="button" data-password-toggle="resetPassword"
+                      aria-label="Show password">Show</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="resetConfirm">Confirm new password</label>
+            <input id="resetConfirm" type="password" autocomplete="new-password" minlength="8" required />
+          </div>
+          <button class="btn btn-primary btn-block" type="button" id="resetSubmitBtn">Set new password</button>
+        </div>
+
+        <div class="alert alert-info" id="resetMsg" role="status" hidden></div>
+        {% if SMS_BACKEND == 'none' %}
+          <div class="banner banner-warning" role="note" style="margin-top: 14px;">
+            SMS delivery is not configured on this deployment. Password reset codes cannot be
+            sent here; contact support if you cannot access your account.
+          </div>
+        {% endif %}
+        <p class="form-foot"><button class="link-button" type="button" id="backToLogin">Back to sign in</button></p>
+      </form>
+
+      <p class="auth-switch">New to {{ PLATFORM_NAME }}? <a href="{% url 'register' %}">Create an account</a></p>
     </section>
-  </main>
+  </div>
+</div>
+{% endblock %}
 
-  <script src="{% static 'js/auth.js' %}"></script>
-  <script src="{% static 'js/loan.js' %}"></script>
-  <script src="{% static 'js/paystack.js' %}"></script>
-  <script>
-    (function() {
-      window.Auth.init();
-      
-      const form = document.getElementById("loginForm");
-      const msg = document.getElementById("msg");
-      const loginBtn = document.getElementById("loginBtn");
-      const phoneInput = document.getElementById("phone");
-      const passwordInput = document.getElementById("password");
+{% block footer %}{% include "partials/footer.html" %}{% endblock %}
 
-      function showMessage(text, type) {
-        msg.textContent = text || "";
-        msg.className = "msg";
-        if (type === "error") msg.classList.add("msg-error");
-        if (type === "success") msg.classList.add("msg-success");
-        if (type === "info") msg.classList.add("msg-info");
-      }
-
-      function setLoading(loading) {
-        loginBtn.disabled = loading;
-        loginBtn.textContent = loading ? "Logging in..." : "Login";
-      }
-
-      form.addEventListener("submit", async function(e) {
-        e.preventDefault();
-        showMessage("", "");
-
-        const phone = phoneInput.value.trim();
-        const password = passwordInput.value;
-
-        if (!phone) {
-          showMessage("Please enter your phone number.", "error");
-          phoneInput.focus();
-          return;
-        }
-
-        if (!password) {
-          showMessage("Please enter your password.", "error");
-          passwordInput.focus();
-          return;
-        }
-
-        setLoading(true);
-
-        try {
-          await window.Auth.login({ phone, password });
-          showMessage("Login successful! Redirecting...", "success");
-          
-          setTimeout(function() {
-            window.location.href = "{% url 'dashboard' %}";
-          }, 500);
-          
-        } catch (err) {
-          const errorMessage = err.message || "Login failed. Please try again.";
-          showMessage(errorMessage, "error");
-          setLoading(false);
-          
-          if (errorMessage.toLowerCase().includes("phone") || 
-              errorMessage.toLowerCase().includes("account not found")) {
-            phoneInput.focus();
-          } else if (errorMessage.toLowerCase().includes("password")) {
-            passwordInput.focus();
-            passwordInput.select();
-          }
-        }
-      });
-
-      phoneInput.addEventListener("input", function() {
-        if (msg.classList.contains("msg-error")) { showMessage("", ""); }
-      });
-
-      passwordInput.addEventListener("input", function() {
-        if (msg.classList.contains("msg-error")) { showMessage("", ""); }
-      });
-    })();
-  </script>
-</body>
-</html>
+{% block scripts %}
+<script src="{% static 'js/phone.js' %}" defer></script>
+<script src="{% static 'js/auth.js' %}" defer></script>
+<script src="{% static 'js/page-auth.js' %}" defer></script>
+{% endblock %}

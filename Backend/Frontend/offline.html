@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Offline — {{ PLATFORM_NAME }}{% endblock %}
+{% block description %}You are offline. Financial actions cannot be submitted until the connection returns.{% endblock %}
+
+{% block topbar %}{% include "partials/topbar.html" with title="Offline" section_label="Connection" %}{% endblock %}
+
+{% block content %}
+<div class="page offline-page">
+  <div class="card">
+    {% include "partials/art.html" with file="img/texture-band" modifier="art--band" w=1200 h=514 %}
+    <h1>You are offline</h1>
+    <p class="muted">This page is available from the app's offline cache. Your account, applications and payments are not stored for offline use, so they cannot be shown or changed until you reconnect.</p>
+    <p class="tiny muted">Nothing you attempted while offline has been queued or submitted. Return online, then retry the action from your dashboard.</p>
+    <div class="row" style="justify-content: center; margin-top: 20px;">
+      <button class="btn btn-primary" type="button" data-reload>Try again</button>
+      <a class="btn btn-ghost" href="/">Go to the homepage</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
