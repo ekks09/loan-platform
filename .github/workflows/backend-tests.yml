@@ -1,0 +1,51 @@
+name: backend
+
+on:
+  push:
+    branches: ["main", "arena/**"]
+  pull_request:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: Backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: Backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Django system checks
+        run: python manage.py check --settings=core.test_settings
+
+      - name: Migration drift check
+        run: >-
+          python manage.py makemigrations --check --dry-run --noinput
+          --settings=core.test_settings
+
+      - name: Test suite
+        # Django exits 0 even when zero tests are discovered, so assert that
+        # the runner actually executed something. Running from Backend/ is
+        # required for discovery.
+        run: |
+          set -o pipefail
+          python manage.py test --settings=core.test_settings --verbosity 1 | tee /tmp/tests.log
+          grep -Eq "^Ran [1-9][0-9]* tests?" /tmp/tests.log
+
+      - name: Deployment configuration validation
+        run: >-
+          python manage.py check_config --allow-test-mode
+          --settings=core.ci_settings

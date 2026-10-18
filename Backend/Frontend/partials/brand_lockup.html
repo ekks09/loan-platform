@@ -1,0 +1,11 @@
+{% comment %}
+  Stacked brand lockup: mark, wordmark, tagline.
+
+  Used where there is room for the full signature (auth pages, footer).
+  For the sidebar, use the compact horizontal version in sidebar.html.
+{% endcomment %}
+<div class="brand-lockup">
+  <span class="brand-lockup-mark">{% include "partials/brand_mark.svg" %}</span>
+  <span class="brand-lockup-word">{{ PLATFORM_NAME }}</span>
+  <span class="brand-lockup-tagline">{{ PLATFORM_TAGLINE }}</span>
+</div>

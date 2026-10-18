@@ -1,0 +1,224 @@
+{% load static %}
+<aside class="app-sidebar" id="appSidebar" aria-label="Application navigation">
+  <a class="brand side-brand" href="{% url 'index' %}">
+    <span class="brand-mark">{% include "partials/brand_mark.svg" %}</span>
+    <span>
+      <span class="brand-word">{{ PLATFORM_NAME }}</span>
+      <span class="brand-sub">Kenya · KES</span>
+    </span>
+  </a>
+
+  {% if active == "dashboard" %}
+    <nav class="side-nav" aria-label="Account">
+      <span class="side-label">Account</span>
+      <a class="side-link is-active" href="{% url 'dashboard' %}" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Overview
+      </a>
+      <a class="side-link" href="{% url 'dashboard' %}#loanCard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="16" r="3"/></svg>
+        Application
+      </a>
+      <a class="side-link" href="{% url 'dashboard' %}#history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+        Activity
+      </a>
+      <a class="side-link" href="{% url 'dashboard' %}#payments">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M3 10h18"/></svg>
+        Payments
+      </a>
+      <a class="side-link" href="{% url 'dashboard' %}#verifyTitle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3.5 19 6v6c0 4.2-2.9 7.4-7 8.5-4.1-1.1-7-4.3-7-8.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>
+        Identity
+      </a>
+
+      <span class="side-label">Quick actions</span>
+      <a class="side-link" href="{% url 'dashboard' %}#loanCard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        New application
+      </a>
+      <a class="side-link" href="{% url 'dashboard' %}#verifyTitle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>
+        Upload documents
+      </a>
+    </nav>
+
+    <div class="side-card">
+      <h2>Money states are server-authoritative</h2>
+      <p>A browser callback never marks a payment successful. Confirmation comes from the provider, then the dashboard updates.</p>
+      <a class="btn btn-secondary btn-sm btn-block" href="{% url 'dashboard' %}#payments">
+        View payment history
+      </a>
+    </div>
+
+  {% elif active == "staff" %}
+    <nav class="side-nav" aria-label="Verification queue">
+      <span class="side-label">Queue</span>
+      <a class="side-link {% if current_filter == 'pending' %}is-active{% endif %}"
+         href="{% url 'verification-dashboard' %}?status=pending"
+         {% if current_filter == 'pending' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4.5l3 1.8"/></svg>
+        Pending <span class="side-count">{{ counts.pending }}</span>
+      </a>
+      <a class="side-link {% if current_filter == 'verified' %}is-active{% endif %}"
+         href="{% url 'verification-dashboard' %}?status=verified"
+         {% if current_filter == 'verified' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3.5 19 6v6c0 4.2-2.9 7.4-7 8.5-4.1-1.1-7-4.3-7-8.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>
+        Verified <span class="side-count">{{ counts.verified }}</span>
+      </a>
+      <a class="side-link {% if current_filter == 'rejected' %}is-active{% endif %}"
+         href="{% url 'verification-dashboard' %}?status=rejected"
+         {% if current_filter == 'rejected' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/></svg>
+        Rejected <span class="side-count">{{ counts.rejected }}</span>
+      </a>
+      <a class="side-link {% if current_filter == 'all' %}is-active{% endif %}"
+         href="{% url 'verification-dashboard' %}?status=all"
+         {% if current_filter == 'all' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        All records
+      </a>
+
+      <span class="side-label">Operations</span>
+      <a class="side-link" href="{% url 'verification-dashboard' %}?status=pending#reviewList">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>
+        Review queue
+      </a>
+      <a class="side-link" href="{% url 'admin:index' %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M14 4h6v6M20 4l-8 8"/><path d="M10 4H4v16h16v-6"/></svg>
+        Django admin
+      </a>
+    </nav>
+
+    <div class="side-card">
+      <h2>{{ counts.awaiting_documents }} awaiting documents</h2>
+      <p>Registered accounts that have not uploaded all three images. Signed links expire after {{ signed_url_ttl }} seconds.</p>
+    </div>
+
+  {% elif active == "auth" %}
+    <nav class="side-nav" aria-label="Account access">
+      <span class="side-label">Account</span>
+      <a class="side-link" href="{% url 'index' %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V20H4z"/><path d="M9.5 20v-5h5v5"/></svg>
+        Home
+      </a>
+      <a class="side-link {% if active_page == 'login' %}is-active{% endif %}" href="{% url 'login_view' %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h9"/></svg>
+        Sign in
+      </a>
+      <a class="side-link {% if active_page == 'register' %}is-active{% endif %}" href="{% url 'register' %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10" cy="8.5" r="3.5"/><path d="M3.5 20a6.5 6.5 0 0 1 13 0"/><path d="M18 8v6M15 11h6"/></svg>
+        Create account
+      </a>
+
+      <span class="side-label">The process</span>
+      <span class="side-link" style="cursor: default;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+        1 · Account and consent
+      </span>
+      <a class="side-link" href="{% url 'index' %}#how-it-works">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12h8"/></svg>
+        2 · Identity review
+      </a>
+      <a class="side-link" href="{% url 'index' %}#fees">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h8"/></svg>
+        3 · Offer and fee
+      </a>
+
+      <span class="side-label">Trust</span>
+      <a class="side-link" href="{% url 'privacy' %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="4.5" y="10" width="15" height="10" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>
+        Privacy notice
+      </a>
+      <a class="side-link" href="{% url 'terms' %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M9 12h6M9 16h6"/></svg>
+        Terms of use
+      </a>
+    </nav>
+
+    <div class="side-card">
+      <h2>Your data stays private</h2>
+      <p>Identity images are stored privately and reviewer links expire after five minutes. Every generated link is recorded.</p>
+    </div>
+
+  {% else %}
+    <nav class="side-nav" aria-label="Sections">
+      <span class="side-label">Sections</span>
+      <a class="side-link" data-spy="overview" href="{% url 'index' %}#overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V20H4z"/><path d="M9.5 20v-5h5v5"/></svg>
+        Overview
+      </a>
+      <a class="side-link" data-spy="how-it-works" href="{% url 'index' %}#how-it-works">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 6h14M5 12h9M5 18h6"/><circle cx="18.5" cy="17.5" r="2.5"/></svg>
+        How it works
+      </a>
+      <a class="side-link" data-spy="fees" href="{% url 'index' %}#fees">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h8"/></svg>
+        Fees
+      </a>
+      <a class="side-link" data-spy="security" href="{% url 'index' %}#security">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3.5 19 6v6c0 4.2-2.9 7.4-7 8.5-4.1-1.1-7-4.3-7-8.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>
+        Security
+      </a>
+      <a class="side-link" data-spy="faq" href="{% url 'index' %}#faq">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .9-1 1.7"/><circle cx="12" cy="16.8" r=".9" fill="currentColor" stroke="none"/></svg>
+        FAQ
+      </a>
+      <a class="side-link" data-spy="contact" href="{% url 'index' %}#contact">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 5h16v12H9l-5 4z"/></svg>
+        Contact
+      </a>
+    </nav>
+
+    <div class="side-card">
+      <h2>Start with the information</h2>
+      <p>Full fee schedule, manual identity review and provider-confirmed statuses. No payment is collected at registration.</p>
+      <a class="btn btn-primary btn-sm btn-block" href="{% url 'register' %}">Create an account</a>
+      <p style="margin: 10px 0 0;"><a href="{% url 'login_view' %}" style="color: var(--gold-bright); font-size: 0.78rem;">Already registered? Sign in</a></p>
+    </div>
+  {% endif %}
+
+  <div class="side-appearance" role="group" aria-label="Appearance">
+    <span class="side-label" style="padding-top: 0;">Appearance</span>
+    <div class="appearance-row">
+      <button class="appearance-toggle" type="button" data-theme-toggle
+              role="switch" aria-checked="false" aria-label="Dark theme">
+        {% include "partials/theme_icons.html" %}
+        <span class="appearance-label">Dark theme</span>
+      </button>
+      <button class="appearance-auto" type="button" data-theme-set="system"
+              aria-pressed="true" title="Follow the device setting">Auto</button>
+    </div>
+  </div>
+
+  <div class="side-foot">
+    {% if active == "dashboard" %}
+      <span class="avatar" aria-hidden="true" id="sidebarAvatar">—</span>
+      <span class="side-user">
+        <strong id="sidebarPhone">Signed in</strong>
+        <span>{{ PLATFORM_NAME }} account</span>
+      </span>
+      <button class="btn btn-quiet btn-sm" type="button" id="sidebarLogout" aria-label="Sign out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" focusable="false">
+          <path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h9"/>
+        </svg>
+      </button>
+    {% elif active == "staff" %}
+      <span class="side-user">
+        <strong>Staff review</strong>
+        <span>{{ request.user.phone }}</span>
+      </span>
+      <form method="post" action="{% url 'admin:logout' %}" class="inline-form" style="margin: 0;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-quiet btn-sm" aria-label="Log out">Log out</button>
+      </form>
+    {% else %}
+      <a class="btn btn-ghost btn-sm" href="{% if active == 'auth' %}{% url 'index' %}{% else %}{% url 'login_view' %}{% endif %}">
+        {% if active == "auth" %}Back to site{% else %}Sign in{% endif %}
+      </a>
+      <span class="side-user" style="text-align: right; margin-left: auto;">
+        <span>{{ CURRENT_YEAR }} · {{ PLATFORM_NAME }}</span>
+      </span>
+    {% endif %}
+  </div>
+</aside>

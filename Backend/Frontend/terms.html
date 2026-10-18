@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Terms — {{ PLATFORM_NAME }}{% endblock %}
+{% block description %}Draft terms for using {{ PLATFORM_NAME }}. No live credit is issued while operating approvals are outstanding.{% endblock %}
+
+{% block topbar %}{% include "partials/topbar.html" with title="Terms of use" section_label="Legal" %}{% endblock %}
+
+{% block content %}
+<div class="page" style="max-width: 860px;">
+  <span class="eyebrow">Terms</span>
+  <h1 style="margin-top: 10px;">Terms of use</h1>
+  <p class="lead">These draft terms describe the service. They are not approved lending terms and do not create a credit agreement.</p>
+
+  <div class="banner banner-warning" role="note" style="margin: var(--space-4) 0;">
+    <span><strong>Draft — version {{ TERMS_VERSION }}.</strong> No live loans are issued and no
+    fees are collected while approvals are outstanding. A separate, approved credit agreement
+    is required before any real money moves.</span>
+  </div>
+
+  <article class="card">
+    <h2>1. The service</h2>
+    <p>{{ PLATFORM_NAME }} lets you create an account, submit identity documents for manual review, apply for an amount between KES {{ min_amount|default:"100" }} and KES {{ max_amount|default:"60,000" }}, and follow an application's status. Live disbursement and fee collection are disabled unless the operator has recorded the required approvals.</p>
+    <p>Nothing on this site is an offer of credit. An application is a request for review, not an approval. An approved offer may be accepted or declined, and it expires if it is not accepted in time.</p>
+
+    <h2>2. Your account</h2>
+    <ul>
+      <li>Provide accurate information and use a phone number and National ID that belong to you.</li>
+      <li>Keep your password and one-time codes private. We will never ask you for your password.</li>
+      <li>Do not create accounts for other people or upload documents without their permission.</li>
+      <li>Tell us promptly if you believe your account has been compromised.</li>
+    </ul>
+
+    <h2>3. Identity review</h2>
+    <p>Identity review is manual. We may reject documents that are unclear, expired, altered or inconsistent with the account details. Uploading documents does not guarantee approval, and a rejection is not a determination that you are ineligible for any other service.</p>
+
+    <h2>4. Fees</h2>
+    <p>The processing fee is calculated from the published schedule (version {{ fee_schedule_version|default:"2026-10-draft" }}) and disclosed in the quote and the offer. It is not interest and it is not a repayment schedule. No fee is charged at registration. In this environment, fee collection is disabled.</p>
+    <p>If fee collection is enabled after approval, you would pay only after accepting the written offer. A payment is not complete until the provider confirms it.</p>
+
+    <h2>5. Disbursement and repayment</h2>
+    <p>Disbursement begins only after approval and, where applicable, confirmed payment. A transfer request accepted by a provider is not proof that money reached you; the status changes to disbursed only after provider confirmation.</p>
+    <p>Repayment terms, interest, due dates and collections are not implemented. No live credit is issued, and no repayment obligation arises from using this environment. A future credit product requires a separate approved agreement.</p>
+
+    <h2>6. Acceptable use</h2>
+    <p>Do not attempt to access another person's account, probe the service for vulnerabilities without written permission, submit fraudulent documents, automate requests in a way that degrades the service, or use the service for money laundering or other unlawful activity.</p>
+
+    <h2>7. Availability and changes</h2>
+    <p>The service may be unavailable during maintenance or when a dependency fails. We may change features, suspend access or correct errors. Material changes to these terms produce a new version and may require renewed consent before you apply.</p>
+
+    <h2>8. Liability</h2>
+    <p>To the extent permitted by law, the service is provided without warranties that are not expressly stated. Nothing in these terms limits rights that cannot be limited under Kenyan law. A full liability position must be reviewed by legal counsel before live operations.</p>
+
+    <h2>9. Governing law</h2>
+    <p>These draft terms are intended to be governed by the laws of Kenya. The courts and applicable regulators have authority over disputes once the operating entity and approved terms are published.</p>
+
+    <h2>10. Contact</h2>
+    {% if PLATFORM_SUPPORT_EMAIL %}
+      <p>Email <a href="mailto:{{ PLATFORM_SUPPORT_EMAIL }}">{{ PLATFORM_SUPPORT_EMAIL }}</a>{% if PLATFORM_SUPPORT_PHONE %}, or call <a href="tel:{{ PLATFORM_SUPPORT_PHONE }}">{{ PLATFORM_SUPPORT_PHONE }}</a>{% endif %}.</p>
+    {% else %}
+      <p>A support and complaints channel must be published before live operations. Until then, the service cannot accept live applications.</p>
+    {% endif %}
+    <p class="tiny muted">Licence status: {{ PLATFORM_LICENCE_STATUS }}. No CBK authorisation or other certification is claimed.</p>
+  </article>
+</div>
+{% endblock %}
+
+{% block footer %}{% include "partials/footer.html" %}{% endblock %}

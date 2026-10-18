@@ -1,0 +1,22 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true" focusable="false">
+  <!--
+    M-Biashara mark: two interlocking upward chevrons.
+    The rear chevron is drawn first, the front chevron overlaps it, and the
+    notch in the front stroke lets the rear one show through — the visual
+    reading is two parties climbing together, locked into one another.
+  -->
+  <rect width="64" height="64" rx="16" fill="#071320"/>
+
+  <!-- rear chevron -->
+  <path d="M18 30 L32 16 L46 30"
+        fill="none" stroke="#8C6E1F" stroke-width="7"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- front chevron, interlocking over the rear one -->
+  <path d="M18 41 L32 27 L46 41"
+        fill="none" stroke="#D4AF37" stroke-width="7"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- M-Pesa green baseline: the rails that carry the money -->
+  <rect x="17" y="46.4" width="30" height="2.4" rx="1.2" fill="#10B981"/>
+</svg>

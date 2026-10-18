@@ -1,67 +1,331 @@
-<!doctype html>
-{% load static %}
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PesaFix</title>
-  <!-- FAVICON LINK (Pointing to css/logo.png) -->
-  <link rel="icon" type="image/png" href="{% static 'css/logo.png' %}" />
-  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
-</head>
-<body>
-  <header class="topbar">
-    <div class="brand">
-        <!-- HEADER LOGO (Pointing to css/logo.png) -->
-        <img src="{% static 'css/logo.png' %}" alt="Logo" class="brand-logo">
-        <span>PesaFix</span>
-    </div>
-    <nav class="topnav">
-      <a class="link" href="{% url 'login_view' %}">Login</a>
-      <a class="btn btn-primary" href="{% url 'register' %}">Apply Now</a>
-    </nav>
-  </header>
+{% extends "base.html" %}
+{% load static humanize %}
 
-  <main class="container">
-    <section class="hero">
-      <h1>Mpesa service-fee based loan processing for Kenya</h1>
-      <p class="muted">
-        Apply in minutes using your phone number and National ID. Pay the required service fee to begin processing,
-        then track your loan status on your dashboard. 
-      </p>
+{% block title %}{{ PLATFORM_NAME }} — clarity at every step{% endblock %}
+{% block description %}Prepare a Kenyan shilling application, complete private identity verification and follow provider-confirmed updates. Full fee schedule published before you register.{% endblock %}
+{% block body_class %}marketing-page{% endblock %}
 
-      <div class="card">
-        <h2>How it works</h2>
-        <ol class="steps">
-          <li>Create an account with your phone number, National ID, and password.</li>
-          <li>Request a loan amount and confirm your M-Pesa number.</li>
-          <li>Pay the service fee via Paystack (card / mobile money options supported by Paystack).</li>
-          <li>We verify payment server-side and, if approved, disburse via Paystack then Transfered to your M-Pesa.</li>
-        </ol>
-        
-        <div class="terms-notice">
-          <p class="tiny emphasized">
-            <strong>Important:</strong> By proceeding, you agree to provide accurate information. 
-            Keep your credentials secure. PesaFix will never ask for your password via phone call or SMS.
-          </p>
+{% block topbar %}{% include "partials/topbar.html" with title="Overview" section_label="M-Biashara" %}{% endblock %}
+
+{% block content %}
+<section class="hero" id="overview">
+  <div class="page page--wide" style="padding-top: 0;">
+    <div class="hero-grid">
+      <div class="hero-copy" data-reveal>
+        <span class="eyebrow">Kenyan shilling applications</span>
+        <h1>Clarity at every step of your <em>financial journey</em>.</h1>
+        <p class="lead">
+          Understand the process, prepare your identity documents and follow verified
+          updates from your {{ PLATFORM_NAME }} account. No payment is taken at registration.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="{% url 'register' %}">
+            Start an application
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#fees">See the fee schedule</a>
         </div>
-        
-        <a class="btn btn-primary btn-block" href="{% url 'register' %}">Get Started</a>
+        <ul class="hero-points">
+          <li>Published, versioned fee schedule</li>
+          <li>Manual identity review</li>
+          <li>Provider-confirmed money states</li>
+        </ul>
       </div>
-    </section>
-  </main>
 
-  <footer class="footer">
-    <div class="container">
-      <div class="muted tiny">© <span id="y"></span> PesaFix.KE. All rights reserved.</div>
-      <div class="muted tiny" style="margin-top: 5px;">
-        Licensed and regulated in accordance with Kenyan financial regulations.
+      <div class="hero-visual" data-reveal data-reveal-delay="1">
+        <img src="{% static 'img/hero-skyline.jpg' %}" alt="" width="1440" height="900"
+             fetchpriority="high" decoding="async" />
+        <div class="hero-overlay">
+          <div class="row row-between">
+            <h2>Application progress</h2>
+            <span class="chip chip-gold">Under review</span>
+          </div>
+          <ol class="mini-steps">
+            <li class="is-done">Account and consent recorded</li>
+            <li class="is-current">Identity documents with the review team</li>
+            <li>Offer prepared after approval</li>
+            <li>Disbursement only after provider confirmation</li>
+          </ol>
+        </div>
       </div>
     </div>
-  </footer>
 
-  <script>
-    document.getElementById("y").textContent = String(new Date().getFullYear());
-  </script>
-</body>
-</html>
+    <div class="hero-badge" data-reveal>
+      <strong>Published fee schedule</strong>
+      <span>· No live fee is collected in this environment. No credit is issued until the required approvals are recorded.</span>
+    </div>
+  </div>
+</section>
+
+<section class="page page--wide" style="padding-top: 0;">
+  <div class="grid grid-3" data-reveal>
+    <div class="card card--flat">
+      <span class="eyebrow">Transparent</span>
+      <h3 style="margin-top: 8px;">Every band, published</h3>
+      <p class="muted" style="font-size: 0.86rem; margin: 0;">Amount ranges, rate and a worked example for each band. The minimum charge is stated, not hidden in a footnote.</p>
+    </div>
+    <div class="card card--flat">
+      <span class="eyebrow">Private</span>
+      <h3 style="margin-top: 8px;">Documents stay guarded</h3>
+      <p class="muted" style="font-size: 0.86rem; margin: 0;">Identity images live in private storage. Reviewer links expire after five minutes and every access is logged.</p>
+    </div>
+    <div class="card card--flat">
+      <span class="eyebrow">Server-authoritative</span>
+      <h3 style="margin-top: 8px;">No optimistic money states</h3>
+      <p class="muted" style="font-size: 0.86rem; margin: 0;">A browser callback never marks a payment successful. Only a signed provider confirmation moves the state.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how-it-works">
+  <span id="how" class="anchor-alias" aria-hidden="true"></span>
+  <div class="page page--wide">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">How it works</span>
+      <h2>Four steps. Each one visible before the next begins.</h2>
+      <p>An application is not an approval. An accepted offer is not a disbursement. Your dashboard keeps those states separate.</p>
+    </div>
+
+    {% include "partials/art.html" with file="img/how-flow" modifier="art--band" w=1400 h=659 %}
+
+    <div class="steps" style="margin-top: var(--space-5);">
+      <article class="step" data-reveal>
+        <span class="step-number">01</span>
+        <h3>Create your account</h3>
+        <p>Register with a Kenyan mobile number and National ID. Review the privacy notice and record your consent.</p>
+        <span class="step-note">No payment at this stage.</span>
+      </article>
+      <article class="step" data-reveal data-reveal-delay="1">
+        <span class="step-number">02</span>
+        <h3>Verify your identity</h3>
+        <p>Upload the front and back of your ID plus a selfie. A staff reviewer checks the images manually.</p>
+        <span class="step-note">Uploading documents does not guarantee approval.</span>
+      </article>
+      <article class="step" data-reveal data-reveal-delay="2">
+        <span class="step-number">03</span>
+        <h3>Apply and review an offer</h3>
+        <p>Choose an amount between KES {{ min_amount|intcomma }} and KES {{ max_amount|intcomma }}. If approved, you receive written terms to accept or decline.</p>
+        <span class="step-note">The fee is disclosed before you accept.</span>
+      </article>
+      <article class="step" data-reveal data-reveal-delay="3">
+        <span class="step-number">04</span>
+        <h3>Disbursement status</h3>
+        <p>Money moves only after the payment provider confirms the transfer. A request being accepted is not a completed payment.</p>
+        <span class="step-note">Provider confirmation is the source of truth.</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="fees">
+  <div class="page page--wide">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">Fees</span>
+      <h2>Know the cost before you share your details.</h2>
+      <p>The processing fee depends on the amount you apply for. It is a separate cost, disclosed again in the offer, and never charged at registration.</p>
+    </div>
+
+    <div class="fee-calc" data-reveal data-fee-calc>
+      <div class="fee-calc-main">
+        <div class="fee-calc-head">
+          <label for="feeAmount">Move the slider to price an amount</label>
+          <output class="fee-calc-value" id="feeAmountOut" for="feeAmount">KES {{ initial_amount|intcomma }}</output>
+        </div>
+        <input class="range" type="range" id="feeAmount"
+               min="{{ min_amount }}" max="{{ max_amount }}" step="100" value="{{ initial_amount }}"
+               aria-describedby="feeCalcNote" />
+        <div class="fee-calc-scale" aria-hidden="true">
+          <span>KES {{ min_amount|intcomma }}</span>
+          <span>KES {{ max_amount|intcomma }}</span>
+        </div>
+      </div>
+
+      <dl class="fee-calc-readout" aria-live="polite">
+        <div><dt>Band</dt><dd id="calcBand">KES {{ initial_band_min|intcomma }} – {{ initial_band_max|intcomma }}</dd></div>
+        <div><dt>Band rate</dt><dd id="calcRate">{{ initial_rate }}%</dd></div>
+        <div><dt>Processing fee</dt><dd id="calcFee">KES {{ initial_fee|intcomma }}</dd></div>
+        <div><dt>Principal + fee</dt><dd id="calcTotal">KES {{ initial_amount|add:initial_fee|intcomma }}</dd></div>
+      </dl>
+
+      <p class="tiny muted" id="feeCalcNote">
+        Each figure comes from the server's published schedule, rounded to the nearest
+        shilling (rounded down) with a KES {{ fee_minimum }} minimum. “Principal + fee” is not a repayment
+        schedule; repayment terms are not implemented in this environment.
+      </p>
+    </div>
+
+    <div class="fee-layout" data-reveal>
+      <div>
+        <div class="table-wrap">
+          <table class="table table--cards">
+            <caption>Processing fee schedule · version {{ fee_schedule_version }}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Loan amount (KES)</th>
+                <th scope="col">Fee rate</th>
+                <th scope="col">Example fee</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in pricing_rows %}
+              <tr>
+                <td data-label="Loan amount (KES)">{{ row.min|intcomma }} – {{ row.max|intcomma }}</td>
+                <td data-label="Fee rate">{{ row.rate }}%</td>
+                <td data-label="Example fee">KES {{ row.example_fee|intcomma }} at KES {{ row.example_amount|intcomma }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if FEE_COLLECTION_MODE == 'upfront' %}
+          <div class="banner banner-warning" role="note" style="margin-top: 16px;">
+            The processing fee is collected only after your application is approved and you
+            accept the written offer. It is never charged at registration.
+          </div>
+        {% else %}
+          <div class="banner banner-info" role="note" style="margin-top: 16px;">
+            <strong>No application fee is collected in this environment.</strong>
+            Fee collection is disabled while the operating approvals are outstanding. The schedule is published so you can
+            assess the cost before applying; no live loan is issued.
+          </div>
+        {% endif %}
+      </div>
+
+      <aside class="fee-side">
+        {% include "partials/art.html" with file="img/commerce-plate" modifier="art--commerce" w=1200 h=531 %}
+        <h3 style="margin-top: 14px;">What the fee covers</h3>
+        <p>The processing fee covers identity review, application handling and the payment rails used for disbursement.</p>
+        <ul>
+          <li>A fixed schedule, not a daily interest charge.</li>
+          <li>Shown in the quote, the offer and the payment step.</li>
+          <li>Reviewed under version {{ fee_schedule_version }}.</li>
+          <li>A KES {{ fee_minimum }} minimum applies, so the smallest amounts carry a
+            higher effective percentage than the band rate shown.</li>
+        </ul>
+        <p class="tiny">This is a draft commercial proposal. It is not interest and it is not a repayment schedule. Repayment terms are not implemented in this environment.</p>
+      </aside>
+    </div>
+
+    <div id="feeBands" hidden>
+      {% for row in pricing_rows %}
+        <span data-min="{{ row.min }}" data-max="{{ row.max }}" data-rate="{{ row.rate }}"></span>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section" id="security">
+  <div class="page page--wide">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">Privacy and security</span>
+      <h2>Sensitive information deserves restraint.</h2>
+      <p>These are controls in the application, not certification claims. External audits and regulatory approvals are still outstanding.</p>
+    </div>
+
+    <div class="security-layout" data-reveal>
+      <div class="grid grid-2">
+        <article class="card">
+          <h3>Private document storage</h3>
+          <p class="muted">Identity images are written to a private bucket. The database stores storage paths, not public links. Reviewers receive signed links that expire after five minutes.</p>
+        </article>
+        <article class="card">
+          <h3>Minimum data on screen</h3>
+          <p class="muted">Your National ID is masked in the dashboard, phone numbers are masked in logs, and private storage paths are never rendered into pages.</p>
+        </article>
+        <article class="card">
+          <h3>Server-authoritative money states</h3>
+          <p class="muted">A browser callback never marks a payment successful. Charge outcomes require a signed provider webhook, a single stored event and an exact amount match.</p>
+        </article>
+        <article class="card">
+          <h3>You stay in control</h3>
+          <p class="muted">Withdraw consent at any time, request your data, or ask for correction. Privacy requests use the route published in the notice.</p>
+        </article>
+      </div>
+
+      {% include "partials/art.html" with file="img/security-plate" modifier="art--aside" w=600 h=900 %}
+    </div>
+
+    <p class="tiny muted" style="margin-top: 20px;">
+      Read the <a href="{% url 'privacy' %}">privacy notice</a> for the lawful basis, retention
+      and your rights, or the <a href="{% url 'terms' %}">terms</a> for the service conditions.
+    </p>
+  </div>
+</section>
+
+<section class="section" id="faq">
+  <div class="page page--wide">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">Questions</span>
+      <h2>Straight answers, including the limits.</h2>
+    </div>
+
+    <div class="faq-list" data-reveal>
+      <details class="faq-item">
+        <summary>Who can apply?</summary>
+        <div class="faq-body">
+          <p>You need a Kenyan mobile number and a National ID. Identity review is manual. Submitting documents does not guarantee approval, and the service does not yet issue live loans while operating approvals are outstanding.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>What does it cost to apply?</summary>
+        <div class="faq-body">
+          <p>Nothing at registration. The processing fee shown above applies to an approved offer. In this environment fee collection is disabled, so no money is taken. If collection is enabled after approval, the fee is only requested after you accept the written offer.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>Which documents do you ask for, and why?</summary>
+        <div class="faq-body">
+          <p>The front and back of your National ID and a selfie, up to 5 MB each in JPEG, PNG or WebP. They are used to check that the person applying matches the identity record. Documents are optional when you create the account and can be uploaded from the dashboard.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>How long does review take?</summary>
+        <div class="faq-body">
+          <p>Review is performed by staff, not an automated score. Timing depends on document quality and volume. We do not promise a same-day decision, and the dashboard shows the actual state rather than a countdown.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>Is my information safe?</summary>
+        <div class="faq-body">
+          <p>Documents are kept in private storage and accessed through short-lived links. Access is recorded. The application does not claim bank-grade security, encryption certification or regulatory approval; those reviews remain outstanding.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>What happens after I accept an offer?</summary>
+        <div class="faq-body">
+          <p>If fee collection is enabled, you would pay the disclosed fee through the payment provider. Disbursement starts only after approval and payment confirmation, and is marked complete only when the provider confirms the transfer. This environment does not issue live credit, and repayment terms are not implemented.</p>
+        </div>
+      </details>
+      <details class="faq-item">
+        <summary>How do I raise a concern?</summary>
+        <div class="faq-body">
+          <p>Use the support channel published in the footer or the contact route in the privacy notice. Include your registered phone number and the request ID shown with any error message. We do not use fabricated response times or resolution guarantees.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top: 0;">
+  <div class="page page--wide">
+    <div class="cta" data-reveal>
+      <div>
+        <span class="eyebrow" style="color: var(--gold-bright);">Get started</span>
+        <h2 style="margin-top: 8px;">Start with the information, not the obligation.</h2>
+        <p>Create an account, review the fee schedule and upload documents when you are ready. No payment is collected at registration.</p>
+      </div>
+      <a class="btn btn-primary" href="{% url 'register' %}">
+        Create an account
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block footer %}{% include "partials/footer.html" %}{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/page-index.js' %}" defer></script>
+{% endblock %}

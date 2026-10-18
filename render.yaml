@@ -1,54 +1,138 @@
+# Render blueprint for the Django backend.
+#
+# Safety posture of this blueprint:
+#   * payments disabled, fee collection disabled, legal terms unapproved;
+#   * no secret values committed — Render generates the Django key and every
+#     credential is marked `sync: false`, so it must be entered in the Render
+#     dashboard and is never readable from the repository.
+# Do not flip PAYMENTS_ENABLED / PAYMENTS_LIVE_MODE or LEGAL_TERMS_APPROVED
+# until the compliance, product and legal gates are signed off.
 services:
   - type: web
     name: loan-platform-backend
-    env: python
-    buildCommand: |
-      pip install -r Backend/requirements.txt
-      python Backend/manage.py migrate
-      python Backend/manage.py collectstatic --noinput
-    startCommand: gunicorn core.wsgi --chdir Backend
+    runtime: python
     plan: free
+    region: frankfurt
+    branch: main
+    healthCheckPath: /health/
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r Backend/requirements.txt
+      python Backend/manage.py collectstatic --noinput
+    startCommand: |
+      python Backend/manage.py migrate --noinput
+      gunicorn core.wsgi:application \
+        --chdir Backend \
+        --bind 0.0.0.0:$PORT \
+        --workers 2 \
+        --threads 4 \
+        --timeout 60 \
+        --access-logfile - \
+        --error-logfile -
+    autoDeploy: false
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+      # --- Core Django ---------------------------------------------------
       - key: DJANGO_SECRET_KEY
-        value: "<YOUR_DJANGO_SECRET_KEY>"
+        generateValue: true
       - key: DJANGO_DEBUG
-        value: false
+        value: "false"
+      - key: DJANGO_ALLOW_INSECURE_SECRETS
+        value: "false"
+      # Leave blank to derive from Render's RENDER_EXTERNAL_HOSTNAME.
       - key: DJANGO_ALLOWED_HOSTS
-        value: YOUR_BACKEND_SERVICE.onrender.com
+        sync: false
+      # Leave blank to derive https://RENDER_EXTERNAL_HOSTNAME.
       - key: DJANGO_CSRF_TRUSTED_ORIGINS
-        value: https://loan-platform.onrender.com
+        sync: false
+      - key: DJANGO_SECURE_SSL
+        value: "true"
+      # Keep HSTS off until the custom domain is final; then set a 12-month max-age.
+      - key: DJANGO_HSTS_SECONDS
+        value: "0"
+      - key: TRUST_PROXY_HEADERS
+        value: "true"
+      - key: DJANGO_LOG_LEVEL
+        value: "INFO"
+
+      # --- API surface ---------------------------------------------------
+      # Same-origin deployment: the Django service also serves the pages, so
+      # this stays a relative path. Set an absolute URL only for a split
+      # frontend, together with CORS_ALLOWED_ORIGINS on this service.
+      - key: API_BASE_URL
+        value: /api/v1
       - key: CORS_ALLOWED_ORIGINS
-        value: https://loan-platform.onrender.com
+        sync: false
+
+      # --- Database (Supabase Postgres) ---------------------------------
       - key: SUPABASE_DB_HOST
-        value: "<YOUR_SUPABASE_HOST>"
+        sync: false
       - key: SUPABASE_DB_PORT
-        value: 5432
+        value: "5432"
       - key: SUPABASE_DB_NAME
-        value: "<YOUR_SUPABASE_DB_NAME>"
+        value: postgres
       - key: SUPABASE_DB_USER
-        value: "<YOUR_SUPABASE_USER>"
+        value: postgres
       - key: SUPABASE_DB_PASSWORD
-        value: "<YOUR_SUPABASE_PASSWORD>"
+        sync: false
       - key: SUPABASE_DB_SSLMODE
         value: require
-      - key: PAYSTACK_SECRET_KEY
-        value: "<YOUR_PAYSTACK_SECRET_KEY>"
-      - key: PAYSTACK_PUBLIC_KEY
-        value: "<YOUR_PAYSTACK_PUBLIC_KEY>"
-      - key: PAYSTACK_BASE_URL
-        value: https://api.paystack.co
-      - key: PAYSTACK_WEBHOOK_SECRET
-        value: "<YOUR_PAYSTACK_WEBHOOK_SECRET>"
+
+      # --- Private document storage -------------------------------------
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: identity-documents
+      - key: SUPABASE_STORAGE_PRIVATE
+        value: "true"
+      # Start false so the service can boot before the bucket is provisioned.
+      # Set to true once document upload must be mandatory for readiness.
+      - key: REQUIRE_DOCUMENT_STORAGE
+        value: "false"
+      - key: DOCUMENT_SIGNED_URL_TTL
+        value: "300"
+      - key: DOCUMENT_RETENTION_DAYS
+        value: "90"
+
+      # --- Payments: disabled by default ---------------------------------
+      # Enabling requires PAYSTACK_SECRET_KEY / PAYSTACK_PUBLIC_KEY and an
+      # explicit business decision. Never commit live keys.
+      - key: PAYMENTS_ENABLED
+        value: "false"
+      - key: PAYMENTS_LIVE_MODE
+        value: "false"
+      - key: FEE_COLLECTION_MODE
+        value: "disabled"
+      - key: FEE_COLLECTION_APPROVED
+        value: "false"
+
+      # --- Legal / display ----------------------------------------------
+      - key: LEGAL_TERMS_APPROVED
+        value: "false"
+      - key: TERMS_VERSION
+        value: "2026-10-draft"
+      - key: PRIVACY_VERSION
+        value: "2026-10-draft"
+      - key: CONSENT_VERSION
+        value: "2026-10-draft"
+      - key: PLATFORM_NAME
+        value: PesaFix
+      - key: PLATFORM_LICENCE_STATUS
+        value: Licence status not yet published
       - key: INTERNAL_EMAIL_DOMAIN
         value: example.com
-      - key: APP_FEE_CURRENCY
-        value: KES
-      - key: APP_COUNTRY
-        value: KE
-      - key: DEFAULT_FROM_EMAIL
-        value: no-reply@example.com
+
+      # --- Notifications ------------------------------------------------
+      - key: SMS_BACKEND
+        value: "none"
+
+      # --- Auth / throttling -------------------------------------------
       - key: JWT_ACCESS_TTL_MINUTES
-        value: 30
+        value: "30"
       - key: JWT_ISSUER
         value: loan-platform-ke
       - key: JWT_AUDIENCE

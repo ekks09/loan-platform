@@ -1,154 +1,92 @@
+from __future__ import annotations
+
+from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
-from .models import User, phone_validator, national_id_validator
 
+from users.models import ConsentRecord, User
+from users.phone import InvalidPhoneNumber, normalize_msisdn
 
-def normalize_phone(phone: str) -> str:
-    """Normalize phone number to 2547XXXXXXXX or 2541XXXXXXXX format."""
-    raw = (phone or "").strip().replace(" ", "").replace("-", "")
+# Used to keep login timing similar when an account does not exist.
+_DUMMY_HASH = make_password("not-a-real-password-for-timing")
 
-    if not raw:
-        raise serializers.ValidationError("Phone number is required.")
-
-    if raw.startswith("+"):
-        raw = raw[1:]
-
-    # Already in correct format
-    if raw.startswith("254") and len(raw) == 12:
-        if not (raw[3] == "7" or raw[3] == "1"):
-            raise serializers.ValidationError("Invalid Kenyan phone number. Must start with 07 or 01.")
-        return raw
-
-    # Format: 07XXXXXXXX or 01XXXXXXXX
-    if raw.startswith("0") and len(raw) == 10:
-        if not (raw[1] == "7" or raw[1] == "1"):
-            raise serializers.ValidationError("Invalid Kenyan phone number. Must start with 07 or 01.")
-        return "254" + raw[1:]
-
-    # Format: 7XXXXXXXX or 1XXXXXXXX (9 digits)
-    if len(raw) == 9 and (raw[0] == "7" or raw[0] == "1"):
-        return "254" + raw
-
-    raise serializers.ValidationError("Invalid phone number format. Use 07XXXXXXXX or 2547XXXXXXXX.")
+GENERIC_LOGIN_ERROR = "Invalid phone number or password."
 
 
 class RegisterSerializer(serializers.Serializer):
-    phone = serializers.CharField()
-    national_id = serializers.CharField()
-    password = serializers.CharField(min_length=8, write_only=True)
+    phone = serializers.CharField(max_length=20)
+    national_id = serializers.CharField(max_length=10)
+    password = serializers.CharField(min_length=8, max_length=128, write_only=True)
+    consent = serializers.BooleanField()
+    consent_version = serializers.CharField(required=False, allow_blank=True)
 
     def validate_phone(self, value: str) -> str:
-        normalized = normalize_phone(value)
-        # Check if already registered
+        try:
+            normalized = normalize_msisdn(value)
+        except InvalidPhoneNumber as exc:
+            raise serializers.ValidationError(str(exc)) from exc
         if User.objects.filter(phone=normalized).exists():
-            raise serializers.ValidationError("This phone number is already registered. Please login instead.")
+            raise serializers.ValidationError(
+                "This phone number is already registered. Please log in instead."
+            )
         return normalized
 
     def validate_national_id(self, value: str) -> str:
         value = (value or "").strip()
-        if not value:
-            raise serializers.ValidationError("National ID is required.")
-        if not value.isdigit():
-            raise serializers.ValidationError("National ID must contain only digits.")
-        if len(value) < 6 or len(value) > 10:
+        if not value.isdigit() or not 6 <= len(value) <= 10:
             raise serializers.ValidationError("National ID must be 6-10 digits.")
+        if User.objects.filter(national_id=value).exists():
+            raise serializers.ValidationError(
+                "This national ID is already registered. Contact support if this is an error."
+            )
         return value
 
     def validate_password(self, value: str) -> str:
-        if not value or len(value) < 8:
-            raise serializers.ValidationError("Password must be at least 8 characters.")
+        try:
+            validate_password(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages)) from exc
         return value
 
-    def create(self, validated_data):
-        return User.objects.create_user(
-            phone=validated_data["phone"],
-            national_id=validated_data["national_id"],
-            password=validated_data["password"],
-        )
-
-
-class RegisterWithPhotosSerializer(serializers.Serializer):
-    """Serializer for registration with photo ID verification."""
-    phone = serializers.CharField()
-    national_id = serializers.CharField()
-    password = serializers.CharField(min_length=8, write_only=True)
-
-    def validate_phone(self, value: str) -> str:
-        normalized = normalize_phone(value)
-        if User.objects.filter(phone=normalized).exists():
-            raise serializers.ValidationError("This phone number is already registered. Please login instead.")
-        return normalized
-
-    def validate_national_id(self, value: str) -> str:
-        value = (value or "").strip()
+    def validate_consent(self, value: bool) -> bool:
         if not value:
-            raise serializers.ValidationError("National ID is required.")
-        if not value.isdigit():
-            raise serializers.ValidationError("National ID must contain only digits.")
-        if len(value) < 6 or len(value) > 10:
-            raise serializers.ValidationError("National ID must be 6-10 digits.")
+            raise serializers.ValidationError(
+                "You must accept the privacy notice and terms to create an account."
+            )
         return value
 
-    def validate_password(self, value: str) -> str:
-        if not value or len(value) < 8:
-            raise serializers.ValidationError("Password must be at least 8 characters.")
+    def validate_consent_version(self, value: str) -> str:
+        if value and value != settings.CONSENT_VERSION:
+            raise serializers.ValidationError(
+                "The privacy notice has changed. Reload the page and review it again."
+            )
         return value
-
-    def create(self, validated_data):
-        # Photo URLs will be added by the view after upload
-        photo_data = validated_data.pop('photo_data', {})
-        
-        user = User.objects.create_user(
-            phone=validated_data["phone"],
-            national_id=validated_data["national_id"],
-            password=validated_data["password"],
-            id_front_url=photo_data.get('id_front_url'),
-            id_front_path=photo_data.get('id_front_path', ''),
-            id_back_url=photo_data.get('id_back_url'),
-            id_back_path=photo_data.get('id_back_path', ''),
-            selfie_url=photo_data.get('selfie_url'),
-            selfie_path=photo_data.get('selfie_path', ''),
-            verification_status=User.VerificationStatus.PENDING,
-        )
-        return user
 
 
 class LoginSerializer(serializers.Serializer):
-    phone = serializers.CharField()
-    password = serializers.CharField(write_only=True)
+    phone = serializers.CharField(max_length=20)
+    password = serializers.CharField(write_only=True, max_length=128)
 
     def validate_phone(self, value: str) -> str:
-        return normalize_phone(value)
+        try:
+            return normalize_msisdn(value)
+        except InvalidPhoneNumber as exc:
+            # Do not reveal whether the number format or the account was wrong.
+            raise serializers.ValidationError(GENERIC_LOGIN_ERROR) from exc
 
     def validate(self, attrs):
-        phone = attrs.get("phone")
-        password = attrs.get("password")
-
-        if not phone:
-            raise serializers.ValidationError({"phone": "Phone number is required."})
-
-        if not password:
-            raise serializers.ValidationError({"password": "Password is required."})
-
-        # Find user by phone
-        try:
-            user = User.objects.get(phone=phone)
-        except User.DoesNotExist:
-            raise serializers.ValidationError({
-                "non_field_errors": ["No account found with this phone number. Please register first."]
-            })
-
-        # Check password
-        if not user.check_password(password):
-            raise serializers.ValidationError({
-                "non_field_errors": ["Incorrect password. Please try again."]
-            })
-
-        # Check if active
+        user = User.objects.filter(phone=attrs["phone"]).first()
+        if user is None:
+            check_password(attrs["password"], _DUMMY_HASH)
+            raise serializers.ValidationError(GENERIC_LOGIN_ERROR)
+        if not user.check_password(attrs["password"]):
+            raise serializers.ValidationError(GENERIC_LOGIN_ERROR)
         if not user.is_active:
-            raise serializers.ValidationError({
-                "non_field_errors": ["Your account has been deactivated. Please contact support."]
-            })
-
+            raise serializers.ValidationError(
+                "This account is disabled. Please contact support."
+            )
         attrs["user"] = user
         return attrs
 
@@ -156,33 +94,57 @@ class LoginSerializer(serializers.Serializer):
 class MeSerializer(serializers.ModelSerializer):
     is_verified = serializers.BooleanField(read_only=True)
     has_uploaded_documents = serializers.BooleanField(read_only=True)
+    can_borrow = serializers.BooleanField(read_only=True)
+    national_id_masked = serializers.CharField(read_only=True)
+    consent_current = serializers.SerializerMethodField()
 
-    class Meta:
-        model = User
-        fields = [
-            "phone",
-            "national_id",
-            "created_at",
-            "verification_status",
-            "is_verified",
-            "has_uploaded_documents",
-        ]
-        read_only_fields = fields
-
-
-class UserVerificationSerializer(serializers.ModelSerializer):
-    """Serializer for admin verification dashboard."""
     class Meta:
         model = User
         fields = [
             "id",
             "phone",
-            "national_id",
-            "id_front_url",
-            "id_back_url",
-            "selfie_url",
+            "national_id_masked",
+            "created_at",
             "verification_status",
             "verification_notes",
-            "created_at",
+            "is_verified",
+            "has_uploaded_documents",
+            "consent_current",
+            "can_borrow",
         ]
         read_only_fields = fields
+
+    def get_consent_current(self, obj: User) -> bool:
+        return obj.has_current_consent
+
+
+class ConsentGrantSerializer(serializers.Serializer):
+    consent_version = serializers.CharField(required=False, allow_blank=True)
+    purposes = serializers.ListField(
+        child=serializers.ChoiceField(choices=ConsentRecord.Purpose.choices),
+        required=False,
+    )
+
+    def validate_consent_version(self, value: str) -> str:
+        if value and value != settings.CONSENT_VERSION:
+            raise serializers.ValidationError(
+                "The privacy notice has changed. Reload the page and review it again."
+            )
+        return value
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=20)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=20)
+    code = serializers.CharField(max_length=6, min_length=6)
+    new_password = serializers.CharField(min_length=8, max_length=128, write_only=True)
+
+    def validate_new_password(self, value: str) -> str:
+        try:
+            validate_password(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages)) from exc
+        return value
