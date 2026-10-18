@@ -41,29 +41,26 @@ jobs:
       - name: Dependency lockfile drift check
         # Backend/requirements.txt must be exactly what pip-compile produces
         # from Backend/requirements.in, and every package must be hash-locked.
+        # The paths are root-relative, so override the job's Backend CWD.
+        working-directory: ${{ github.workspace }}
         run: |
           pip install --upgrade "pip==26.2.1" "pip-tools==7.6.2"
-          pip --version
-          pip-compile --version
-          cp Backend/requirements.txt /tmp/committed.txt
           rc=0
-          pip-compile --generate-hashes Backend/requirements.in 2> /tmp/compile-err.txt || rc=$?
-          if [ $rc -ne 0 ]; then
-            # pip-compile itself failed (network, resolver, tool mismatch):
-            # surface its stderr through annotations — the raw log host is
-            # unreachable from some networks, annotations are API-readable.
-            ( tail -40 /tmp/compile-err.txt || true ) | sed -e 's/%/%25/g' -e 's/\r/%0D/g' -e 's/$/%0A/' | tr -d '\n' \
-              | xargs -0 echo "::error title=pip-compile-failed::" || true
-            git checkout -- Backend/requirements.txt
-            exit $rc
+          cp Backend/requirements.txt /tmp/committed.txt || rc=$?
+          if [ $rc -eq 0 ]; then
+            pip-compile --generate-hashes Backend/requirements.in 2>/tmp/compile-err.txt || rc=$?
           fi
-          diff -u /tmp/committed.txt Backend/requirements.txt > /tmp/lockdiff.txt || rc=$?
-          if [ $rc -ne 0 ]; then
-            ( head -120 /tmp/lockdiff.txt || true ) | sed -e 's/%/%25/g' -e 's/\r/%0D/g' -e 's/$/%0A/' | tr -d '\n' \
-              | xargs -0 echo "::error title=lockfile-drift::" || true
+          if [ $rc -eq 0 ]; then
+            diff -u /tmp/committed.txt Backend/requirements.txt > /tmp/lockdiff.txt || rc=$?
           fi
-          git checkout -- Backend/requirements.txt
-          grep -c -- "--hash=sha256:" Backend/requirements.txt
+          if [ $rc -eq 0 ]; then
+            grep -c -- "--hash=sha256:" Backend/requirements.txt || rc=$?
+          fi
+          if [ $rc -ne 0 ]; then
+            python Backend/scripts/ci_annotate_log.py pip-compile-stderr /tmp/compile-err.txt 40 || true
+            python Backend/scripts/ci_annotate_log.py lockfile-drift /tmp/lockdiff.txt 120 || true
+            git checkout -- Backend/requirements.txt || true
+          fi
           exit $rc
 
       - name: Vulnerability scan (pip-audit)
@@ -206,18 +203,10 @@ jobs:
 
       - name: Full test suite (PostgreSQL)
         run: |
-          set -o pipefail
           rc=0
           python manage.py test --settings=core.pg_test_settings --verbosity 2 | tee /tmp/pg-tests.log || rc=$?
           if [ $rc -ne 0 ]; then
-            # Surface the failure tail in run annotations (API-readable).
-            ( grep -E "^(FAIL|ERROR|SUBFAIL|AssertionError|Traceback|django\.|psycopg|[A-Za-z.]+Error)" /tmp/pg-tests.log | tail -40 || true ) \
-              | sed -e 's/%/%25/g' -e 's/\r/%0D/g' -e 's/$/%0A/' | tr -d '\n' \
-              | xargs -0 echo "::error title=postgres-suite::" || true
-            # And always: the last lines unfiltered, so evidence cannot die.
-            ( tail -30 /tmp/pg-tests.log || true ) \
-              | sed -e 's/%/%25/g' -e 's/\r/%0D/g' -e 's/$/%0A/' | tr -d '\n' \
-              | xargs -0 echo "::error title=postgres-log-tail::" || true
+            python ../scripts/ci_annotate_log.py postgres-suite /tmp/pg-tests.log 120 || true
             exit $rc
           fi
           grep -Eq "^Ran [1-9][0-9]* tests? " /tmp/pg-tests.log || { tail -200 /tmp/pg-tests.log; exit 1; }
