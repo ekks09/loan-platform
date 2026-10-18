@@ -30,13 +30,21 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        # Pin pip itself: pip-compile's resolver output (and therefore the
+        # drift check below) depends on the pip version, which otherwise
+        # floats with the runner image (ubuntu-latest migrates 2026-10-19).
+        run: |
+          pip install --upgrade "pip==26.2.1"
+          pip --version
+          pip install -r requirements.txt
 
       - name: Dependency lockfile drift check
         # Backend/requirements.txt must be exactly what pip-compile produces
         # from Backend/requirements.in, and every package must be hash-locked.
         run: |
-          pip install "pip-tools==7.6.2"
+          pip install --upgrade "pip==26.2.1" "pip-tools==7.6.2"
+          pip --version
+          pip-compile --version
           cp Backend/requirements.txt /tmp/committed.txt
           pip-compile --generate-hashes Backend/requirements.in
           diff -u /tmp/committed.txt Backend/requirements.txt
@@ -165,7 +173,13 @@ jobs:
           cache-dependency-path: Backend/requirements.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        # Pin pip itself: pip-compile's resolver output (and therefore the
+        # drift check below) depends on the pip version, which otherwise
+        # floats with the runner image (ubuntu-latest migrates 2026-10-19).
+        run: |
+          pip install --upgrade "pip==26.2.1"
+          pip --version
+          pip install -r requirements.txt
 
       - name: Migration smoke test (PostgreSQL)
         # migrate an empty database end to end, then prove again that no
