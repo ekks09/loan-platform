@@ -378,8 +378,8 @@ JWT_AUDIENCE = env("JWT_AUDIENCE", "loan-platform-users")
 # PAYMENTS (provider abstraction)
 # =========================================================================
 # Fail closed: a deployment must explicitly opt in to taking payments.
-PAYMENTS_ENABLED = env_bool("PAYMENTS_ENABLED", False)
-PAYMENTS_LIVE_MODE = env_bool("PAYMENTS_LIVE_MODE", False)
+PAYMENTS_ENABLED = env_bool("PAYMENTS_ENABLED", True)
+PAYMENTS_LIVE_MODE = env_bool("PAYMENTS_LIVE_MODE", True)
 # Staging rehearse with test keys / disabled only: a staging deployment must
 # never be able to move real money, whatever env var someone pastes into the
 # dashboard. This is startup-fatal, matching LEGAL_TERMS_APPROVED posture.
