@@ -65,6 +65,14 @@ run ends with a line like:
 Configuration OK (1 warning(s)). payments=off mode=test fees=disabled
 ```
 
+Run it with the pinned interpreter: the repository root carries a
+`.python-version` file (3.11.9 - the same pin as `PYTHON_VERSION` in both
+blueprints, kept in sync by a test). pyenv picks it up automatically, and
+Render also reads it for any service created by hand that has no
+`PYTHON_VERSION` of its own, so a manually configured service no longer
+silently drifts to a newer CPython. The preflight warns when the local
+interpreter's major.minor differs from the pin.
+
 `deploy/render.staging.env` is git-ignored. Never commit it, paste it into a
 ticket, or attach it to a PR.
 
@@ -177,15 +185,16 @@ wrong.
 | Start fails with `Document storage is required ...` | `REQUIRE_DOCUMENT_STORAGE=true`, storage keys missing | Add `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` |
 | `/health/` returns 400 | `DJANGO_ALLOWED_HOSTS` does not include the onrender hostname | Clear it (derived automatically) or add the hostname |
 | Deploy fails on `migrate` | Database is not empty and its `django_migrations` history predates this codebase | Point staging at its own fresh database (see `docs/RELEASE_PROCESS.md`, isolation rule 1); never migrate a legacy database in place |
-| Deploy still runs Python 3.13 | Blueprint not applied, or a dashboard `PYTHON_VERSION` | Recreate from `render.staging.yaml`; it pins `3.11.9` |
+| Deploy still runs Python 3.13 | Blueprint not applied, or a dashboard `PYTHON_VERSION` overriding it | Recreate from `render.staging.yaml`; it pins `3.11.9`. For services the blueprint does not manage, the repo-root `.python-version` (same `3.11.9`) applies when no dashboard `PYTHON_VERSION` is set - delete any dashboard entry that disagrees |
 
 ## 9. What CI already guarantees
 
 - `render.staging.yaml` and `render.yaml` are generated from
   `deploy/render.common.yaml.j2` plus the params files; CI fails on drift.
-- The suite asserts that both blueprints pin Python 3.11, commit no secret
-  values, keep every credential `sync: false`, and keep the payment posture
-  dashboard-owned rather than pinned to a stale value.
+- The suite asserts that both blueprints pin Python 3.11, that the repo-root
+  `.python-version` matches that pin (so hand-created services inherit it),
+  commit no secret values, keep every credential `sync: false`, and keep the
+  payment posture dashboard-owned rather than pinned to a stale value.
 - `check_config` is tested for staging: secure cookies, required storage and
   `PAYMENTS_LIVE_MODE=false` are non-negotiable.
 
