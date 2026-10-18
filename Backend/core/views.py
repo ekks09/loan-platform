@@ -119,8 +119,9 @@ def manifest(request):
         "name": settings.PLATFORM_NAME,
         "short_name": settings.PLATFORM_NAME,
         "description": (
-            "Apply for a Kenyan shilling loan, follow each verification step "
-            "and see provider-confirmed updates in one account."
+            f"{settings.PLATFORM_NAME} — simple, fast, and transparent loans. "
+            "Create your free account, upload your ID and track your loan "
+            "status live from your dashboard."
         ),
         "lang": "en-KE",
         "dir": "ltr",
@@ -253,7 +254,10 @@ def readiness(request):
                 "approved" if settings.LEGAL_TERMS_APPROVED else "draft"
             )
 
-    storage_ok = bool(settings.SUPABASE_URL and settings.SUPABASE_SERVICE_KEY)
+    from core.storage import document_storage_configured
+
+    storage_ok = document_storage_configured()
+    checks["document_store"] = getattr(settings, "DOCUMENT_STORE", "supabase")
     checks["document_storage"] = "configured" if storage_ok else "missing"
     if settings.REQUIRE_DOCUMENT_STORAGE and not storage_ok:
         ready = False

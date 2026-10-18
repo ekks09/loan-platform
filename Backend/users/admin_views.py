@@ -19,8 +19,8 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_http_methods
 
 from core.notifications import send_sms
+from core.storage import get_document_store
 from users.models import DocumentAccessLog, User
-from users.storage import SupabaseStorage
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,8 @@ def _signed_documents(request, user: User) -> dict:
         ("selfie", "selfie_path"),
     ):
         path = getattr(user, path_field, "")
-        url = SupabaseStorage.create_signed_url(path) if path else None
+        signed = get_document_store().signed_url(path) if path else None
+        url = signed.url if signed else None
         if url:
             DocumentAccessLog.objects.create(
                 staff_user=request.user,
@@ -168,7 +169,7 @@ def verify_user(request, user_id):
             "verification_notes",
         ]
     )
-    send_sms(user.phone, message, purpose="verification")
+    send_sms(user.phone, message, purpose="verification", user=user)
     logger.info(
         "Verification %s for user id=%s by staff id=%s", action, user.pk, request.user.pk
     )

@@ -1,0 +1,11 @@
+# Parameters for render.staging.yaml — edit here, then run scripts/render_blueprints.py --write (CI asserts no drift).
+NAME: loan-platform-backend-staging
+PLAN: free
+BRANCH: main
+AUTODEPLOY: false
+DEPLOY_ENVIRONMENT: staging
+REQUIRE_DOCUMENT_STORAGE: true
+DOCUMENT_RETENTION_DAYS: 30
+SMS_BACKEND: console
+THROTTLE_ANON: 60/min
+THROTTLE_USER: 120/min

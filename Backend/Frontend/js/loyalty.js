@@ -1,5 +1,5 @@
 /**
- * Loyalty, savings vault and the M-Biashara credit health panel.
+ * Loyalty, savings vault and the platform credit health panel.
  *
  * Everything rendered here comes from GET /api/loyalty/summary/. The module
  * never computes a score, a tier or a cash-back amount on its own: it displays

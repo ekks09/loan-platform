@@ -1,0 +1,28 @@
+# Coverage configuration for the Django suite (CI coverage gate).
+# Baseline measured after P1-P4 hardening: 88% overall, 4211 statements.
+# Gate at 85%: 3 points of headroom for new/uncovered-by-design code
+# (admin-only paths, deprecated shims) while preventing erosion.
+[run]
+source =
+    core
+    users
+    loans
+    payments
+    loyalty
+omit =
+    */tests/*
+    */migrations/*
+    */wsgi.py
+    */asgi.py
+    */manage.py
+    # Deprecated import-shim kept for one release; not executed by the suite.
+    # New code imports core.storage directly. Remove with the shim.
+    users/storage.py
+
+[report]
+show_missing = true
+fail_under = 85
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    if settings.DEBUG

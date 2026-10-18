@@ -6,6 +6,8 @@ for another account; those are internal service calls.
 """
 from __future__ import annotations
 
+from django.conf import settings
+
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -55,7 +57,7 @@ def _payload(user, account: LoyaltyAccount) -> dict:
             "factors": [f.as_dict() for f in factors],
             "portable": False,
             "disclosure": (
-                "This score is built from activity recorded on M-Biashara only. "
+                f"This score is built from activity recorded on {settings.PLATFORM_NAME} only. "
                 "It is not a credit bureau score, is not shared with other lenders "
                 "and cannot be transferred to another provider."
             ),

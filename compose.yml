@@ -1,0 +1,91 @@
+# Local development stack for the loan platform.
+#
+#   cp .env.compose.example .env.compose
+#   docker compose up --build
+#
+# This is a reproducible local verification environment: PostgreSQL on the
+# same major version the production host runs (Supabase Postgres 15) and a
+# MinIO service so the real S3 adapter exercises the same code path the
+# suite proves. It is NOT a production deployment description — payments,
+# legal acceptance and SMS delivery stay OFF, and every credential is a
+# docker-local placeholder.
+#
+# Statically validated in this workspace (compose spec parse + env wiring +
+# check_config rehearsal); see docs/LOCAL_DOCKER.md for the evidence and
+# known sandbox limitations.
+name: loan-platform-local
+
+services:
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    env_file: .env.compose
+    # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB are injected from
+    # .env.compose; do NOT add an environment: block expanding ${...} here —
+    # compose interpolation does not read env_file, so empty overrides would
+    # clobber the credentials.
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    env_file: .env.compose
+    command: server /data --console-address ":9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    ports:
+      - "9000:9000"   # S3 API (browser-download origin: matches S3_PUBLIC_ENDPOINT_URL)
+      - "9001:9001"   # Console
+
+  minio-init:
+    # Creates the private documents bucket exactly the way the README and the
+    # adapter expect; idempotent so restarts are no-ops. We deliberately do
+    # not let app code create the bucket — fail-closed bucket existence is a
+    # misconfiguration tripwire.
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    env_file: .env.compose
+    entrypoint:
+      - sh
+      - -c
+      - >
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        && mc mb --ignore-existing "local/$$S3_BUCKET"
+        && mc anonymous set none "local/$$S3_BUCKET"
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env.compose
+    depends_on:
+      db:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health/').status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  pgdata:
+  miniodata:

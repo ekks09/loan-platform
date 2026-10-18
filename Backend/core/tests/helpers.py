@@ -6,7 +6,7 @@ than raw inserts so the tests exercise the same invariants as production.
 from __future__ import annotations
 
 from datetime import timedelta
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.conf import settings
 from django.utils import timezone
@@ -122,6 +122,51 @@ def expire_loan_offer(loan: Loan) -> Loan:
     return loan
 
 
+def fake_document_store(
+    *,
+    upload_effects: list | None = None,
+    signed_url: str | None = None,
+    configured: bool = True,
+):
+    """Build a MagicMock shaped like a ``core.storage.DocumentStore``.
+
+    ``upload_effects`` mixes ``StoredDocument``/path strings/exceptions in
+    call order, mirroring how the old facade tests staged uploads.
+    """
+    from django.conf import settings as _settings
+
+    from core.storage.base import SignedUrl, StoredDocument, validate_document_file
+
+    store = MagicMock(name="DocumentStore")
+    store.configured.return_value = configured
+    # Validation is provider-independent; run it for real so a fake store can
+    # never "approve" a file the production adapters would reject.
+    store.validate_file.side_effect = (
+        lambda file: validate_document_file(file, max_bytes=_settings.DOCUMENT_MAX_BYTES)
+    )
+    if upload_effects is not None:
+        effects = []
+        for item in upload_effects:
+            if isinstance(item, Exception):
+                effects.append(item)
+            elif isinstance(item, StoredDocument):
+                effects.append(item)
+            else:
+                effects.append(StoredDocument(path=str(item)))
+        store.upload.side_effect = effects
+    else:
+        store.upload.side_effect = (
+            lambda file, *, folder, user_identifier: StoredDocument(
+                path=f"users/{user_identifier}/{folder}/doc.jpg"
+            )
+        )
+    store.signed_url.return_value = (
+        SignedUrl(url=signed_url, expires_in=300) if signed_url else None
+    )
+    store.delete.return_value = True
+    return store
+
+
 class DictMock:
     """Small helper for building provider response dictionaries."""
 
@@ -141,7 +186,13 @@ class DictMock:
 
 
 class patched_provider:
-    """Context manager patching ``payments.services.PaystackClient``."""
+    """Patch the low-level Paystack HTTP client used by the provider adapter.
+
+    Business services resolve the adapter through the registry, which builds
+    ``PaystackProvider`` around ``PaystackClient``; patching the client class
+    therefore intercepts every provider call while the adapter's parsing and
+    normalization still run for real — exactly what the tests should prove.
+    """
 
     def __init__(self, **methods):
         self.methods = methods
@@ -149,7 +200,7 @@ class patched_provider:
         self.client = None
 
     def __enter__(self):
-        self._patcher = patch("payments.services.PaystackClient")
+        self._patcher = patch("payments.providers.paystack.PaystackClient")
         mocked_class = self._patcher.start()
         self.client = mocked_class.return_value
         for name, value in self.methods.items():

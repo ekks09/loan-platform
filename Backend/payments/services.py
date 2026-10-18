@@ -22,6 +22,8 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 
+from typing import Mapping
+
 from core.errors import (
     FeeCollectionDisabled,
     InvalidTransition,
@@ -39,7 +41,17 @@ from payments.models import (
     TransferEvent,
     WebhookEvent,
 )
-from payments.paystack import PaystackClient, ProviderError
+from payments.providers import (
+    ChargeStatus,
+    ChargeVerification,
+    PaymentProvider,
+    ProviderError,
+    RefundStatus,
+    TransferState,
+    TransferStatus,
+    WebhookEventKind,
+    get_payment_provider,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -118,10 +130,9 @@ def internal_email(phone: str) -> str:
     return f"user-{phone}@{settings.INTERNAL_EMAIL_DOMAIN}"
 
 
-def _client() -> PaystackClient:
-    if not settings.PAYMENTS_ENABLED:
-        raise PaymentsDisabled()
-    return PaystackClient()
+def _provider() -> PaymentProvider:
+    """Return the configured payment provider (fails closed when disabled)."""
+    return get_payment_provider()
 
 
 def get_or_create_fee_payment(loan: Loan) -> Payment:
@@ -139,6 +150,7 @@ def get_or_create_fee_payment(loan: Loan) -> Payment:
         amount_kes=loan.compute_service_fee(loan.amount),
         currency="KES",
         status=Payment.Status.PENDING,
+        provider=settings.PAYMENT_PROVIDER,
     )
     Loan.objects.filter(pk=loan.pk).update(paystack_reference=reference)
     loan.refresh_from_db(fields=["paystack_reference"])
@@ -166,8 +178,7 @@ def initialize_fee_payment(loan: Loan, *, actor=None) -> Payment:
     if payment.authorization_url and payment.access_code:
         return payment
 
-    client = _client()
-    data = client.initialize_transaction(
+    checkout = _provider().initialize(
         email=internal_email(loan.user.phone),
         amount_minor=to_minor(payment.amount_kes),
         reference=payment.reference,
@@ -185,9 +196,9 @@ def initialize_fee_payment(loan: Loan, *, actor=None) -> Payment:
 
     with transaction.atomic():
         payment = Payment.objects.select_for_update().get(pk=payment.pk)
-        payment.provider_reference = str(data.get("reference") or payment.reference)[:64]
-        payment.authorization_url = data.get("authorization_url")
-        payment.access_code = data.get("access_code")
+        payment.provider_reference = (checkout.provider_reference or payment.reference)[:64]
+        payment.authorization_url = checkout.authorization_url
+        payment.access_code = checkout.access_code or None
         payment.save(
             update_fields=[
                 "provider_reference",
@@ -207,26 +218,36 @@ def initialize_fee_payment(loan: Loan, *, actor=None) -> Payment:
 # ---------------------------------------------------------------------
 # Charge success
 # ---------------------------------------------------------------------
-def _verify_charge_with_provider(payment: Payment) -> dict:
-    client = _client()
-    return client.verify_transaction(payment.reference)
+def _verify_charge_with_provider(payment: Payment) -> ChargeVerification:
+    return _provider().verify(payment.reference)
 
 
-def _validate_charge(payment: Payment, data: dict) -> None:
-    status_value = str(data.get("status", "")).lower()
-    if status_value != "success":
+def _coerce_charge(data: ChargeVerification | Mapping) -> ChargeVerification:
+    """Normalize a provider charge payload when one is passed directly.
+
+    Internal callers pass :class:`ChargeVerification`. A raw mapping is the
+    authenticated webhook payload path; the provider adapter is the only
+    code allowed to parse it.
+    """
+    if isinstance(data, ChargeVerification):
+        return data
+    return _provider().normalize_charge(data)
+
+
+def _validate_charge(payment: Payment, verification: ChargeVerification) -> None:
+    if verification.status is not ChargeStatus.SUCCESS:
         raise InvalidTransition(
-            f"Provider reports payment status {status_value or 'unknown'}."
+            f"Provider reports payment status {verification.status.value}."
         )
-    if str(data.get("reference", "")) != payment.reference:
+    if verification.reference != payment.reference:
         raise InvalidTransition("Provider reference does not match the payment.")
-    currency = str(data.get("currency", "")).upper()
+    currency = verification.currency.upper()
     if currency != payment.currency:
         raise InvalidTransition(
             f"Currency mismatch: expected {payment.currency}, received {currency}."
         )
     try:
-        amount_kes = from_minor(int(data.get("amount", 0)))
+        amount_kes = from_minor(verification.amount_minor)
     except Exception as exc:
         raise InvalidTransition("Provider amount is invalid.") from exc
     if amount_kes != payment.amount_kes:
@@ -235,19 +256,20 @@ def _validate_charge(payment: Payment, data: dict) -> None:
         )
 
 
-def mark_payment_succeeded(payment: Payment, data: dict, *, reason: str) -> Payment:
+def mark_payment_succeeded(
+    payment: Payment, data: ChargeVerification | Mapping, *, reason: str
+) -> Payment:
     """Idempotently mark a payment paid and post the collection journal."""
+    verification = _coerce_charge(data)
     with transaction.atomic():
         payment = Payment.objects.select_for_update().get(pk=payment.pk)
         if payment.status == Payment.Status.SUCCEEDED:
             return payment
         if payment.status == Payment.Status.REFUNDED:
             raise InvalidTransition("A refunded payment cannot be marked paid again.")
-        payment.provider_transaction_id = str(data.get("id", ""))[:64]
-        payment.channel = str(data.get("channel", ""))[:32]
-        payment.gateway_response = str(
-            (data.get("gateway_response") or data.get("status") or "")[:255]
-        )
+        payment.provider_transaction_id = verification.transaction_id[:64]
+        payment.channel = verification.channel[:32]
+        payment.gateway_response = verification.gateway_response[:255]
         payment.last_verified_at = timezone.now()
         payment.save(
             update_fields=[
@@ -280,16 +302,21 @@ def mark_payment_succeeded(payment: Payment, data: dict, *, reason: str) -> Paym
     return payment
 
 
-def process_charge_success(reference: str, data: dict, *, verify: bool | None = None) -> Payment:
+def process_charge_success(
+    reference: str, data: ChargeVerification | Mapping, *, verify: bool | None = None
+) -> Payment:
     payment = Payment.objects.filter(reference=reference).first()
     if payment is None:
         raise InvalidTransition("No payment matches this provider reference.")
     if verify is None:
         verify = settings.PAYSTACK_VERIFY_ON_WEBHOOK
-    if verify:
-        data = _verify_charge_with_provider(payment)
-    _validate_charge(payment, data)
-    return mark_payment_succeeded(payment, data, reason="Provider confirmed charge")
+    verification = (
+        _verify_charge_with_provider(payment) if verify else _coerce_charge(data)
+    )
+    _validate_charge(payment, verification)
+    return mark_payment_succeeded(
+        payment, verification, reason="Provider confirmed charge"
+    )
 
 
 # ---------------------------------------------------------------------
@@ -386,16 +413,15 @@ def _claim_transfer(transfer_id: int, *, actor=None) -> Transfer | None:
 def _ensure_recipient(transfer: Transfer) -> Transfer:
     if transfer.recipient_code:
         return transfer
-    client = _client()
     try:
-        recipient = client.create_transfer_recipient(
+        recipient = _provider().create_transfer_recipient(
             name=f"Borrower {transfer.loan.user.phone[-4:]}",
-            phone_254=transfer.loan.mpesa_phone,
+            phone=transfer.loan.mpesa_phone,
         )
     except ProviderError as exc:
         _record_transfer_error(transfer, exc)
         raise
-    code = str(recipient.get("recipient_code") or "")
+    code = recipient.recipient_code
     if not code:
         error = ProviderError("Provider did not return a recipient code.")
         _record_transfer_error(transfer, error)
@@ -431,9 +457,8 @@ def execute_transfer(transfer_id: int, *, actor=None) -> Transfer:
         return transfer
     transfer = _mark_initiating(transfer)
 
-    client = _client()
     try:
-        data = client.initiate_transfer(
+        initiation = _provider().initiate_transfer(
             amount_minor=to_minor(transfer.amount_kes),
             recipient_code=transfer.recipient_code,
             reference=transfer.reference,
@@ -445,8 +470,8 @@ def execute_transfer(transfer_id: int, *, actor=None) -> Transfer:
 
     with transaction.atomic():
         transfer = Transfer.objects.select_for_update().get(pk=transfer.pk)
-        transfer.provider_transfer_code = str(data.get("transfer_code") or "")[:64]
-        transfer.provider_reference = str(data.get("reference") or transfer.reference)[:64]
+        transfer.provider_transfer_code = initiation.transfer_code[:64]
+        transfer.provider_reference = (initiation.provider_reference or transfer.reference)[:64]
         transfer.initiated_at = timezone.now()
         transfer.save(
             update_fields=[
@@ -499,6 +524,7 @@ def _fail_loan_after_transfer(transfer: Transfer, reason: str) -> None:
             f"Your {settings.PLATFORM_NAME} disbursement could not be completed. "
             "Our team has been alerted and will contact you.",
             purpose="disbursement_failed",
+            user=loan.user,
         )
     )
 
@@ -560,6 +586,7 @@ def confirm_transfer_success(transfer: Transfer, data: dict | None = None) -> Tr
                 f"{settings.PLATFORM_NAME}: KES {amount:,} has been sent to your M-Pesa. "
                 "Reply to this number if you need help.",
                 purpose="disbursed",
+                user=loan.user,
             )
         )
     logger.info("Transfer %s confirmed successful", transfer.pk)
@@ -645,39 +672,42 @@ def retry_disbursement(loan: Loan, *, actor=None) -> Transfer:
 
 def refresh_transfer_from_provider(transfer: Transfer, *, actor=None) -> Transfer:
     """Ask the provider for the authoritative state of a transfer."""
-    client = _client()
+    provider = _provider()
     try:
         if transfer.provider_transfer_code:
-            data = client.get_transfer(transfer.provider_transfer_code)
+            state: TransferState | None = provider.get_transfer(
+                transfer.provider_transfer_code
+            )
         else:
             # The transfer reference is deterministic per loan, so a request
             # whose acknowledgement never arrived (timeout) can still be
-            # reconciled by listing provider transfers for that reference.
-            matches = client.list_transfers(reference=transfer.reference)
-            data = matches[0] if matches else {}
+            # reconciled by looking the provider up for that reference.
+            state = provider.find_transfer_by_reference(transfer.reference)
     except ProviderError as exc:
         logger.error("Transfer lookup failed for %s: %s", transfer.pk, exc.code)
         return transfer
 
-    status_value = str(data.get("status", "")).lower()
-    if status_value == "success":
-        return confirm_transfer_success(transfer, data)
-    if status_value == "failed":
-        return mark_transfer_failed(transfer, "Provider reports failed", data)
-    if status_value == "reversed":
-        return mark_transfer_reversed(transfer, data)
-    if status_value in {"pending", "otp", "processing", "queued"}:
-        with transaction.atomic():
-            transfer = Transfer.objects.select_for_update().get(pk=transfer.pk)
-            if transfer.status == Transfer.Status.UNKNOWN and transfer.can_transition_to(
-                Transfer.Status.PENDING_PROVIDER
-            ):
-                transfer.transition_to(
-                    Transfer.Status.PENDING_PROVIDER,
-                    reason="Provider still processing",
-                    actor=actor,
-                )
+    if state is None:
         return transfer
+    if state.status is TransferStatus.SUCCESS:
+        return confirm_transfer_success(transfer, dict(state.raw))
+    if state.status is TransferStatus.FAILED:
+        return mark_transfer_failed(
+            transfer, state.reason or "Provider reports failed", dict(state.raw)
+        )
+    if state.status is TransferStatus.REVERSED:
+        return mark_transfer_reversed(transfer, dict(state.raw))
+    # PENDING: accepted but not settled; keep awaiting confirmation.
+    with transaction.atomic():
+        transfer = Transfer.objects.select_for_update().get(pk=transfer.pk)
+        if transfer.status == Transfer.Status.UNKNOWN and transfer.can_transition_to(
+            Transfer.Status.PENDING_PROVIDER
+        ):
+            transfer.transition_to(
+                Transfer.Status.PENDING_PROVIDER,
+                reason="Provider still processing",
+                actor=actor,
+            )
     return transfer
 
 
@@ -711,9 +741,8 @@ def request_refund(
         requested_by=actor,
     )
 
-    client = _client()
     try:
-        data = client.create_refund(
+        outcome = _provider().refund(
             transaction_reference=payment.reference,
             amount_minor=to_minor(amount_kes),
             reason=reason[:255],
@@ -724,14 +753,14 @@ def request_refund(
         refund.save(update_fields=["status", "provider_response", "updated_at"])
         raise
 
-    refund.provider_refund_id = str(data.get("id") or "")[:64]
-    refund.provider_response = data if isinstance(data, dict) else {}
-    provider_status = str(data.get("status", "")).lower()
-    refund.status = (
-        Refund.Status.SUCCEEDED
-        if provider_status in {"processed", "success", "completed"}
-        else Refund.Status.PROCESSING
-    )
+    refund.provider_refund_id = outcome.refund_id[:64]
+    refund.provider_response = dict(outcome.raw)
+    if outcome.status is RefundStatus.SETTLED:
+        refund.status = Refund.Status.SUCCEEDED
+    elif outcome.status is RefundStatus.FAILED:
+        refund.status = Refund.Status.FAILED
+    else:
+        refund.status = Refund.Status.PROCESSING
     refund.save(update_fields=["provider_refund_id", "provider_response", "status", "updated_at"])
 
     with transaction.atomic():
@@ -799,7 +828,7 @@ def record_webhook_event(*, event_id: str, event_type: str, payload: dict, refer
     event, created = WebhookEvent.objects.get_or_create(
         event_id=event_id,
         defaults={
-            "provider": "paystack",
+            "provider": settings.PAYMENT_PROVIDER,
             "event_type": event_type[:64],
             "reference": (reference or "")[:64],
             "payload": payload,
@@ -832,15 +861,21 @@ def process_webhook_event(event: WebhookEvent) -> str:
 
 
 def _dispatch_event(event: WebhookEvent) -> str:
-    data = (event.payload.get("data") or {}) if isinstance(event.payload, dict) else {}
-    event_type = event.event_type
-    reference = str(data.get("reference") or "")
+    envelope = _provider().classify_webhook(
+        event.payload if isinstance(event.payload, Mapping) else {}
+    )
+    data = envelope.data
+    reference = envelope.reference
 
-    if event_type == "charge.success":
+    if envelope.kind is WebhookEventKind.CHARGE_SUCCESS:
         process_charge_success(reference, data)
         return "processed"
 
-    if event_type.startswith("transfer."):
+    if envelope.kind in {
+        WebhookEventKind.TRANSFER_SUCCESS,
+        WebhookEventKind.TRANSFER_FAILED,
+        WebhookEventKind.TRANSFER_REVERSED,
+    }:
         transfer = (
             Transfer.objects.filter(provider_reference=reference).first()
             or Transfer.objects.filter(reference=reference).first()
@@ -850,30 +885,31 @@ def _dispatch_event(event: WebhookEvent) -> str:
         )
         if transfer is None:
             raise InvalidTransition(f"No transfer matches reference {reference!r}.")
-        if event_type == "transfer.success":
-            confirm_transfer_success(transfer, data)
-        elif event_type == "transfer.failed":
-            mark_transfer_failed(transfer, str(data.get("reason") or "Provider failed transfer"), data)
-        elif event_type == "transfer.reversed":
-            mark_transfer_reversed(transfer, data)
+        if envelope.kind is WebhookEventKind.TRANSFER_SUCCESS:
+            confirm_transfer_success(transfer, dict(data))
+        elif envelope.kind is WebhookEventKind.TRANSFER_FAILED:
+            mark_transfer_failed(
+                transfer, str(data.get("reason") or "Provider failed transfer"), dict(data)
+            )
         else:
-            return "ignored"
+            mark_transfer_reversed(transfer, dict(data))
         return "processed"
 
-    if event_type.startswith("refund."):
+    if envelope.kind in {
+        WebhookEventKind.REFUND_PROCESSED,
+        WebhookEventKind.REFUND_FAILED,
+    }:
         refund = (
             Refund.objects.filter(provider_refund_id=str(data.get("id") or "")).first()
             or Refund.objects.filter(reference=reference).first()
         )
         if refund is None:
             raise InvalidTransition("No refund matches this event.")
-        if event_type == "refund.processed":
+        if envelope.kind is WebhookEventKind.REFUND_PROCESSED:
             complete_refund(refund)
-            return "processed"
-        if event_type == "refund.failed":
+        else:
             fail_refund(refund, str(data.get("reason") or "Provider failed refund"))
-            return "processed"
-        return "ignored"
+        return "processed"
 
     return "ignored"
 
@@ -892,10 +928,10 @@ def run_reconciliation(*, dry_run: bool = True, actor=None) -> ReconciliationRun
         "ledger_imbalances": 0,
         "duplicate_payments": 0,
     }
-    client: PaystackClient | None = None
+    provider: PaymentProvider | None = None
     try:
         if settings.PAYMENTS_ENABLED:
-            client = PaystackClient()
+            provider = get_payment_provider()
 
         # 1. Payments marked paid but the loan never progressed.
         paid_not_disbursed = Loan.objects.filter(
@@ -924,10 +960,10 @@ def run_reconciliation(*, dry_run: bool = True, actor=None) -> ReconciliationRun
         )[:100]
         summary["in_flight_transfers_checked"] = transfers.count()
         for transfer in transfers:
-            provider_state = None
-            if client is not None and transfer.provider_transfer_code:
+            provider_state: TransferState | None = None
+            if provider is not None and transfer.provider_transfer_code:
                 try:
-                    provider_state = client.get_transfer(transfer.provider_transfer_code)
+                    provider_state = provider.get_transfer(transfer.provider_transfer_code)
                 except ProviderError as exc:
                     issues.append(
                         {
@@ -937,16 +973,17 @@ def run_reconciliation(*, dry_run: bool = True, actor=None) -> ReconciliationRun
                         }
                     )
                     continue
-            provider_status = str((provider_state or {}).get("status", "")).lower()
-            if provider_status == "success" and not dry_run:
-                confirm_transfer_success(transfer, provider_state)
+            if provider_state is not None and provider_state.status is TransferStatus.SUCCESS and not dry_run:
+                confirm_transfer_success(transfer, dict(provider_state.raw))
                 issues.append({"type": "transfer_confirmed", "transfer_id": transfer.pk})
-            elif provider_status == "success":
+            elif provider_state is not None and provider_state.status is TransferStatus.SUCCESS:
                 issues.append(
                     {"type": "transfer_should_be_success", "transfer_id": transfer.pk}
                 )
-            elif provider_status == "failed" and not dry_run:
-                mark_transfer_failed(transfer, "Reconciliation: provider failed", provider_state)
+            elif provider_state is not None and provider_state.status is TransferStatus.FAILED and not dry_run:
+                mark_transfer_failed(
+                    transfer, "Reconciliation: provider failed", dict(provider_state.raw)
+                )
                 issues.append({"type": "transfer_failed", "transfer_id": transfer.pk})
             elif transfer.status == Transfer.Status.FAILED and not transfer.raw_last_event:
                 issues.append({"type": "transfer_failed_unconfirmed", "transfer_id": transfer.pk})

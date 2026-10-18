@@ -1,5 +1,13 @@
 # Remediation report
 
+> **Historical snapshot (2026-10-17).** This document records the state of the
+> repository at a specific point. For the CURRENT engineering state —
+> tests, gates, environments and remaining work — see
+> `docs/RELEASE_ASSESSMENT.md` and `docs/ISSUE_REGISTER.csv` (reconciled).
+
+> Branch suffix and test counts below are as they were on that date.
+
+
 **Repository:** `ekks09/loan-platform`
 **Branch:** `arena/f463a275-loan-platform` (branched from `e0e95b8`)
 **Date:** 2026-10-17

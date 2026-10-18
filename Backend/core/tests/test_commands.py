@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from core.tests.helpers import (
     expire_loan_offer,
+    fake_document_store,
     make_loan,
     make_staff,
     make_verified_user,
@@ -109,28 +110,42 @@ class PurgeDocumentsCommandTests(TestCase):
             documents_uploaded_at=timezone.now() - timedelta(days=400)
         )
 
-    @patch("core.management.commands.purge_documents.SupabaseStorage.delete_file")
-    def test_dry_run_deletes_nothing(self, delete_file):
-        out = StringIO()
-        call_command("purge_documents", "--days", "90", stdout=out)
+    def test_dry_run_deletes_nothing(self):
+        store = fake_document_store()
+        with patch(
+            "core.management.commands.purge_documents.get_document_store",
+            return_value=store,
+        ):
+            out = StringIO()
+            call_command("purge_documents", "--days", "90", stdout=out)
         self.assertIn("would purge documents for 1", out.getvalue())
-        delete_file.assert_not_called()
+        store.delete.assert_not_called()
         self.user.refresh_from_db()
         self.assertTrue(self.user.id_front_path)
 
-    @patch("core.management.commands.purge_documents.SupabaseStorage.delete_file")
-    def test_apply_clears_paths_but_keeps_the_decision_record(self, delete_file):
-        out = StringIO()
-        call_command("purge_documents", "--days", "90", "--apply", stdout=out)
+    def test_apply_clears_paths_but_keeps_the_decision_record(self):
+        store = fake_document_store()
+        with patch(
+            "core.management.commands.purge_documents.get_document_store",
+            return_value=store,
+        ):
+            out = StringIO()
+            call_command("purge_documents", "--days", "90", "--apply", stdout=out)
         self.user.refresh_from_db()
         self.assertEqual(self.user.id_front_path, "")
         self.assertEqual(self.user.id_back_path, "")
         self.assertEqual(self.user.selfie_path, "")
         self.assertEqual(self.user.verification_status, User.VerificationStatus.VERIFIED)
-        self.assertEqual(delete_file.call_count, 3)
+        self.assertEqual(store.delete.call_count, 3)
 
-    @patch("core.management.commands.purge_documents.SupabaseStorage.delete_file")
-    def test_users_with_an_open_loan_are_skipped(self, delete_file):
+    def test_users_with_an_open_loan_are_skipped(self):
+        store = fake_document_store()
+        self._store_patcher = patch(
+            "core.management.commands.purge_documents.get_document_store",
+            return_value=store,
+        )
+        self._store_patcher.start()
+        self.addCleanup(self._store_patcher.stop)
         # The setUp user now has an open loan and must retain their documents.
         make_loan(self.user)
 
@@ -146,4 +161,5 @@ class PurgeDocumentsCommandTests(TestCase):
         other.refresh_from_db()
         self.assertTrue(self.user.id_front_path)
         self.assertEqual(other.id_front_path, "")
-        self.assertEqual(delete_file.call_count, 3)
+        # Only the loan-free user's three documents are deleted.
+        self.assertEqual(store.delete.call_count, 3)

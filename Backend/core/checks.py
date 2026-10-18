@@ -42,13 +42,21 @@ def check_production_configuration(app_configs, **kwargs):
                     id="core.W004",
                 )
             )
-        if not settings.SUPABASE_URL and settings.REQUIRE_DOCUMENT_STORAGE:
-            issues.append(
-                Error(
-                    "Document storage is required but SUPABASE_URL is not configured.",
-                    id="core.E005",
+        if settings.REQUIRE_DOCUMENT_STORAGE:
+            try:
+                from core.storage import document_storage_configured
+
+                storage_ok = document_storage_configured()
+            except Exception:
+                storage_ok = False
+            if not storage_ok:
+                issues.append(
+                    Error(
+                        "Document storage is required but the selected "
+                        "DOCUMENT_STORE is not configured.",
+                        id="core.E005",
+                    )
                 )
-            )
     if settings.PAYMENTS_ENABLED and settings.PAYSTACK_SECRET_KEY.startswith("sk_test_"):
         issues.append(
             Warning(

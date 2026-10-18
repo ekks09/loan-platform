@@ -1,0 +1,18 @@
+# Direct production dependencies for the Django backend.
+#
+# Edit THIS file only, then regenerate requirements.txt with:
+#
+#     pip-compile --generate-hashes Backend/requirements.in
+#
+# requirements.txt is a fully pinned, hash-locked artifact: do not hand-edit.
+# CI fails when the two files drift or when a requirement is not hash-locked.
+Django==5.0.8
+djangorestframework==3.17.2
+django-cors-headers==4.4.0
+PyJWT==2.15.0
+requests==2.33.0
+psycopg2-binary==2.9.9
+python-dotenv==1.2.2
+whitenoise==6.7.0
+gunicorn==22.0.0
+supabase==2.7.4

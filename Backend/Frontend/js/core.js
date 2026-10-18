@@ -1,5 +1,5 @@
 /**
- * Shared UI behaviour for M-Biashara.
+ * Shared UI behaviour for the platform.
  *
  * Everything here is progressive enhancement: pages remain readable without
  * JavaScript. No personal or financial data is stored by this module.

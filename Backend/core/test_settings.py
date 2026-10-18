@@ -19,7 +19,7 @@ os.environ.setdefault("PAYMENTS_LIVE_MODE", "false")
 os.environ.setdefault("SMS_BACKEND", "console")
 os.environ.setdefault("REQUIRE_DOCUMENT_STORAGE", "false")
 os.environ.setdefault("DJANGO_DEV_SQLITE", "1")
-os.environ.setdefault("DJANGO_SQLITE_PATH", "/tmp/loan-platform-dev.sqlite3")
+os.environ.setdefault("DJANGO_SQLITE_PATH", "/tmp/loan-platform-dev.sqlite3")  # nosec B108 -- test-only sqlite path
 
 # A developer's local Backend/.env is loaded by core.settings below. Anything
 # security-relevant that the suite asserts on is pinned here first, with a hard
@@ -29,6 +29,33 @@ os.environ.setdefault("DJANGO_SQLITE_PATH", "/tmp/loan-platform-dev.sqlite3")
 os.environ["DJANGO_PREVIEW_EMBED"] = "0"
 os.environ["DJANGO_SECURE_SSL"] = "0"
 os.environ["DJANGO_HSTS_SECONDS"] = "0"
+
+# Posture surface — hard assignments, NOT setdefaults. python-dotenv loads
+# with override=False, so a setdefault only wins when the key was absent; a
+# demo/preview .env (payments on, upfront fees, s3 document store, required
+# storage...) would otherwise leak through and silently change what the suite
+# proves. The suite must produce identical results on every machine.
+os.environ.update(
+    {
+        "DEPLOY_ENVIRONMENT": "development",
+        "FEE_COLLECTION_MODE": "disabled",
+        "FEE_COLLECTION_APPROVED": "false",
+        "LEGAL_TERMS_APPROVED": "false",
+        "DOCUMENT_STORE": "supabase",
+        "SUPABASE_URL": "",
+        "SUPABASE_SERVICE_KEY": "",
+        "SUPABASE_STORAGE_BUCKET": "",
+        "SUPABASE_DB_HOST": "",
+        "S3_ENDPOINT_URL": "",
+        "S3_PUBLIC_ENDPOINT_URL": "",
+        "S3_ACCESS_KEY": "",
+        "S3_SECRET_KEY": "",  # nosec B105 -- deliberately empty test posture
+        "S3_BUCKET": "",
+        "S3_REGION": "us-east-1",
+        "NOTIFICATION_MAX_RETRIES": "1",
+        "OTP_RESEND_COOLDOWN_SECONDS": "60",
+    }
+)
 
 from core.settings import *  # noqa: E402,F401,F403
 
@@ -56,7 +83,7 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
-MEDIA_ROOT = "/tmp/loan-platform-test-media"
+MEDIA_ROOT = "/tmp/loan-platform-test-media"  # nosec B108 -- test-only media root
 LOGGING = {"version": 1, "disable_existing_loggers": True}
 SILENCED_SYSTEM_CHECKS = ["core.W004", "core.W006"]
 
@@ -69,7 +96,7 @@ REST_FRAMEWORK = {
         "anon": "10000/hour",
         "quote": "10000/hour",
         "user": "10000/hour",
-        "login": "10000/hour",
+        "login": "10000/hour",  # nosec B105 -- test throttle rate, not a credential
         "register": "10000/hour",
         "password_reset": "10000/hour",
         "payment_init": "10000/hour",

@@ -91,7 +91,7 @@ the form.
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
-| POST | `payments/init/` | bearer | Initialise a Paystack M-Pesa charge |
+| POST | `payments/init/` | bearer | Initialise an M-Pesa charge, returns a provider-neutral `authorization_url` |
 | POST | `payments/verify/` | bearer | Re-query the provider for one payment |
 | GET | `payments/history/` | bearer | The caller's payments only |
 | POST | `payments/ops/refund/` | staff | Refund |
@@ -137,6 +137,23 @@ Errors share one shape:
 | 409 | Illegal state transition, duplicate application, payments disabled |
 | 429 | Throttled; `Retry-After` is set |
 | 503 | Provider unavailable; safe to retry |
+
+## 4a. Payment checkout (provider-neutral)
+
+`POST payments/init/` creates (or reuses) the checkout for an accepted loan
+offer. The response's stable contract is:
+
+* `authorization_url` — hosted checkout page; the frontend **redirects** the
+  customer there. It never loads a provider SDK and needs nothing else.
+* `provider` — the configured `PAYMENT_PROVIDER` (currently `paystack`).
+* `reference`, `amount_kes`, `mode`, `fee_collection_mode` — server-authoritative
+  values for display only; fulfilment never trusts them.
+
+Deprecated compatibility fields `paystack_public_key`, `access_code` and
+`email` are still returned for one release; the bundled frontend no longer
+reads them and they will be removed in a future version. Fulfilment always
+arrives through the signed webhook (`webhooks/paystack/`) or the explicit
+`payments/verify/` action, both server-verified against the provider.
 
 ## 5. Idempotency
 

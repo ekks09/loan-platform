@@ -1,5 +1,5 @@
 /**
- * Mobile number handling for M-Biashara (Kenya +254, DR Congo +243).
+ * Mobile number handling (Kenya +254, DR Congo +243).
  *
  * Account creation, sign-in and password reset accept every format a person
  * actually types:

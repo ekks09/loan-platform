@@ -37,7 +37,11 @@ logger = logging.getLogger(__name__)
 
 
 class InitPaymentView(APIView):
-    """Create (or reuse) the Paystack checkout for an approved loan's fee."""
+    """Create (or reuse) the provider checkout for an approved loan's fee.
+
+    Returns a provider-neutral ``authorization_url``; the frontend redirects
+    there. It must never need provider SDKs, keys or session tokens.
+    """
 
     permission_classes = [permissions.IsAuthenticated]
     throttle_classes = [ScopedRateThrottle]
@@ -69,14 +73,19 @@ class InitPaymentView(APIView):
         return Response(
             {
                 "payment": PaymentSerializer(payment).data,
-                "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
-                "email": internal_email(loan.user.phone),
+                # Provider-neutral contract: the frontend only needs this URL.
+                "authorization_url": payment.authorization_url,
+                "provider": settings.PAYMENT_PROVIDER,
                 "mode": "live" if settings.PAYMENTS_LIVE_MODE else "test",
                 "amount_kes": payment.amount_kes,
                 "reference": payment.reference,
-                "authorization_url": payment.authorization_url,
-                "access_code": payment.access_code,
                 "fee_collection_mode": settings.FEE_COLLECTION_MODE,
+                "email": internal_email(loan.user.phone),
+                # Deprecated Paystack-specific fields retained for one release
+                # for API compatibility. The bundled frontend no longer reads
+                # them (it redirects instead); removal is tracked in docs/API.md.
+                "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
+                "access_code": payment.access_code,
             }
         )
 

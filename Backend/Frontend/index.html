@@ -2,21 +2,20 @@
 {% load static humanize %}
 
 {% block title %}{{ PLATFORM_NAME }} — clarity at every step{% endblock %}
-{% block description %}Prepare a Kenyan shilling application, complete private identity verification and follow provider-confirmed updates. Full fee schedule published before you register.{% endblock %}
+{% block description %}{{ PLATFORM_NAME }} — simple, fast, and transparent loans. Create your free account, upload your ID and track your loan status live from your {{ PLATFORM_NAME }} dashboard. Full fee schedule published before you register.{% endblock %}
 {% block body_class %}marketing-page{% endblock %}
 
-{% block topbar %}{% include "partials/topbar.html" with title="Overview" section_label="M-Biashara" %}{% endblock %}
+{% block topbar %}{% include "partials/topbar.html" with title="Overview" section_label=PLATFORM_NAME %}{% endblock %}
 
 {% block content %}
 <section class="hero" id="overview">
   <div class="page page--wide" style="padding-top: 0;">
     <div class="hero-grid">
       <div class="hero-copy" data-reveal>
-        <span class="eyebrow">Kenyan shilling applications</span>
-        <h1>Clarity at every step of your <em>financial journey</em>.</h1>
+        <h1><em>{{ PLATFORM_NAME }}</em> — simple, fast, and transparent loans.</h1>
         <p class="lead">
-          Understand the process, prepare your identity documents and follow verified
-          updates from your {{ PLATFORM_NAME }} account. No payment is taken at registration.
+          Get funded without the runaround — apply in minutes and track your loan
+          status live from your {{ PLATFORM_NAME }} dashboard.
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="{% url 'register' %}">
@@ -26,9 +25,9 @@
           <a class="btn btn-ghost" href="#fees">See the fee schedule</a>
         </div>
         <ul class="hero-points">
-          <li>Published, versioned fee schedule</li>
-          <li>Manual identity review</li>
-          <li>Provider-confirmed money states</li>
+          <li><strong>1.</strong> Create your account <em>(100% free)</em></li>
+          <li><strong>2.</strong> Upload your ID <em>(fast verification)</em></li>
+          <li><strong>3.</strong> Track your status <em>(real-time updates)</em></li>
         </ul>
       </div>
 

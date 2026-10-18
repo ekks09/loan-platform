@@ -14,12 +14,14 @@ from django.core.exceptions import ImproperlyConfigured
 from core.config import (
     env,
     env_bool,
+    env_float,
     env_int,
     env_list,
     normalise_hosts,
     normalise_origins,
     validate_secret,
 )
+from core.pwa import resolve_cache_version
 
 # =========================================================================
 # BASE
@@ -38,6 +40,14 @@ if load_dotenv is not None:
     load_dotenv(BASE_DIR / ".env", override=False)
 
 DEBUG = env_bool("DJANGO_DEBUG", False)
+# Deployment posture label: development (local), staging (pre-production
+# rehearsal), production (live). Used only for guardrails — behaviour must
+# otherwise be identical so staging exercises the production build.
+DEPLOY_ENVIRONMENT = env("DEPLOY_ENVIRONMENT", "development").strip().lower()
+if DEPLOY_ENVIRONMENT not in {"development", "staging", "production"}:
+    raise ImproperlyConfigured(
+        f"DEPLOY_ENVIRONMENT must be development|staging|production, got {DEPLOY_ENVIRONMENT!r}"
+    )
 ALLOW_INSECURE_SECRETS = env_bool("DJANGO_ALLOW_INSECURE_SECRETS", False)
 
 # =========================================================================
@@ -225,16 +235,58 @@ CACHES = {
 }
 
 # =========================================================================
-# STORAGE / SUPABASE
+# STORAGE (private documents)
 # =========================================================================
+# DOCUMENT_STORE selects the adapter (validated at startup; fail closed).
+#   supabase — Supabase Storage (existing production default)
+#   s3       — S3-compatible object storage (AWS S3, MinIO, …)
+DOCUMENT_STORE = (env("DOCUMENT_STORE", "supabase") or "").lower()
+if DOCUMENT_STORE not in {"supabase", "s3"}:
+    raise ImproperlyConfigured(
+        f"DOCUMENT_STORE {DOCUMENT_STORE!r} is not supported. Choose: supabase, s3."
+    )
+
+# --- Supabase adapter -----------------------------------------------------
 SUPABASE_URL = env("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = env("SUPABASE_SERVICE_KEY", "")
 SUPABASE_STORAGE_BUCKET = env("SUPABASE_STORAGE_BUCKET", "identity-documents")
 SUPABASE_STORAGE_PRIVATE = env_bool("SUPABASE_STORAGE_PRIVATE", True)
+
+# --- S3-compatible adapter (MinIO local testing / S3 production) ----------
+S3_ENDPOINT_URL = env("S3_ENDPOINT_URL", "")  # server-side operations
+# Split-horizon signing: presigned GET URLs are generated for this origin
+# instead (defaults to S3_ENDPOINT_URL). Needed when the server talks to the
+# store over an in-cluster address (e.g. docker compose `http://minio:9000`)
+# but the browser downloads from the published one (http://localhost:9000) —
+# SigV4 signs the host header, so the host in the URL must be the one the
+# browser will actually reach.
+S3_PUBLIC_ENDPOINT_URL = env("S3_PUBLIC_ENDPOINT_URL", S3_ENDPOINT_URL)
+S3_REGION = env("S3_REGION", "us-east-1")
+S3_ACCESS_KEY = env("S3_ACCESS_KEY", "")
+S3_SECRET_KEY = env("S3_SECRET_KEY", "")
+S3_BUCKET = env("S3_BUCKET", "")
+
 DOCUMENT_SIGNED_URL_TTL = env_int("DOCUMENT_SIGNED_URL_TTL", 300)
 DOCUMENT_RETENTION_DAYS = env_int("DOCUMENT_RETENTION_DAYS", 90)
 DOCUMENT_MAX_BYTES = env_int("DOCUMENT_MAX_BYTES", 5 * 1024 * 1024)
 REQUIRE_DOCUMENT_STORAGE = env_bool("REQUIRE_DOCUMENT_STORAGE", not DEBUG)
+
+if DOCUMENT_STORE == "s3" and REQUIRE_DOCUMENT_STORAGE:
+    missing = [
+        name
+        for name, value in (
+            ("S3_ENDPOINT_URL", S3_ENDPOINT_URL),
+            ("S3_ACCESS_KEY", S3_ACCESS_KEY),
+            ("S3_SECRET_KEY", S3_SECRET_KEY),
+            ("S3_BUCKET", S3_BUCKET),
+        )
+        if not value
+    ]
+    if missing:
+        raise ImproperlyConfigured(
+            "DOCUMENT_STORE=s3 with required storage but the following are "
+            "missing: " + ", ".join(missing)
+        )
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = DOCUMENT_MAX_BYTES
 DATA_UPLOAD_MAX_MEMORY_SIZE = DOCUMENT_MAX_BYTES * 4 + 1024 * 1024
@@ -323,11 +375,34 @@ JWT_ISSUER = env("JWT_ISSUER", "loan-platform")
 JWT_AUDIENCE = env("JWT_AUDIENCE", "loan-platform-users")
 
 # =========================================================================
-# PAYMENTS (PAYSTACK)
+# PAYMENTS (provider abstraction)
 # =========================================================================
 # Fail closed: a deployment must explicitly opt in to taking payments.
 PAYMENTS_ENABLED = env_bool("PAYMENTS_ENABLED", False)
 PAYMENTS_LIVE_MODE = env_bool("PAYMENTS_LIVE_MODE", False)
+# Staging rehearse with test keys / disabled only: a staging deployment must
+# never be able to move real money, whatever env var someone pastes into the
+# dashboard. This is startup-fatal, matching LEGAL_TERMS_APPROVED posture.
+if DEPLOY_ENVIRONMENT == "staging" and PAYMENTS_LIVE_MODE:
+    raise ImproperlyConfigured(
+        "Staging can never run PAYMENTS_LIVE_MODE=true. "
+        "Use test keys (PAYMENTS_LIVE_MODE=false) or disable payments; "
+        "live mode belongs to production only."
+    )
+
+# Provider selection. Business logic talks to the PaymentProvider contract
+# (payments.providers); only the named adapter holds provider-specific
+# behaviour. The set is validated at startup so a typo fails the boot rather
+# than the first charge.
+PAYMENT_PROVIDER = (env("PAYMENT_PROVIDER", "paystack") or "").lower()
+SUPPORTED_PAYMENT_PROVIDERS = frozenset({"paystack"})
+if PAYMENT_PROVIDER not in SUPPORTED_PAYMENT_PROVIDERS:
+    raise ImproperlyConfigured(
+        f"PAYMENT_PROVIDER {PAYMENT_PROVIDER!r} is not supported. "
+        f"Choose one of: {', '.join(sorted(SUPPORTED_PAYMENT_PROVIDERS))}."
+    )
+
+# --- Paystack adapter settings (required when the provider is active) -----
 PAYSTACK_BASE_URL = env("PAYSTACK_BASE_URL", "https://api.paystack.co")
 PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY", "") or ""
 PAYSTACK_PUBLIC_KEY = env("PAYSTACK_PUBLIC_KEY", "") or ""
@@ -343,28 +418,32 @@ PAYSTACK_MAX_LOAN_KES = env_int("PAYSTACK_MAX_LOAN_KES", 60000)
 APP_FEE_CURRENCY = env("APP_FEE_CURRENCY", "KES")
 
 if PAYMENTS_ENABLED:
-    missing = [
-        name
-        for name, value in (
-            ("PAYSTACK_SECRET_KEY", PAYSTACK_SECRET_KEY),
-            ("PAYSTACK_PUBLIC_KEY", PAYSTACK_PUBLIC_KEY),
-        )
-        if not value
-    ]
-    if missing:
-        raise ImproperlyConfigured(
-            "Payments are enabled but the following are missing: " + ", ".join(missing)
-        )
-    if not PAYMENTS_LIVE_MODE and PAYSTACK_SECRET_KEY.startswith("sk_live_"):
-        raise ImproperlyConfigured(
-            "PAYMENTS_LIVE_MODE is false but a live Paystack secret key is configured. "
-            "Refusing to start: use test keys or explicitly enable live mode."
-        )
-    if PAYMENTS_LIVE_MODE and not PAYSTACK_SECRET_KEY.startswith("sk_live_"):
-        raise ImproperlyConfigured(
-            "PAYMENTS_LIVE_MODE is true but the Paystack secret key is not a live key."
-        )
-elif PAYSTACK_SECRET_KEY or PAYSTACK_PUBLIC_KEY:
+    if PAYMENT_PROVIDER == "paystack":
+        missing = [
+            name
+            for name, value in (
+                ("PAYSTACK_SECRET_KEY", PAYSTACK_SECRET_KEY),
+                ("PAYSTACK_PUBLIC_KEY", PAYSTACK_PUBLIC_KEY),
+            )
+            if not value
+        ]
+        if missing:
+            raise ImproperlyConfigured(
+                "Payments are enabled but the following are missing: "
+                + ", ".join(missing)
+            )
+        if not PAYMENTS_LIVE_MODE and PAYSTACK_SECRET_KEY.startswith("sk_live_"):
+            raise ImproperlyConfigured(
+                "PAYMENTS_LIVE_MODE is false but a live Paystack secret key is "
+                "configured. Refusing to start: use test keys or explicitly "
+                "enable live mode."
+            )
+        if PAYMENTS_LIVE_MODE and not PAYSTACK_SECRET_KEY.startswith("sk_live_"):
+            raise ImproperlyConfigured(
+                "PAYMENTS_LIVE_MODE is true but the Paystack secret key is not a "
+                "live key."
+            )
+elif PAYMENT_PROVIDER == "paystack" and (PAYSTACK_SECRET_KEY or PAYSTACK_PUBLIC_KEY):
     raise ImproperlyConfigured(
         "Paystack keys are set while PAYMENTS_ENABLED is false. Remove the keys "
         "or enable payments to avoid ambiguous configuration."
@@ -403,7 +482,11 @@ REQUIRE_OFFER_ACCEPTANCE = env_bool("REQUIRE_OFFER_ACCEPTANCE", True)
 API_BASE_URL = env("API_BASE_URL", "/api/v1")
 API_BASE_URL = API_BASE_URL.rstrip("/") or "/api/v1"
 
-PLATFORM_NAME = env("PLATFORM_NAME", "M-Biashara")
+# Single branding source: PLATFORM_NAME. The default matches the deployed
+# brand in render.yaml and Backend/.env.example; every screen string reads
+# this setting (never a hardcoded name) so re-branding is one environment
+# variable, not a code change.
+PLATFORM_NAME = env("PLATFORM_NAME", "PesaFix")
 PLATFORM_TAGLINE = env(
     "PLATFORM_TAGLINE", "Clarity at every step of your financial journey."
 )
@@ -430,7 +513,12 @@ CONSENT_VERSION = env("CONSENT_VERSION", "2026-10-draft")
 # Progressive Web App
 PWA_THEME_COLOR = env("PWA_THEME_COLOR", "#071320")
 PWA_BACKGROUND_COLOR = env("PWA_BACKGROUND_COLOR", "#F7F4EE")
-PWA_CACHE_VERSION = env("PWA_CACHE_VERSION", "2026-10-18.5")
+# Cache-busting identity for the service worker's precache. Default: a
+# deterministic fingerprint of the app shell itself (core/pwa.py), so a
+# deploy that changes any cached asset automatically changes the version —
+# no hand-bumped string. PWA_CACHE_VERSION remains as an explicit override
+# for pipelines that prefer stamping the build id / commit SHA.
+PWA_CACHE_VERSION = resolve_cache_version(env("PWA_CACHE_VERSION", ""), BASE_DIR / "Frontend")
 
 if PAYMENTS_LIVE_MODE and not LEGAL_TERMS_APPROVED:
     raise ImproperlyConfigured(
@@ -454,6 +542,15 @@ if SMS_BACKEND == "africastalking" and not (
         "SMS_BACKEND='africastalking' requires AFRICASTALKING_USERNAME and "
         "AFRICASTALKING_API_KEY."
     )
+
+# Bounded retry of transient provider failures (in-request). Attempts total
+# 1 + NOTIFICATION_MAX_RETRIES; permanent rejections never retry.
+NOTIFICATION_MAX_RETRIES = env_int("NOTIFICATION_MAX_RETRIES", 1)
+NOTIFICATION_RETRY_BACKOFF_SECONDS = env_float("NOTIFICATION_RETRY_BACKOFF_SECONDS", 0.5)
+
+# Minimum gap between two OTP SMS for the same number, on top of the
+# windowed limits in the domain layer. Prevents resend loops.
+OTP_RESEND_COOLDOWN_SECONDS = env_int("OTP_RESEND_COOLDOWN_SECONDS", 60)
 
 # =========================================================================
 # TIME / I18N
