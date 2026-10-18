@@ -41,7 +41,7 @@ memory or intent.
 | 15 | Tests as PostgreSQL (prod-matching major) | `tests-postgres` CI job on `postgres:15` service + `core/pg_test_settings.py` | job spec verified; local full-suite rehearsal on sqlite green |
 | 16 | Migration smoke test | job runs `migrate` then `makemigrations --check` on the pg job | step in workflow |
 | 17 | collectstatic gate | `collectstatic --noinput --dry-run` in CI | rehearsed exit 0 locally |
-| 18 | Security scanning (bandit) + dependency audit (pip-audit) | both as CI gates; app code scans at **zero** findings | this document §3; `Backend/.pip-audit-allowlist` (19 IDs) |
+| 18 | Security scanning (bandit) + dependency audit (pip-audit) | both as CI gates; app code scans at **zero** findings | this document §3; `Backend/.pip-audit-allowlist` (29 IDs, extended 2026-10-18) |
 | 19 | Coverage gate at a documented threshold | `.coveragerc` (`fail_under=85`), measured baseline 88% | §3 |
 | 20 | docker-compose with postgres + MinIO + app | `Dockerfile`, `compose.yml`, `.env.compose.example` | `docs/LOCAL_DOCKER.md` validation evidence + limitations |
 | 21 | No unsafe placeholder secrets in examples | every example file uses obviously-local placeholders; boot rejects weak secrets | secret validation tests; render blueprints keep `sync: false` |
@@ -65,7 +65,7 @@ coverage report (fail_under=85)      → TOTAL 4243 stmts, 88%
 bandit -r core users loans payments loyalty -x tests,migrations
   → 0 Low / 0 Medium / 0 High
 pip-audit -r Backend/requirements.txt
-  → only the 19 allowlisted Django 5.0-EOL IDs (see §5)
+  → only the 29 allowlisted Django 5.0-EOL IDs (see §5)
 python manage.py makemigrations --check --dry-run --noinput
   → "No changes detected"
 python manage.py check_config --allow-test-mode --settings=core.ci_settings
@@ -120,7 +120,7 @@ same commands against a service container).
 
 | Risk | Severity | Position |
 |---|---|---|
-| Django 5.0.8 is end-of-life: 19 advisories fixable only off the 5.0 line | **High** | deliberate, tracked: upgrade to 5.2 LTS as a separate staging-gated change first after this branch; CI hard-fails on any advisory outside the documented budget |
+| Django 5.0.8 is end-of-life: 29 advisories (19 original + 10 published/aliased after the initial scan, added 2026-10-18) fixable only off the 5.0 line | **High** | deliberate, tracked: upgrade to 5.2 LTS as a separate staging-gated change first after this branch; CI hard-fails on any advisory outside the documented budget |
 | PyJWT PYSEC-2025-183 (unfixed upstream) | Low | decode pins `algorithms=[\"HS256\"]` with a single key — confusion class not applicable |
 | Sandbox could not execute Docker/Postgres | Medium | mitigations documented; first docker run + CI job run are the two rehearse-on-host actions |
 | Test-key Paystack round trip never run against the real provider | Medium | required staging checklist item (#3 in RELEASE_PROCESS.md) |

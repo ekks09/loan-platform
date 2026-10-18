@@ -11,7 +11,13 @@
 # pyjwt, python-dotenv, djangorestframework) or have no advisories, so
 # any NEW finding in any other package FAILS CI.
 #
-# Budget: exactly these 19 unique IDs, and nothing else.
+# Budget: exactly these 29 unique IDs, and nothing else.
+#
+# 2026-10-18 extension (+10 GHSA IDs): a re-scan surfaced ten further
+# advisory IDs against Django 5.0.8 that were published (or GHSA-aliased)
+# after this file was generated. Same rationale, same fix path: every one
+# is only fixable off the EOL 5.0 line, and the Django 5.2 LTS upgrade is
+# the tracked remedy (docs/RELEASE_ASSESSMENT.md).
 PYSEC-2024-102
 PYSEC-2024-156
 PYSEC-2024-157
@@ -31,3 +37,13 @@ PYSEC-2026-2091
 PYSEC-2026-2092
 PYSEC-2026-3717
 PYSEC-2026-4035
+GHSA-3h9f-r86x-qvjx
+GHSA-6w2r-r2m5-xq5w
+GHSA-7xr5-9hcq-chf9
+GHSA-8cjm-8mp7-r2xf
+GHSA-8qcx-xf44-272x
+GHSA-923m-gv2p-w5qp
+GHSA-crhf-3pfg-w68w
+GHSA-frmv-pr5f-9mcr
+GHSA-h7pc-vwp9-298g
+GHSA-qw25-v68c-qjf3
