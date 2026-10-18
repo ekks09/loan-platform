@@ -30,18 +30,38 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        # Pin pip itself: pip-compile's resolver output (and therefore the
+        # drift check below) depends on the pip version, which otherwise
+        # floats with the runner image (ubuntu-latest migrates 2026-10-19).
+        run: |
+          pip install --upgrade "pip==26.2.1"
+          pip --version
+          pip install -r requirements.txt
 
       - name: Dependency lockfile drift check
         # Backend/requirements.txt must be exactly what pip-compile produces
         # from Backend/requirements.in, and every package must be hash-locked.
+        # The paths are root-relative, so override the job's Backend CWD.
+        working-directory: ${{ github.workspace }}
         run: |
-          pip install "pip-tools==7.6.2"
-          cp Backend/requirements.txt /tmp/committed.txt
-          pip-compile --generate-hashes Backend/requirements.in
-          diff -u /tmp/committed.txt Backend/requirements.txt
-          git checkout -- Backend/requirements.txt
-          grep -c -- "--hash=sha256:" Backend/requirements.txt
+          pip install --upgrade "pip==26.2.1" "pip-tools==7.6.2"
+          rc=0
+          cp Backend/requirements.txt /tmp/committed.txt || rc=$?
+          if [ $rc -eq 0 ]; then
+            pip-compile --generate-hashes Backend/requirements.in 2>/tmp/compile-err.txt || rc=$?
+          fi
+          if [ $rc -eq 0 ]; then
+            diff -u /tmp/committed.txt Backend/requirements.txt > /tmp/lockdiff.txt || rc=$?
+          fi
+          if [ $rc -eq 0 ]; then
+            grep -c -- "--hash=sha256:" Backend/requirements.txt || rc=$?
+          fi
+          if [ $rc -ne 0 ]; then
+            python Backend/scripts/ci_annotate_log.py pip-compile-stderr /tmp/compile-err.txt 40 || true
+            python Backend/scripts/ci_annotate_log.py lockfile-drift /tmp/lockdiff.txt 120 || true
+            git checkout -- Backend/requirements.txt || true
+          fi
+          exit $rc
 
       - name: Vulnerability scan (pip-audit)
         # Gate, not advisor: fails on ANY advisory beyond the deliberate,
@@ -100,8 +120,12 @@ jobs:
         # required for discovery.
         run: |
           set -o pipefail
-          python manage.py test --settings=core.test_settings --verbosity 1 | tee /tmp/tests.log
-          grep -Eq "^Ran [1-9][0-9]* tests? " /tmp/tests.log || { tail -200 /tmp/tests.log; exit 1; }
+          # unittest writes progress AND the "Ran N tests" summary to STDERR;
+          # merge the streams or the zero-discovery grep below can never see
+          # it, and every green run scores as a failure.
+          python manage.py test --settings=core.test_settings --verbosity 1 2>&1 | tee /tmp/tests.log
+          grep -Eq "^Ran [1-9][0-9]* tests? " /tmp/tests.log \
+            || { python ../scripts/ci_annotate_log.py sqlite-suite /tmp/tests.log 120 || true; tail -200 /tmp/tests.log; exit 1; }
 
       - name: Coverage gate
         # Measured baseline after hardening phases: 88% total; gate at 85 in
@@ -165,7 +189,13 @@ jobs:
           cache-dependency-path: Backend/requirements.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        # Pin pip itself: pip-compile's resolver output (and therefore the
+        # drift check below) depends on the pip version, which otherwise
+        # floats with the runner image (ubuntu-latest migrates 2026-10-19).
+        run: |
+          pip install --upgrade "pip==26.2.1"
+          pip --version
+          pip install -r requirements.txt
 
       - name: Migration smoke test (PostgreSQL)
         # migrate an empty database end to end, then prove again that no
@@ -177,6 +207,12 @@ jobs:
 
       - name: Full test suite (PostgreSQL)
         run: |
-          set -o pipefail
-          python manage.py test --settings=core.pg_test_settings --verbosity 1 | tee /tmp/pg-tests.log
-          grep -Eq "^Ran [1-9][0-9]* tests? " /tmp/pg-tests.log || { tail -200 /tmp/pg-tests.log; exit 1; }
+          rc=0
+          # See the SQLite step: unittest reports on STDERR, so merge streams.
+          python manage.py test --settings=core.pg_test_settings --verbosity 2 2>&1 | tee /tmp/pg-tests.log || rc=$?
+          if [ $rc -ne 0 ]; then
+            python ../scripts/ci_annotate_log.py postgres-suite /tmp/pg-tests.log 120 || true
+            exit $rc
+          fi
+          grep -Eq "^Ran [1-9][0-9]* tests? " /tmp/pg-tests.log \
+            || { python ../scripts/ci_annotate_log.py postgres-log-after-grep /tmp/pg-tests.log 120 || true; tail -200 /tmp/pg-tests.log; exit 1; }
