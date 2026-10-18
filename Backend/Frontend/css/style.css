@@ -1124,7 +1124,15 @@ body.is-nav-open {
 }
 
 .btn-primary:hover {
+  --btn-fg: var(--gold-ink);
+  background: var(--btn-bg);
+  border-color: var(--gold-bright);
+  filter: brightness(1.05);
   box-shadow: var(--shadow-glow), var(--shadow-md);
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  --btn-fg: #140e02;
 }
 
 [data-theme="dark"] .btn-primary {
@@ -1133,12 +1141,7 @@ body.is-nav-open {
   --btn-fg: #1c1403;
 }
 
-.btn-primary:hover {
-  --btn-bg: var(--gold-bright);
-  border-color: var(--gold-bright);
-  background: var(--gold-wash);
-  filter: brightness(1.03);
-}
+
 
 .btn-secondary {
   --btn-bg: var(--emerald);
@@ -1171,6 +1174,12 @@ body.is-nav-open {
 .btn-ghost:hover {
   --btn-border: var(--gold);
   color: var(--gold-deep);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+
+[data-theme="dark"] .btn-ghost:hover {
+  color: var(--gold-bright);
+  background: rgba(212, 175, 55, 0.08);
 }
 
 .btn-quiet {
@@ -5571,6 +5580,11 @@ dialog.dialog {
 }
 
 .link-button:hover {
+  color: var(--gold-deep);
+  text-decoration-color: var(--gold);
+}
+
+[data-theme="dark"] .link-button:hover {
   color: var(--gold-bright);
   text-decoration-color: var(--gold-bright);
 }

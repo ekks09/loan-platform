@@ -291,7 +291,9 @@
   Auth.register = async function (payload) {
     const body = {
       phone: normalizePhone(payload.phone),
-      national_id: String(payload.national_id || "").trim(),
+      // Accept both spellings: page-auth historically sent `nationalId`,
+      // which silently serialised to "" and made registration unwinnable.
+      national_id: String(payload.national_id != null ? payload.national_id : payload.nationalId || "").trim(),
       password: payload.password,
       consent: Boolean(payload.consent),
       consent_version: payload.consentVersion || "",
