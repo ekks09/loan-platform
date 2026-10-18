@@ -120,8 +120,12 @@ jobs:
         # required for discovery.
         run: |
           set -o pipefail
-          python manage.py test --settings=core.test_settings --verbosity 1 | tee /tmp/tests.log
-          grep -Eq "^Ran [1-9][0-9]* tests? " /tmp/tests.log || { tail -200 /tmp/tests.log; exit 1; }
+          # unittest writes progress AND the "Ran N tests" summary to STDERR;
+          # merge the streams or the zero-discovery grep below can never see
+          # it, and every green run scores as a failure.
+          python manage.py test --settings=core.test_settings --verbosity 1 2>&1 | tee /tmp/tests.log
+          grep -Eq "^Ran [1-9][0-9]* tests? " /tmp/tests.log \
+            || { python ../scripts/ci_annotate_log.py sqlite-suite /tmp/tests.log 120 || true; tail -200 /tmp/tests.log; exit 1; }
 
       - name: Coverage gate
         # Measured baseline after hardening phases: 88% total; gate at 85 in
@@ -204,9 +208,11 @@ jobs:
       - name: Full test suite (PostgreSQL)
         run: |
           rc=0
-          python manage.py test --settings=core.pg_test_settings --verbosity 2 | tee /tmp/pg-tests.log || rc=$?
+          # See the SQLite step: unittest reports on STDERR, so merge streams.
+          python manage.py test --settings=core.pg_test_settings --verbosity 2 2>&1 | tee /tmp/pg-tests.log || rc=$?
           if [ $rc -ne 0 ]; then
             python ../scripts/ci_annotate_log.py postgres-suite /tmp/pg-tests.log 120 || true
             exit $rc
           fi
-          grep -Eq "^Ran [1-9][0-9]* tests? " /tmp/pg-tests.log || { tail -200 /tmp/pg-tests.log; exit 1; }
+          grep -Eq "^Ran [1-9][0-9]* tests? " /tmp/pg-tests.log \
+            || { python ../scripts/ci_annotate_log.py postgres-log-after-grep /tmp/pg-tests.log 120 || true; tail -200 /tmp/pg-tests.log; exit 1; }
