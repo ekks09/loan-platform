@@ -46,8 +46,6 @@
       ring.style.strokeDasharray = String(circumference);
       ring.style.strokeDashoffset = String(circumference * (1 - ratio));
     }
-    const meter = $("loyaltyMeter");
-    if (meter) meter.style.setProperty("--score-ratio", String(ratio));
     MB.setText($("loyaltyScoreScale"), min + " – " + max);
 
     const list = $("loyaltyFactors");

@@ -17,6 +17,7 @@ from loyalty.services import (
     account_for,
     credit_factors,
     discounted_fee,
+    fee_discount_bps,
     lock_into_vault,
     max_limit_kes,
     release_from_vault,
@@ -39,7 +40,7 @@ def _payload(user, account: LoyaltyAccount) -> dict:
         "lifetime_repaid_kes": account.lifetime_repaid_kes,
         "cashback_kes": account.cashback_kes,
         "vault_kes": account.vault_kes,
-        "fee_discount_bps": 150 if account.tier == Tier.GOLD else 0,
+        "fee_discount_bps": fee_discount_bps(account),
         "fee_example": {
             "amount_kes": 10_000,
             "standard_fee_kes": sample,
