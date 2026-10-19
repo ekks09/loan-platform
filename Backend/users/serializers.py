@@ -66,18 +66,29 @@ class RegisterSerializer(serializers.Serializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    phone = serializers.CharField(max_length=20)
+    # Borrowers sign in with their phone number; back-office operators sign in
+    # with a display name. Exactly one of the two is supplied.
+    phone = serializers.CharField(
+        max_length=20, required=False, allow_blank=True, default=""
+    )
+    username = serializers.CharField(
+        max_length=150, required=False, allow_blank=True, default=""
+    )
     password = serializers.CharField(write_only=True, max_length=128)
 
-    def validate_phone(self, value: str) -> str:
-        try:
-            return normalize_msisdn(value)
-        except InvalidPhoneNumber as exc:
-            # Do not reveal whether the number format or the account was wrong.
-            raise serializers.ValidationError(GENERIC_LOGIN_ERROR) from exc
+    def _identifier(self, attrs: dict) -> str:
+        return str(attrs.get("phone") or attrs.get("username") or "").strip()
 
     def validate(self, attrs):
-        user = User.objects.filter(phone=attrs["phone"]).first()
+        identifier = self._identifier(attrs)
+        if not identifier:
+            raise serializers.ValidationError("Enter your phone number or username.")
+
+        try:
+            user = User.objects.get_by_natural_key(identifier)
+        except User.DoesNotExist:
+            user = None
+
         if user is None:
             check_password(attrs["password"], _DUMMY_HASH)
             raise serializers.ValidationError(GENERIC_LOGIN_ERROR)

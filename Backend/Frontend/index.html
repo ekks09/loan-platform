@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% load static humanize %}
 
-{% block title %}{{ PLATFORM_NAME }} — clarity at every step{% endblock %}
-{% block description %}{{ PLATFORM_NAME }} — simple, fast, and transparent loans. Create your free account, upload your ID and track your loan status live from your {{ PLATFORM_NAME }} dashboard. Full fee schedule published before you register.{% endblock %}
+{% block title %}{{ PLATFORM_NAME }} — Borrow Quick Loan Now{% endblock %}
+{% block description %}Quick loans from KES {{ min_amount|intcomma }} to KES {{ max_amount|intcomma }}. Apply on your phone with your National ID and have the money sent straight to your M-PESA line.{% endblock %}
 {% block body_class %}marketing-page{% endblock %}
 
 {% block topbar %}{% include "partials/topbar.html" with title="Overview" section_label=PLATFORM_NAME %}{% endblock %}
@@ -12,22 +12,27 @@
   <div class="page page--wide" style="padding-top: 0;">
     <div class="hero-grid">
       <div class="hero-copy" data-reveal>
-        <h1><em>{{ PLATFORM_NAME }}</em> — simple, fast, and transparent loans.</h1>
+        <div class="hero-brand">
+          <span class="hero-brand-mark">{% include "partials/brand_mark.svg" %}</span>
+          <h1 class="hero-brand-word">{{ PLATFORM_NAME }}</h1>
+          <p class="hero-subhead">Borrow Quick Loan Now</p>
+        </div>
         <p class="lead">
-          Get funded without the runaround — apply in minutes and track your loan
-          status live from your {{ PLATFORM_NAME }} dashboard.
+          Quick loans from <strong>KES {{ min_amount|intcomma }}</strong> to
+          <strong>KES {{ max_amount|intcomma }}</strong>, paid straight to your M-PESA.
+          Apply with your phone number and National ID. No paperwork, no branch visits.
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="{% url 'register' %}">
-            Start an application
+            Create Account
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>
-          <a class="btn btn-ghost" href="#fees">See the fee schedule</a>
+          <a class="btn btn-ghost" href="#how-it-works">See how it works</a>
         </div>
         <ul class="hero-points">
-          <li><strong>1.</strong> Create your account <em>(100% free)</em></li>
-          <li><strong>2.</strong> Upload your ID <em>(fast verification)</em></li>
-          <li><strong>3.</strong> Track your status <em>(real-time updates)</em></li>
+          <li>Free to create an account</li>
+          <li>No paperwork, no guarantor</li>
+          <li>Money sent to your M-PESA line</li>
         </ul>
       </div>
 
@@ -36,42 +41,69 @@
              fetchpriority="high" decoding="async" />
         <div class="hero-overlay">
           <div class="row row-between">
-            <h2>Application progress</h2>
-            <span class="chip chip-gold">Under review</span>
+            <h2>How it works</h2>
+            <span class="chip chip-gold">KES {{ min_amount|intcomma }} min</span>
           </div>
           <ol class="mini-steps">
-            <li class="is-done">Account and consent recorded</li>
-            <li class="is-current">Identity documents with the review team</li>
-            <li>Offer prepared after approval</li>
-            <li>Disbursement only after provider confirmation</li>
+            <li class="is-done">Enter your phone number</li>
+            <li class="is-current">Choose your loan amount</li>
+            <li>Receive the money on M-PESA</li>
           </ol>
         </div>
       </div>
     </div>
 
     <div class="hero-badge" data-reveal>
-      <strong>Published fee schedule</strong>
-      <span>· No live fee is collected in this environment. No credit is issued until the required approvals are recorded.</span>
+      <strong>{{ PLATFORM_SOCIAL_PROOF|default:"Clear fees, quick decisions, and money paid straight to your M-PESA." }}</strong>
+      <span>· {{ PLATFORM_LICENCE_STATUS }}</span>
     </div>
   </div>
 </section>
 
-<section class="page page--wide" style="padding-top: 0;">
-  <div class="grid grid-3" data-reveal>
-    <div class="card card--flat">
-      <span class="eyebrow">Transparent</span>
-      <h3 style="margin-top: 8px;">Every band, published</h3>
-      <p class="muted" style="font-size: 0.86rem; margin: 0;">Amount ranges, rate and a worked example for each band. The minimum charge is stated, not hidden in a footnote.</p>
+<section class="proof-band" aria-label="Loan summary">
+  <div class="page page--wide">
+    <ul class="proof-stats" data-reveal>
+      <li class="proof-stat">
+        <strong>KES {{ min_amount|intcomma }}</strong>
+        <span>minimum loan</span>
+      </li>
+      <li class="proof-stat">
+        <strong>3 min</strong>
+        <span>to apply</span>
+      </li>
+      <li class="proof-stat">
+        <strong>No paperwork</strong>
+        <span>phone number and ID only</span>
+      </li>
+      <li class="proof-stat">
+        <strong>M-PESA</strong>
+        <span>paid to your line</span>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="section" id="why">
+  <div class="page page--wide">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">Why {{ PLATFORM_NAME }}</span>
+      <h2>Simple loans. Clear costs.</h2>
+      <p>No branch visits, no guarantor and no long forms. Just the three things that matter.</p>
     </div>
-    <div class="card card--flat">
-      <span class="eyebrow">Private</span>
-      <h3 style="margin-top: 8px;">Documents stay guarded</h3>
-      <p class="muted" style="font-size: 0.86rem; margin: 0;">Identity images live in private storage. Reviewer links expire after five minutes and every access is logged.</p>
-    </div>
-    <div class="card card--flat">
-      <span class="eyebrow">Server-authoritative</span>
-      <h3 style="margin-top: 8px;">No optimistic money states</h3>
-      <p class="muted" style="font-size: 0.86rem; margin: 0;">A browser callback never marks a payment successful. Only a signed provider confirmation moves the state.</p>
+
+    <div class="grid grid-3" data-reveal>
+      <div class="card card--flat">
+        <h3>Instant M-PESA payout</h3>
+        <p class="muted">Once your loan is approved, the money is sent straight to the M-PESA line registered on your account.</p>
+      </div>
+      <div class="card card--flat">
+        <h3>Start small, grow your limit</h3>
+        <p class="muted">Borrow from <strong>KES {{ min_amount|intcomma }}</strong> and grow your limit each time you repay on time.</p>
+      </div>
+      <div class="card card--flat">
+        <h3>100% digital and paperless</h3>
+        <p class="muted">All you need is your phone number and your National ID. Apply from anywhere.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -81,38 +113,44 @@
   <div class="page page--wide">
     <div class="section-head" data-reveal>
       <span class="eyebrow">How it works</span>
-      <h2>Four steps. Each one visible before the next begins.</h2>
-      <p>An application is not an approval. An accepted offer is not a disbursement. Your dashboard keeps those states separate.</p>
+      <h2>Three steps.</h2>
+      <p>No fine print to decode. Enter your number, choose your amount, get your money.</p>
     </div>
 
-    {% include "partials/art.html" with file="img/how-flow" modifier="art--band" w=1400 h=659 %}
-
-    <div class="steps" style="margin-top: var(--space-5);">
+    <div class="steps steps--three" style="margin-top: var(--space-5);">
       <article class="step" data-reveal>
         <span class="step-number">01</span>
-        <h3>Create your account</h3>
-        <p>Register with a Kenyan mobile number and National ID. Review the privacy notice and record your consent.</p>
-        <span class="step-note">No payment at this stage.</span>
+        <h3>Enter your phone number</h3>
+        <p>Register with your Kenyan mobile number and National ID, then record consent. It takes about three minutes.</p>
+        <span class="step-note">Free to create. No payment at this stage.</span>
       </article>
       <article class="step" data-reveal data-reveal-delay="1">
         <span class="step-number">02</span>
-        <h3>Verify your identity</h3>
-        <p>Upload the front and back of your ID plus a selfie. A staff reviewer checks the images manually.</p>
-        <span class="step-note">Uploading documents does not guarantee approval.</span>
+        <h3>Choose your loan amount</h3>
+        <p>Pick anything from <strong>KES {{ min_amount|intcomma }}</strong> up to KES {{ max_amount|intcomma }}. The processing fee is shown before you commit to anything.</p>
+        <span class="step-note">You see the cost first. Always.</span>
       </article>
       <article class="step" data-reveal data-reveal-delay="2">
         <span class="step-number">03</span>
-        <h3>Apply and review an offer</h3>
-        <p>Choose an amount between KES {{ min_amount|intcomma }} and KES {{ max_amount|intcomma }}. If approved, you receive written terms to accept or decline.</p>
-        <span class="step-note">The fee is disclosed before you accept.</span>
-      </article>
-      <article class="step" data-reveal data-reveal-delay="3">
-        <span class="step-number">04</span>
-        <h3>Disbursement status</h3>
-        <p>Money moves only after the payment provider confirms the transfer. A request being accepted is not a completed payment.</p>
-        <span class="step-note">Provider confirmation is the source of truth.</span>
+        <h3>Receive M-PESA cash</h3>
+        <p>Once approved and confirmed, the money is sent to the M-PESA line registered on your account.</p>
+        <span class="step-note">Payout is confirmed by the provider, not the page.</span>
       </article>
     </div>
+
+    <details class="flow-details" data-reveal>
+      <summary class="flow-details-summary">The full process, in detail</summary>
+      <div class="flow-details-body">
+        <ol class="mini-steps">
+          <li>Create your account and record consent.</li>
+          <li>Upload the front and back of your National ID plus a selfie. A reviewer checks them by hand.</li>
+          <li>Apply for an amount. If approved you receive written terms to accept or decline.</li>
+          <li>The disclosed processing fee is collected only after you accept the offer.</li>
+          <li>Disbursement is marked complete only when the payment provider confirms the transfer.</li>
+        </ol>
+        {% include "partials/art.html" with file="img/how-flow" modifier="art--band" w=1400 h=659 %}
+      </div>
+    </details>
   </div>
 </section>
 
@@ -120,14 +158,14 @@
   <div class="page page--wide">
     <div class="section-head" data-reveal>
       <span class="eyebrow">Fees</span>
-      <h2>Know the cost before you share your details.</h2>
-      <p>The processing fee depends on the amount you apply for. It is a separate cost, disclosed again in the offer, and never charged at registration.</p>
+      <h2>Know the cost before you apply.</h2>
+      <p>Move the slider to see the exact processing fee. No surprises later.</p>
     </div>
 
     <div class="fee-calc" data-reveal data-fee-calc>
       <div class="fee-calc-main">
         <div class="fee-calc-head">
-          <label for="feeAmount">Move the slider to price an amount</label>
+          <label for="feeAmount">How much do you need?</label>
           <output class="fee-calc-value" id="feeAmountOut" for="feeAmount">KES {{ initial_amount|intcomma }}</output>
         </div>
         <input class="range" type="range" id="feeAmount"
@@ -153,58 +191,63 @@
       </p>
     </div>
 
-    <div class="fee-layout" data-reveal>
-      <div>
-        <div class="table-wrap">
-          <table class="table table--cards">
-            <caption>Processing fee schedule · version {{ fee_schedule_version }}</caption>
-            <thead>
-              <tr>
-                <th scope="col">Loan amount (KES)</th>
-                <th scope="col">Fee rate</th>
-                <th scope="col">Example fee</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in pricing_rows %}
-              <tr>
-                <td data-label="Loan amount (KES)">{{ row.min|intcomma }} – {{ row.max|intcomma }}</td>
-                <td data-label="Fee rate">{{ row.rate }}%</td>
-                <td data-label="Example fee">KES {{ row.example_fee|intcomma }} at KES {{ row.example_amount|intcomma }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+    <details class="fee-details" data-reveal>
+      <summary class="fee-details-summary">See the full fee table</summary>
+      <div class="fee-details-body">
+        <div class="fee-layout">
+          <div>
+            <div class="table-wrap">
+              <table class="table table--cards">
+                <caption>Processing fee schedule · version {{ fee_schedule_version }}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Loan amount (KES)</th>
+                    <th scope="col">Fee rate</th>
+                    <th scope="col">Example fee</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in pricing_rows %}
+                  <tr>
+                    <td data-label="Loan amount (KES)">{{ row.min|intcomma }} – {{ row.max|intcomma }}</td>
+                    <td data-label="Fee rate">{{ row.rate }}%</td>
+                    <td data-label="Example fee">KES {{ row.example_fee|intcomma }} at KES {{ row.example_amount|intcomma }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            {% if FEE_COLLECTION_MODE == 'upfront' %}
+              <div class="banner banner-warning" role="note" style="margin-top: 16px;">
+                The processing fee is collected only after your application is approved and you
+                accept the written offer. It is never charged at registration.
+              </div>
+            {% else %}
+              <div class="banner banner-info" role="note" style="margin-top: 16px;">
+                <strong>No application fee is collected in this environment.</strong>
+                Fee collection is disabled while the operating approvals are outstanding. The schedule is published so you can
+                assess the cost before applying; no live loan is issued.
+              </div>
+            {% endif %}
+          </div>
+
+          <aside class="fee-side">
+            {% include "partials/art.html" with file="img/commerce-plate" modifier="art--commerce" w=1200 h=531 %}
+            <h3 style="margin-top: 14px;">What the fee covers</h3>
+            <p>The processing fee covers identity review, application handling and the payment rails used for disbursement.</p>
+            <ul>
+              <li>A fixed schedule, not a daily interest charge.</li>
+              <li>Shown in the quote, the offer and the payment step.</li>
+              <li>Reviewed under version {{ fee_schedule_version }}.</li>
+              <li>A KES {{ fee_minimum }} minimum applies, so the smallest amounts carry a
+                higher effective percentage than the band rate shown.</li>
+            </ul>
+            <p class="tiny">This is a draft commercial proposal. It is not interest and it is not a repayment schedule. Repayment terms are not implemented in this environment.</p>
+          </aside>
         </div>
-
-        {% if FEE_COLLECTION_MODE == 'upfront' %}
-          <div class="banner banner-warning" role="note" style="margin-top: 16px;">
-            The processing fee is collected only after your application is approved and you
-            accept the written offer. It is never charged at registration.
-          </div>
-        {% else %}
-          <div class="banner banner-info" role="note" style="margin-top: 16px;">
-            <strong>No application fee is collected in this environment.</strong>
-            Fee collection is disabled while the operating approvals are outstanding. The schedule is published so you can
-            assess the cost before applying; no live loan is issued.
-          </div>
-        {% endif %}
       </div>
-
-      <aside class="fee-side">
-        {% include "partials/art.html" with file="img/commerce-plate" modifier="art--commerce" w=1200 h=531 %}
-        <h3 style="margin-top: 14px;">What the fee covers</h3>
-        <p>The processing fee covers identity review, application handling and the payment rails used for disbursement.</p>
-        <ul>
-          <li>A fixed schedule, not a daily interest charge.</li>
-          <li>Shown in the quote, the offer and the payment step.</li>
-          <li>Reviewed under version {{ fee_schedule_version }}.</li>
-          <li>A KES {{ fee_minimum }} minimum applies, so the smallest amounts carry a
-            higher effective percentage than the band rate shown.</li>
-        </ul>
-        <p class="tiny">This is a draft commercial proposal. It is not interest and it is not a repayment schedule. Repayment terms are not implemented in this environment.</p>
-      </aside>
-    </div>
+    </details>
 
     <div id="feeBands" hidden>
       {% for row in pricing_rows %}
@@ -217,37 +260,33 @@
 <section class="section" id="security">
   <div class="page page--wide">
     <div class="section-head" data-reveal>
-      <span class="eyebrow">Privacy and security</span>
-      <h2>Sensitive information deserves restraint.</h2>
-      <p>These are controls in the application, not certification claims. External audits and regulatory approvals are still outstanding.</p>
+      <span class="eyebrow">Your data is safe</span>
+      <h2>Privacy, straight up.</h2>
     </div>
 
     <div class="security-layout" data-reveal>
-      <div class="grid grid-2">
-        <article class="card">
-          <h3>Private document storage</h3>
-          <p class="muted">Identity images are written to a private bucket. The database stores storage paths, not public links. Reviewers receive signed links that expire after five minutes.</p>
-        </article>
-        <article class="card">
-          <h3>Minimum data on screen</h3>
-          <p class="muted">Your National ID is masked in the dashboard, phone numbers are masked in logs, and private storage paths are never rendered into pages.</p>
-        </article>
-        <article class="card">
-          <h3>Server-authoritative money states</h3>
-          <p class="muted">A browser callback never marks a payment successful. Charge outcomes require a signed provider webhook, a single stored event and an exact amount match.</p>
-        </article>
-        <article class="card">
-          <h3>You stay in control</h3>
-          <p class="muted">Withdraw consent at any time, request your data, or ask for correction. Privacy requests use the route published in the notice.</p>
-        </article>
+      <div class="grid grid-3">
+      <article class="card card--flat">
+        <h3>Private ID storage</h3>
+        <p class="muted">Your ID images stay in private storage. Staff see them through links that expire in five minutes, and every view is logged.</p>
+      </article>
+      <article class="card card--flat">
+        <h3>Masked on screen</h3>
+        <p class="muted">Your National ID is masked on screen and your number is masked in logs. We collect only what a lender must hold.</p>
+      </article>
+      <article class="card card--flat">
+        <h3>Provider-confirmed money</h3>
+        <p class="muted">No screen ever marks a payment successful by itself. Only the payment provider's confirmation moves your loan forward.</p>
+      </article>
       </div>
 
       {% include "partials/art.html" with file="img/security-plate" modifier="art--aside" w=600 h=900 %}
     </div>
 
     <p class="tiny muted" style="margin-top: 20px;">
-      Read the <a href="{% url 'privacy' %}">privacy notice</a> for the lawful basis, retention
-      and your rights, or the <a href="{% url 'terms' %}">terms</a> for the service conditions.
+      These are application controls, not certification claims. External audits and regulatory
+      approvals are still outstanding. Read the <a href="{% url 'privacy' %}">privacy notice</a>
+      or the <a href="{% url 'terms' %}">terms</a> for the detail.
     </p>
   </div>
 </section>
@@ -256,10 +295,16 @@
   <div class="page page--wide">
     <div class="section-head" data-reveal>
       <span class="eyebrow">Questions</span>
-      <h2>Straight answers, including the limits.</h2>
+      <h2>Straight answers.</h2>
     </div>
 
     <div class="faq-list" data-reveal>
+      <details class="faq-item">
+        <summary>What is the smallest amount I can borrow?</summary>
+        <div class="faq-body">
+          <p>KES {{ min_amount|intcomma }}. The maximum is KES {{ max_amount|intcomma }}, and your limit grows as you repay on time.</p>
+        </div>
+      </details>
       <details class="faq-item">
         <summary>Who can apply?</summary>
         <div class="faq-body">
@@ -285,18 +330,6 @@
         </div>
       </details>
       <details class="faq-item">
-        <summary>Is my information safe?</summary>
-        <div class="faq-body">
-          <p>Documents are kept in private storage and accessed through short-lived links. Access is recorded. The application does not claim bank-grade security, encryption certification or regulatory approval; those reviews remain outstanding.</p>
-        </div>
-      </details>
-      <details class="faq-item">
-        <summary>What happens after I accept an offer?</summary>
-        <div class="faq-body">
-          <p>If fee collection is enabled, you would pay the disclosed fee through the payment provider. Disbursement starts only after approval and payment confirmation, and is marked complete only when the provider confirms the transfer. This environment does not issue live credit, and repayment terms are not implemented.</p>
-        </div>
-      </details>
-      <details class="faq-item">
         <summary>How do I raise a concern?</summary>
         <div class="faq-body">
           <p>Use the support channel published in the footer or the contact route in the privacy notice. Include your registered phone number and the request ID shown with any error message. We do not use fabricated response times or resolution guarantees.</p>
@@ -310,12 +343,11 @@
   <div class="page page--wide">
     <div class="cta" data-reveal>
       <div>
-        <span class="eyebrow" style="color: var(--gold-bright);">Get started</span>
-        <h2 style="margin-top: 8px;">Start with the information, not the obligation.</h2>
-        <p>Create an account, review the fee schedule and upload documents when you are ready. No payment is collected at registration.</p>
+        <h2 style="margin-top: 0;">Create your free account.</h2>
+        <p>See your limit and upload your ID when you are ready. No payment is ever taken to register.</p>
       </div>
       <a class="btn btn-primary" href="{% url 'register' %}">
-        Create an account
+        Create Account
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
     </div>

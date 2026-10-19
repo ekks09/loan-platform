@@ -3404,6 +3404,15 @@ body.is-offline .toast-region {
   height: 19px;
 }
 
+
+.bottom-bar a,
+.bottom-bar button {
+  /* Five tabs share a phone-width row: keep every label on one line. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .bottom-bar a[aria-current="page"],
 .bottom-bar button[aria-expanded="true"] {
   color: var(--gold-deep);
@@ -5699,5 +5708,814 @@ textarea:focus-visible {
   .tab-button:active,
   .pager-button:active {
     transform: none;
+  }
+}
+
+/* =========================================================================
+   PESAFIX borrowing funnel — a compact, number-dominant vertical pipeline.
+
+   Typography rule: every shilling amount and every credit score is set in
+   extra-bold, tabular figures. Spacing is deliberately tight so the four
+   modules of the funnel stack fit a phone screen without a scroll hunt.
+   ========================================================================= */
+
+.funnel-page {
+  padding-top: clamp(14px, 2vw, 26px);
+}
+
+.funnel,
+.funnel-stack {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+.funnel-stack {
+  margin-top: var(--space-4);
+}
+
+.funnel-module {
+  padding: clamp(12px, 1.6vw, 18px) clamp(14px, 2vw, 20px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+
+/* ---- Module 1 · profile standing ---------------------------------------- */
+
+.funnel-module--identity {
+  padding-block: clamp(9px, 1.2vw, 13px);
+}
+
+.funnel-status {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: clamp(0.94rem, 3.4vw, 1.05rem);
+  line-height: 1.25;
+}
+
+.funnel-status-key {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.funnel-status-value {
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.funnel-status-value.is-verified {
+  color: var(--success);
+}
+
+.funnel-status-value.is-pending {
+  color: var(--warning);
+}
+
+.funnel-status-value.is-action {
+  color: var(--danger);
+}
+
+/* ---- Module 2 · credit limit ------------------------------------------- */
+
+.funnel-limit-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(10px, 2vw, 20px);
+}
+
+.credit-dial--compact {
+  width: clamp(82px, 17vw, 106px);
+  height: clamp(82px, 17vw, 106px);
+  margin: 0;
+}
+
+.credit-dial--compact circle {
+  stroke-width: 9;
+}
+
+.credit-dial--compact .credit-dial-value strong {
+  font-size: clamp(1.25rem, 4.6vw, 1.6rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.credit-dial--compact .credit-dial-value span {
+  font-size: 0.58rem;
+  line-height: 1.1;
+  max-width: 74px;
+  margin-inline: auto;
+}
+
+.funnel-limit-copy {
+  min-width: 0;
+}
+
+.funnel-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.funnel-money {
+  margin: 2px 0 0;
+  font-size: clamp(2rem, 8.6vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.funnel-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ---- Module 3 · borrow -------------------------------------------------- */
+
+.funnel-module--cta {
+  text-align: center;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--gold-bright) 9%, var(--surface)) 0%,
+    var(--surface) 100%
+  );
+  border-color: var(--gold-line-soft);
+}
+
+.funnel-cta-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+  font-size: clamp(1.12rem, 4.6vw, 1.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.btn-borrow {
+  min-height: 56px;
+  padding-inline: 24px;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  --btn-bg: linear-gradient(135deg, #f8eec8 0%, var(--gold-bright) 45%, var(--gold) 100%);
+  --btn-fg: var(--gold-ink);
+  --btn-border: rgba(184, 134, 11, 0.5);
+  background-image: linear-gradient(135deg, #f8eec8 0%, var(--gold-bright) 45%, var(--gold) 100%);
+  box-shadow: var(--shadow-gold);
+}
+
+
+.funnel-note {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.funnel-note:empty {
+  display: none;
+}
+
+/* ---- Module 4 · repayment ---------------------------------------------- */
+
+.funnel-repay-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 4px 16px;
+  margin-bottom: 10px;
+}
+
+.funnel-due {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.funnel-due-key {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.funnel-due-money {
+  font-size: clamp(1.15rem, 4.8vw, 1.55rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.funnel-due-date {
+  font-size: clamp(0.98rem, 3.8vw, 1.15rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-pay {
+  min-height: 52px;
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  --btn-bg: var(--emerald);
+  --btn-fg: #ffffff;
+  --btn-border: var(--emerald);
+  box-shadow: 0 16px 36px -26px rgba(15, 118, 110, 0.8);
+}
+
+[data-theme="dark"] .btn-pay {
+  --btn-bg: #10b981;
+  --btn-fg: #04211e;
+  --btn-border: #10b981;
+}
+
+.funnel-recent {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.funnel-recent li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  font-size: 0.8rem;
+}
+
+.funnel-recent .fr-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.funnel-recent .fr-amount {
+  flex: none;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Disclosures (history, credit health, notices) ---------------------- */
+
+.funnel-history,
+.funnel-disclosure {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+}
+
+.funnel-disclosure {
+  padding: 12px clamp(12px, 1.8vw, 16px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.funnel-history-summary,
+.funnel-disclosure-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.funnel-history-summary::-webkit-details-marker,
+.funnel-disclosure-summary::-webkit-details-marker {
+  display: none;
+}
+
+.funnel-history-summary::after,
+.funnel-disclosure-summary::after {
+  content: "▾";
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform var(--dur-fast) ease;
+}
+
+.funnel-history[open] > .funnel-history-summary::after,
+.funnel-disclosure[open] > .funnel-disclosure-summary::after {
+  transform: rotate(180deg);
+}
+
+.funnel-history-body,
+.funnel-disclosure-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.funnel-disclosure-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 4px 0 0;
+}
+
+/* =========================================================================
+   Sidebar — compact navigation tree
+   ========================================================================= */
+
+.side-nav--compact .side-link {
+  min-height: 40px;
+  padding: 7px 12px;
+  font-size: 0.88rem;
+}
+
+
+.side-link--accent {
+  font-weight: 700;
+  color: var(--gold-bright);
+  border-color: var(--gold-line-soft);
+  background: color-mix(in srgb, var(--gold-bright) 10%, transparent);
+}
+
+.side-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: auto 0 0;
+  padding: 2px 12px 6px;
+  font-size: 0.7rem;
+  color: var(--sidebar-muted);
+}
+
+.side-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  flex: none;
+}
+
+.side-foot--account {
+  display: block;
+  padding-top: 10px;
+}
+
+.side-account-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.side-account-summary::-webkit-details-marker {
+  display: none;
+}
+
+.side-account-summary .side-user {
+  flex: 1 1 auto;
+}
+
+.side-account-chevron {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-right: 1.6px solid currentColor;
+  border-bottom: 1.6px solid currentColor;
+  opacity: 0.6;
+  rotate: 45deg;
+  transition: rotate var(--dur-fast) ease;
+}
+
+.side-account[open] .side-account-chevron {
+  rotate: 225deg;
+}
+
+.side-account-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--sidebar-line);
+}
+
+.side-account-list {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.side-account-list dt {
+  color: var(--sidebar-muted);
+}
+
+.side-account-list dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 650;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.side-account-support {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--sidebar-muted);
+  overflow-wrap: anywhere;
+}
+
+/* =========================================================================
+   Narrow-screen safeguards: notification feed and toasts
+   ========================================================================= */
+
+/* The feed is a grid (marker column + body) so long reference strings,
+   unbroken URLs and long words wrap instead of overflowing the card. */
+.notify-item {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+}
+
+.notify-item.is-unread {
+  border-color: var(--gold-line);
+  background: var(--gold-soft);
+}
+
+.notify-dot {
+  margin-top: 5px;
+  justify-self: center;
+}
+
+.notify-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.notify-body strong {
+  font-size: 0.88rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.notify-body .notify-when {
+  margin-left: 0;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.notify-body .tiny {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .notify-list {
+    gap: 9px;
+  }
+
+  .notify-item {
+    grid-template-columns: 12px minmax(0, 1fr);
+    gap: 6px 8px;
+    padding: 10px;
+  }
+
+  .notify-body strong {
+    font-size: 0.85rem;
+  }
+
+  .notify-body .tiny {
+    font-size: 0.8rem;
+  }
+
+  /* A status chip next to a heading must never squeeze the heading text. */
+  .card-head {
+    gap: 8px 10px;
+    margin-bottom: var(--space-3);
+  }
+
+  .card-head > :not(:first-child) {
+    flex: none;
+  }
+
+  /* Toasts sit above the bottom bar and wrap instead of clipping. */
+  .toast-region {
+    left: 12px;
+    right: 12px;
+    bottom: calc(84px + var(--safe-bottom));
+    width: auto;
+    gap: 8px;
+  }
+
+  .toast {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 12px 14px;
+    font-size: 0.84rem;
+    line-height: 1.4;
+  }
+
+  .toast > span {
+    flex: 1 1 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .toast .link-button {
+    flex: none;
+    min-height: 32px;
+    padding: 4px 10px;
+  }
+}
+
+@media (max-width: 430px) {
+  .notify-list {
+    gap: 8px;
+  }
+
+  .notify-item {
+    padding: 9px 10px;
+  }
+
+  .notify-body .tiny {
+    font-size: 0.78rem;
+  }
+
+  .card-head h2,
+  .card-head h3 {
+    font-size: clamp(1.05rem, 4.6vw, 1.2rem);
+  }
+
+  .funnel-module,
+  .funnel-disclosure {
+    border-radius: var(--radius-sm);
+  }
+
+  .funnel-repay-grid {
+    gap: 2px 12px;
+  }
+}
+
+/* Narrow-screen overflow guards for the 2026-10 funnel components. Long
+   references, provider codes and shilling amounts must wrap instead of
+   pushing content past the viewport edge on a 320px handset. */
+@media (max-width: 430px) {
+  .card-head h2,
+  .card-head h3,
+  .timeline li,
+  .msg,
+  .pay-amount,
+  .loan-amount,
+  .funnel-status,
+  .notify-body strong {
+    overflow-wrap: anywhere;
+  }
+
+  .bottom-bar a,
+  .bottom-bar button {
+    font-size: 0.6rem;
+  }
+
+
+  /* Connectivity and install notes share the sticky top edge with the
+     topbar: let them wrap instead of clipping on a 320px screen. */
+  .offline-banner {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    padding-inline: 12px;
+  }
+}
+
+/* =========================================================================
+   Landing page — short, plain marketing surface.
+
+   The page opens on the brand (mark plus wordmark) and one line of intent,
+   then three promises, three steps and a live fee calculator. The operational
+   detail — full fee table, full process, licence notes — sits inside
+   disclosures so it is one tap away without cluttering the pitch.
+
+   No emoji and no slang: labels, numbers and step numbers carry the meaning.
+   ========================================================================= */
+
+
+
+
+/* ---- Social proof band -------------------------------------------------- */
+
+.proof-band {
+  padding: 4px 0 0;
+}
+
+.proof-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 14px clamp(12px, 2vw, 20px);
+  list-style: none;
+  border: 1px solid var(--gold-line-soft);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--gold-bright) 8%, var(--surface)) 0%,
+    var(--surface) 60%
+  );
+}
+
+.proof-stat {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  text-align: center;
+}
+
+.proof-stat strong {
+  font-size: clamp(1.1rem, 4vw, 1.45rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.proof-stat span {
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+
+
+
+/* ---- Three-step flow ---------------------------------------------------- */
+
+.steps--three {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+}
+
+
+
+
+/* ---- Disclosures (fee table, full process) ------------------------------ */
+
+.flow-details,
+.fee-details {
+  margin-top: var(--space-5);
+  padding: 12px clamp(12px, 2vw, 18px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.flow-details-summary,
+.fee-details-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.flow-details-summary::-webkit-details-marker,
+.fee-details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.flow-details-summary::after,
+.fee-details-summary::after {
+  content: "▾";
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform var(--dur-fast) ease;
+}
+
+.flow-details[open] > .flow-details-summary::after,
+.fee-details[open] > .fee-details-summary::after {
+  transform: rotate(180deg);
+}
+
+.flow-details-body,
+.fee-details-body {
+  margin-top: 12px;
+}
+
+
+
+
+
+
+
+
+@media (max-width: 430px) {
+  .proof-stats {
+    gap: 8px;
+    padding: 12px 10px;
+  }
+
+  .proof-stat span {
+    font-size: 0.7rem;
+  }
+
+
+}
+
+/* ---- Hero brand lockup -------------------------------------------------- */
+
+.hero-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.hero-brand-mark {
+  width: 54px;
+  height: 54px;
+  display: inline-block;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 34px -22px rgba(0, 0, 0, 0.9);
+}
+
+.hero-brand-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Beats the generic `.hero h1` sizing so the wordmark sits on the brand grid. */
+.hero .hero-brand-word {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--text-4xl);
+  line-height: 1.04;
+  letter-spacing: -0.028em;
+}
+
+.hero-subhead {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 750;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+}
+
+@media (max-width: 640px) {
+  .hero-brand-mark {
+    width: 44px;
+    height: 44px;
+  }
+
+  .hero-subhead {
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
   }
 }

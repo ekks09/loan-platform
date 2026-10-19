@@ -14,6 +14,7 @@ from users.models import (
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = (
+        "username",
         "phone",
         "verification_status",
         "is_active",
@@ -21,7 +22,7 @@ class UserAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("verification_status", "is_active", "is_staff")
-    search_fields = ("phone", "national_id")
+    search_fields = ("username", "phone", "national_id")
     ordering = ("-created_at",)
     date_hierarchy = "created_at"
     actions = ("approve_verification", "reject_verification")
@@ -36,7 +37,7 @@ class UserAdmin(admin.ModelAdmin):
         "last_login",
     )
     fieldsets = (
-        (None, {"fields": ("phone", "national_id", "password")}),
+        (None, {"fields": ("username", "phone", "national_id", "password")}),
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         (
             "Verification",

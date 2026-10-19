@@ -518,6 +518,13 @@ PLATFORM_SUPPORT_PHONE = env("PLATFORM_SUPPORT_PHONE", "")
 PLATFORM_SUPPORT_EMAIL = env("PLATFORM_SUPPORT_EMAIL", "")
 PLATFORM_ADDRESS = env("PLATFORM_ADDRESS", "")
 
+# Marketing copy for the public landing page.
+#
+# The social-proof line is a number the business must be able to stand behind,
+# so it is empty until a reconciled figure is published: the template falls
+# back to a non-numeric line rather than inventing a statistic.
+PLATFORM_SOCIAL_PROOF = env("PLATFORM_SOCIAL_PROOF", "").strip()
+
 # M-Pesa collection shortcuts. Both are empty by default: fee collection runs
 # through Paystack's prompt, and the interface must never invent a Paybill or
 # Till number. Publish one only after the operating account is confirmed.

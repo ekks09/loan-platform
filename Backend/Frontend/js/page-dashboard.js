@@ -94,8 +94,10 @@
           button.disabled = true;
         }
       } else if (button.dataset.networkDisabled) {
-        button.disabled = false;
         delete button.dataset.networkDisabled;
+        // A button disabled for a business reason (nothing due) stays disabled
+        // when connectivity returns.
+        if (!button.dataset.stateDisabled) button.disabled = false;
       }
     });
   }
@@ -118,6 +120,7 @@
     if (copy) copy.textContent = MB.money(value);
     const input = $("amount");
     if (input && Number(input.value) > value) input.value = "";
+    paintLimit();
   }
 
   document.addEventListener("mb:borrow-limit", function (event) {
@@ -263,6 +266,7 @@
 
     if (activeLoan) {
       renderLoan(activeLoan, false);
+      renderFunnel();
       return;
     }
 
@@ -279,6 +283,7 @@
     } else {
       renderEmptyState(canApply);
     }
+    renderFunnel();
   }
 
   function renderEmptyState(canApply) {
@@ -1267,6 +1272,7 @@
       td.colSpan = 5;
       td.className = "muted";
       td.textContent = "Could not load payments: " + (error.message || "unknown error");
+      paintRecent();
     }
   }
 
@@ -1366,6 +1372,8 @@
       });
       actionCell.appendChild(button);
     });
+
+    paintRecent();
   }
 
   function openReceipt(record) {
@@ -1653,6 +1661,230 @@
     }
   }
 
+  // --------------------------------------------------------------- funnel
+  //
+  // The dashboard is a four-module borrowing pipeline: standing, limit,
+  // apply and repay. Everything here is painted from data the server already
+  // returned for the profile, the loan or the ledger — no extra requests, and
+  // no amount is ever invented on the client.
+
+  const PROFILE_STANDING = {
+    verified: { text: "Verified", className: "funnel-status-value is-verified" },
+    review: { text: "In review", className: "funnel-status-value is-pending" },
+    action: { text: "Action needed", className: "funnel-status-value is-action" },
+    pending: { text: "Not verified", className: "funnel-status-value is-pending" },
+  };
+
+  function standingKey() {
+    if (!profile) return "pending";
+    if (profile.is_verified) return "verified";
+    if (profile.verification_status === "rejected") return "action";
+    if (profile.has_uploaded_documents) return "review";
+    return "pending";
+  }
+
+  function paintStanding() {
+    const state = $("funnelProfileState");
+    if (state) {
+      const config = PROFILE_STANDING[standingKey()];
+      state.textContent = config.text;
+      state.className = config.className;
+    }
+
+    // The upload shortcut only earns a slot when something is actually missing.
+    const uploadLink = $("sideUploadLink");
+    if (uploadLink) {
+      const missing =
+        !profile ||
+        (!profile.is_verified &&
+          (!profile.has_uploaded_documents ||
+            profile.verification_status === "rejected"));
+      uploadLink.hidden = !missing;
+    }
+  }
+
+  function canApplyNow() {
+    return Boolean(profile && profile.is_verified && profile.consent_current);
+  }
+
+  function paintLimit() {
+    const value = $("limitValue");
+    if (value) MB.setText(value, MB.money(MAX_AMOUNT));
+    const note = $("limitNote");
+    if (note) {
+      MB.setText(
+        note,
+        canApplyNow()
+          ? "Ready to borrow"
+          : "Verify your ID to unlock it"
+      );
+    }
+  }
+
+  function dueState() {
+    if (!activeLoan) {
+      return { amount: 0, date: "", payable: false, note: "No amount is due — you have no active application." };
+    }
+    const loan = activeLoan;
+    const feeDue = loan.next_action === "pay_service_fee" && !loan.service_fee_paid;
+    if (feeDue) {
+      const payable = FEE_MODE === "upfront";
+      return {
+        amount: Number(loan.service_fee) || 0,
+        date: loan.offer_expires_at || "",
+        payable: payable,
+        note: payable
+          ? "The processing fee is due before disbursement."
+          : "The processing fee is not collected in this environment.",
+      };
+    }
+    if (loan.status === "DISBURSED") {
+      return {
+        amount: 0,
+        date: "",
+        payable: false,
+        note: "Repayment collection is not part of this build, so nothing is due yet.",
+      };
+    }
+    return { amount: 0, date: "", payable: false, note: "Nothing is due right now." };
+  }
+
+  function formatDueDate(value) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return day + "/" + month + "/" + date.getFullYear();
+  }
+
+  function paintDue() {
+    const state = dueState();
+    MB.setText($("dueAmount"), MB.money(state.amount));
+    MB.setText($("dueDate"), formatDueDate(state.date));
+    MB.setText(
+      $("borrowNote"),
+      canApplyNow()
+        ? ""
+        : profile && profile.is_verified
+        ? "Accept the current terms to borrow"
+        : "Verify your ID to borrow"
+    );
+    const payButton = $("funnelPayNow");
+    if (payButton) {
+      payButton.disabled = !state.payable;
+      payButton.setAttribute("aria-disabled", String(!state.payable));
+      if (state.payable) delete payButton.dataset.stateDisabled;
+      else payButton.dataset.stateDisabled = "1";
+    }
+  }
+
+  function paintRecent() {
+    const list = $("funnelRecent");
+    if (!list) return;
+    list.textContent = "";
+    ledgerRows()
+      .slice(0, 3)
+      .forEach(function (row) {
+        const item = document.createElement("li");
+        const label = document.createElement("span");
+        label.className = "fr-label";
+        label.textContent = MB.dateOnly(row.date) + " · " + row.reference;
+        const amount = document.createElement("span");
+        amount.className = "fr-amount";
+        amount.textContent = MB.money(row.amount);
+        item.appendChild(label);
+        item.appendChild(amount);
+        list.appendChild(item);
+      });
+  }
+
+  function renderFunnel() {
+    paintStanding();
+    paintLimit();
+    paintDue();
+    paintRecent();
+  }
+
+  function focusApply() {
+    const canApply = canApplyNow();
+    if (!canApply) {
+      const verifyCard = document.querySelector('[aria-labelledby="verifyTitle"]');
+      if (verifyCard) verifyCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      MB.toast(
+        profile && profile.is_verified
+          ? "Accept the current terms to continue."
+          : "Verify your identity to unlock borrowing.",
+        { kind: "info" }
+      );
+      return;
+    }
+    const applyBlock = $("applyBlock");
+    if (applyBlock) applyBlock.hidden = false;
+    const card = $("loanCard");
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+    const amount = $("amount");
+    if (amount) {
+      window.setTimeout(function () {
+        amount.focus({ preventScroll: true });
+      }, 280);
+    }
+  }
+
+  function openDisclosureForHash() {
+    const hash = window.location.hash;
+    if (hash === "#history" || hash === "#payments") {
+      const details = $("txHistory");
+      if (details) details.open = true;
+    }
+    if (hash === "#verifyTitle") {
+      const card = document.querySelector('[aria-labelledby="verifyTitle"]');
+      if (card) card.scrollIntoView({ block: "start" });
+    }
+  }
+
+  function bindFunnel() {
+    const borrow = $("borrowNow");
+    if (borrow) {
+      borrow.addEventListener("click", function () {
+        focusApply();
+      });
+    }
+
+    const payNow = $("funnelPayNow");
+    if (payNow) {
+      payNow.addEventListener("click", function () {
+        if (payNow.disabled) {
+          MB.toast(dueState().note, { kind: "info" });
+          return;
+        }
+        openPayDialog();
+      });
+    }
+
+    // Sidebar and mobile footer shortcuts both drive the same flow.
+    MB.$$("[data-quick-apply], [data-new-application]").forEach(function (link) {
+      link.addEventListener("click", function (event) {
+        event.preventDefault();
+        focusApply();
+      });
+    });
+
+    MB.$$("[data-wallet-link]").forEach(function (link) {
+      link.addEventListener("click", function () {
+        const details = $("txHistory");
+        if (details) details.open = true;
+      });
+    });
+
+    if (new URLSearchParams(window.location.search).get("apply") === "1") {
+      window.setTimeout(function () {
+        if (canApplyNow()) focusApply();
+      }, 320);
+    }
+    openDisclosureForHash();
+  }
+
   // ------------------------------------------------------------- updates
 
   const PURPOSE_LABEL = {
@@ -1757,6 +1989,8 @@
     bindCopy();
     bindSheet();
     bindNotifications();
+    bindFunnel();
+    renderFunnel();
 
     const phoneInput = $("mpesa_phone");
     if (phoneInput && window.KEPhone) {
@@ -1793,6 +2027,7 @@
     loadHistory(1);
     loadPayments();
     loadNotifications();
+    renderFunnel();
     syncExpress();
     applyPayState("idle", {});
   }
