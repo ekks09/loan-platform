@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% load static humanize %}
 
-{% block title %}{{ PLATFORM_NAME }} — loan ya haraka kutoka KES {{ min_amount|intcomma }}{% endblock %}
-{% block description %}Need quick cash? {{ PLATFORM_NAME }} lets you boost from as low as KES {{ min_amount|intcomma }} — 100% digital, just your phone number and National ID, with M-PESA payout. No paperwork, no queues.{% endblock %}
+{% block title %}{{ PLATFORM_NAME }} — Borrow Quick Loan Now{% endblock %}
+{% block description %}Quick loans from KES {{ min_amount|intcomma }} to KES {{ max_amount|intcomma }}. Apply on your phone with your National ID and have the money sent straight to your M-PESA line.{% endblock %}
 {% block body_class %}marketing-page{% endblock %}
 
 {% block topbar %}{% include "partials/topbar.html" with title="Overview" section_label=PLATFORM_NAME %}{% endblock %}
@@ -12,26 +12,27 @@
   <div class="page page--wide" style="padding-top: 0;">
     <div class="hero-grid">
       <div class="hero-copy" data-reveal>
-        <p class="hero-pill">
-          <span aria-hidden="true">🇰🇪</span> Made for Kenyan hustlers
-        </p>
-        <h1>Form ni ku-boost cash — instantly! 💸</h1>
+        <div class="hero-brand">
+          <span class="hero-brand-mark">{% include "partials/brand_mark.svg" %}</span>
+          <h1 class="hero-brand-word">{{ PLATFORM_NAME }}</h1>
+          <p class="hero-subhead">Borrow Quick Loan Now</p>
+        </div>
         <p class="lead">
-          Need quick cash for a small emergency or the daily hustle? Boost from as low as
-          <strong>KES {{ min_amount|intcomma }}</strong> — no paperwork, no queues, no guarantor.
-          Just your phone and your ID, then M-PESA does the rest.
+          Quick loans from <strong>KES {{ min_amount|intcomma }}</strong> to
+          <strong>KES {{ max_amount|intcomma }}</strong>, paid straight to your M-PESA.
+          Apply with your phone number and National ID. No paperwork, no branch visits.
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="{% url 'register' %}">
-            <span aria-hidden="true">⚡</span> Boost sasa
+            Create Account
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>
           <a class="btn btn-ghost" href="#how-it-works">See how it works</a>
         </div>
-        <ul class="hero-points hero-points--emoji">
-          <li><span aria-hidden="true">📱</span> Apply on your phone</li>
-          <li><span aria-hidden="true">🪪</span> ID only — no paperwork</li>
-          <li><span aria-hidden="true">💸</span> Cash straight to M-PESA</li>
+        <ul class="hero-points">
+          <li>Free to create an account</li>
+          <li>No paperwork, no guarantor</li>
+          <li>Money sent to your M-PESA line</li>
         </ul>
       </div>
 
@@ -40,46 +41,43 @@
              fetchpriority="high" decoding="async" />
         <div class="hero-overlay">
           <div class="row row-between">
-            <h2>Your boost, step by step</h2>
+            <h2>How it works</h2>
             <span class="chip chip-gold">KES {{ min_amount|intcomma }} min</span>
           </div>
           <ol class="mini-steps">
             <li class="is-done">Enter your phone number</li>
-            <li class="is-current">Pick your amount — from KES {{ min_amount|intcomma }}</li>
-            <li>Get cash on M-PESA</li>
-            <li>Repay on time, grow your limit</li>
+            <li class="is-current">Choose your loan amount</li>
+            <li>Receive the money on M-PESA</li>
           </ol>
         </div>
       </div>
     </div>
 
     <div class="hero-badge" data-reveal>
-      <strong>{{ PLATFORM_SOCIAL_PROOF|default:"Built for the hustle — boda riders, mama mboga, students and salary-waiters." }}</strong>
+      <strong>{{ PLATFORM_SOCIAL_PROOF|default:"Clear fees, quick decisions, and money paid straight to your M-PESA." }}</strong>
       <span>· {{ PLATFORM_LICENCE_STATUS }}</span>
     </div>
   </div>
 </section>
 
-<!-- Social proof band. The figure is a deployment setting (PLATFORM_SOCIAL_PROOF)
-     so only a real, reconciled number is ever published here. -->
-<section class="proof-band" aria-label="Why hustlers choose us">
+<section class="proof-band" aria-label="Loan summary">
   <div class="page page--wide">
     <ul class="proof-stats" data-reveal>
       <li class="proof-stat">
         <strong>KES {{ min_amount|intcomma }}</strong>
-        <span>minimum boost — start small</span>
+        <span>minimum loan</span>
       </li>
       <li class="proof-stat">
         <strong>3 min</strong>
-        <span>to finish your application</span>
+        <span>to apply</span>
       </li>
       <li class="proof-stat">
-        <strong>0 papers</strong>
-        <span>100% digital, phone + ID</span>
+        <strong>No paperwork</strong>
+        <span>phone number and ID only</span>
       </li>
       <li class="proof-stat">
         <strong>M-PESA</strong>
-        <span>payout straight to your line</span>
+        <span>paid to your line</span>
       </li>
     </ul>
   </div>
@@ -88,26 +86,23 @@
 <section class="section" id="why">
   <div class="page page--wide">
     <div class="section-head" data-reveal>
-      <span class="eyebrow">Why {{ PLATFORM_NAME }} hits different</span>
-      <h2>Small boost today, bigger limit tomorrow.</h2>
-      <p>No branch visits. No guarantor. No long forms. Just the three things that matter to a hustler.</p>
+      <span class="eyebrow">Why {{ PLATFORM_NAME }}</span>
+      <h2>Simple loans. Clear costs.</h2>
+      <p>No branch visits, no guarantor and no long forms. Just the three things that matter.</p>
     </div>
 
     <div class="grid grid-3" data-reveal>
-      <div class="card card--flat pitch-card">
-        <span class="pitch-emoji" aria-hidden="true">💸</span>
+      <div class="card card--flat">
         <h3>Instant M-PESA payout</h3>
-        <p class="muted">Once your boost is approved, the cash lands on your own M-PESA line. No agent queue, no branch, no "come back tomorrow".</p>
+        <p class="muted">Once your loan is approved, the money is sent straight to the M-PESA line registered on your account.</p>
       </div>
-      <div class="card card--flat pitch-card">
-        <span class="pitch-emoji" aria-hidden="true">📈</span>
-        <h3>Start small, grow big</h3>
-        <p class="muted">Borrow from <strong>KES {{ min_amount|intcomma }}</strong> and build your limit every time you clear on time. Today's small boost is tomorrow's bigger boost.</p>
+      <div class="card card--flat">
+        <h3>Start small, grow your limit</h3>
+        <p class="muted">Borrow from <strong>KES {{ min_amount|intcomma }}</strong> and grow your limit each time you repay on time.</p>
       </div>
-      <div class="card card--flat pitch-card">
-        <span class="pitch-emoji" aria-hidden="true">📱</span>
-        <h3>100% digital &amp; paperless</h3>
-        <p class="muted">Just your phone number and your National ID. Apply from anywhere — on boda, in class, at the kiosk. Zero paperwork.</p>
+      <div class="card card--flat">
+        <h3>100% digital and paperless</h3>
+        <p class="muted">All you need is your phone number and your National ID. Apply from anywhere.</p>
       </div>
     </div>
   </div>
@@ -118,42 +113,37 @@
   <div class="page page--wide">
     <div class="section-head" data-reveal>
       <span class="eyebrow">How it works</span>
-      <h2>Hatua tatu tu — three steps and you're sorted.</h2>
-      <p>No fine print to decode. Enter your number, choose your amount, get your cash.</p>
+      <h2>Three steps.</h2>
+      <p>No fine print to decode. Enter your number, choose your amount, get your money.</p>
     </div>
 
     <div class="steps steps--three" style="margin-top: var(--space-5);">
       <article class="step" data-reveal>
-        <span class="step-emoji" aria-hidden="true">📱</span>
         <span class="step-number">01</span>
         <h3>Enter your phone number</h3>
-        <p>Register with your Kenyan mobile number and National ID, then record consent. Takes about three minutes.</p>
+        <p>Register with your Kenyan mobile number and National ID, then record consent. It takes about three minutes.</p>
         <span class="step-note">Free to create. No payment at this stage.</span>
       </article>
       <article class="step" data-reveal data-reveal-delay="1">
-        <span class="step-emoji" aria-hidden="true">🎯</span>
         <span class="step-number">02</span>
-        <h3>Choose your amount</h3>
+        <h3>Choose your loan amount</h3>
         <p>Pick anything from <strong>KES {{ min_amount|intcomma }}</strong> up to KES {{ max_amount|intcomma }}. The processing fee is shown before you commit to anything.</p>
         <span class="step-note">You see the cost first. Always.</span>
       </article>
       <article class="step" data-reveal data-reveal-delay="2">
-        <span class="step-emoji" aria-hidden="true">💸</span>
         <span class="step-number">03</span>
-        <h3>Get M-PESA cash</h3>
-        <p>Once approved and confirmed, the money is sent to the M-PESA line registered on your account. Clear on time and your limit grows.</p>
+        <h3>Receive M-PESA cash</h3>
+        <p>Once approved and confirmed, the money is sent to the M-PESA line registered on your account.</p>
         <span class="step-note">Payout is confirmed by the provider, not the page.</span>
       </article>
     </div>
 
     <details class="flow-details" data-reveal>
-      <summary class="flow-details-summary">
-        <span aria-hidden="true">🔍</span> The full process, in detail
-      </summary>
+      <summary class="flow-details-summary">The full process, in detail</summary>
       <div class="flow-details-body">
-        <ol class="mini-steps mini-steps--plain">
+        <ol class="mini-steps">
           <li>Create your account and record consent.</li>
-          <li>Upload the front and back of your National ID plus a selfie — a reviewer checks them by hand.</li>
+          <li>Upload the front and back of your National ID plus a selfie. A reviewer checks them by hand.</li>
           <li>Apply for an amount. If approved you receive written terms to accept or decline.</li>
           <li>The disclosed processing fee is collected only after you accept the offer.</li>
           <li>Disbursement is marked complete only when the payment provider confirms the transfer.</li>
@@ -168,14 +158,14 @@
   <div class="page page--wide">
     <div class="section-head" data-reveal>
       <span class="eyebrow">Fees</span>
-      <h2>Ujue cost kabla u-send. Know the cost first.</h2>
-      <p>Move the slider and see the exact processing fee before you share any details. No surprises later.</p>
+      <h2>Know the cost before you apply.</h2>
+      <p>Move the slider to see the exact processing fee. No surprises later.</p>
     </div>
 
     <div class="fee-calc" data-reveal data-fee-calc>
       <div class="fee-calc-main">
         <div class="fee-calc-head">
-          <label for="feeAmount">Chagua amount — how much do you need?</label>
+          <label for="feeAmount">How much do you need?</label>
           <output class="fee-calc-value" id="feeAmountOut" for="feeAmount">KES {{ initial_amount|intcomma }}</output>
         </div>
         <input class="range" type="range" id="feeAmount"
@@ -202,9 +192,7 @@
     </div>
 
     <details class="fee-details" data-reveal>
-      <summary class="fee-details-summary">
-        <span aria-hidden="true">📋</span> See the full fee table
-      </summary>
+      <summary class="fee-details-summary">See the full fee table</summary>
       <div class="fee-details-body">
         <div class="fee-layout">
           <div>
@@ -269,34 +257,6 @@
   </div>
 </section>
 
-<!-- Testimonials. PLACEHOLDER COPY: replace every quote below with a real,
-     consented customer story (or remove the block) before this page is used
-     in a live marketing campaign. Publishing invented reviews as genuine
-     customer feedback breaches advertising and consumer-protection rules. -->
-{% if testimonials %}
-<section class="section" id="stories">
-  <div class="page page--wide">
-    <div class="section-head" data-reveal>
-      <span class="eyebrow">Wa-hustlers wanasema</span>
-      <h2>Real boosts, real hustles.</h2>
-      <p>From a comrade emergency to stocking a kiosk before payday — stories from people who needed a small boost, fast.</p>
-    </div>
-
-    <div class="testimonials" data-reveal>
-      {% for story in testimonials %}
-      <figure class="testimonial" data-placeholder="true">
-        <blockquote>{{ story.quote }}</blockquote>
-        <figcaption>
-          <strong>{{ story.name }}</strong>
-          <span>{{ story.role }}</span>
-        </figcaption>
-      </figure>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
-
 <section class="section" id="security">
   <div class="page page--wide">
     <div class="section-head" data-reveal>
@@ -307,17 +267,14 @@
     <div class="security-layout" data-reveal>
       <div class="grid grid-3">
       <article class="card card--flat">
-        <span class="pitch-emoji" aria-hidden="true">🔒</span>
         <h3>Private ID storage</h3>
         <p class="muted">Your ID images stay in private storage. Staff see them through links that expire in five minutes, and every view is logged.</p>
       </article>
       <article class="card card--flat">
-        <span class="pitch-emoji" aria-hidden="true">🙈</span>
-        <h3>Masked everywhere</h3>
+        <h3>Masked on screen</h3>
         <p class="muted">Your National ID is masked on screen and your number is masked in logs. We collect only what a lender must hold.</p>
       </article>
       <article class="card card--flat">
-        <span class="pitch-emoji" aria-hidden="true">✅</span>
         <h3>Provider-confirmed money</h3>
         <p class="muted">No screen ever marks a payment successful by itself. Only the payment provider's confirmation moves your loan forward.</p>
       </article>
@@ -338,14 +295,14 @@
   <div class="page page--wide">
     <div class="section-head" data-reveal>
       <span class="eyebrow">Questions</span>
-      <h2>Maswali ya kawaida — straight answers.</h2>
+      <h2>Straight answers.</h2>
     </div>
 
     <div class="faq-list" data-reveal>
       <details class="faq-item">
-        <summary>Ni minimum gani? What's the smallest I can borrow?</summary>
+        <summary>What is the smallest amount I can borrow?</summary>
         <div class="faq-body">
-          <p>KES {{ min_amount|intcomma }} — that's the minimum boost. The maximum is KES {{ max_amount|intcomma }}, and your limit grows as you repay on time.</p>
+          <p>KES {{ min_amount|intcomma }}. The maximum is KES {{ max_amount|intcomma }}, and your limit grows as you repay on time.</p>
         </div>
       </details>
       <details class="faq-item">
@@ -386,12 +343,11 @@
   <div class="page page--wide">
     <div class="cta" data-reveal>
       <div>
-        <span class="eyebrow" style="color: var(--gold-bright);">Tuanze — let's go</span>
-        <h2 style="margin-top: 8px;">Account ni bure. Start in three minutes.</h2>
-        <p>Create your free account, see your limit and upload your ID when you're ready. No payment is ever taken to register.</p>
+        <h2 style="margin-top: 0;">Create your free account.</h2>
+        <p>See your limit and upload your ID when you are ready. No payment is ever taken to register.</p>
       </div>
       <a class="btn btn-primary" href="{% url 'register' %}">
-        <span aria-hidden="true">⚡</span> Boost sasa
+        Create Account
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
     </div>

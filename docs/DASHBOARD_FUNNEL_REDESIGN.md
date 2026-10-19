@@ -14,12 +14,12 @@ infrastructure prose is collapsed behind one disclosure, never deleted.
 
 ```
 Account
-  💹 Overview        → /dashboard/            (selected, aria-current="page")
-  💱 Quick Apply     → /dashboard/?apply=1#borrow
-  💰 My Wallet       → /dashboard/#repay
+  [icon] Overview        → /dashboard/            (selected, aria-current="page")
+  [icon] Quick Apply     → /dashboard/?apply=1#borrow
+  [icon] My Wallet       → /dashboard/#repay
 Quick actions
-  💸 New Application → /dashboard/?apply=1#loanCard   (high-visibility accent)
-  💳 Upload Documents→ /dashboard/#verifyTitle        (hidden unless documents are missing)
+  [icon] New Application → /dashboard/?apply=1#loanCard   (high-visibility accent)
+  [icon] Upload Documents→ /dashboard/#verifyTitle        (hidden unless documents are missing)
 ```
 
 Removed: **Identity** and **Activity** as standalone items (identity lives in
@@ -42,12 +42,17 @@ On phones the bottom bar's **Account** tab opens the drawer on this panel
 
 | Key | String |
 | --- | --- |
-| Overview | `💹 Overview` |
-| Quick Apply | `💱 Quick Apply` |
-| My Wallet | `💰 My Wallet` |
-| New Application | `💸 New Application` |
-| Upload Documents | `💳 Upload Documents` |
+| Overview | `Overview` |
+| Quick Apply | `Quick Apply` |
+| My Wallet | `My Wallet` |
+| New Application | `New Application` |
+| Upload Documents | `Upload Documents` |
 | Status marker | `Secure · balances server-confirmed` |
+
+Every navigation item is a plain label beside a 17px stroke icon
+(`viewBox="0 0 24 24"`, `stroke="currentColor"`, `stroke-width="1.7"`,
+`aria-hidden="true"`), matching the icons already used by the staff sidebar.
+Icons are decoration; the label is the only carrier of meaning.
 
 ---
 
@@ -58,26 +63,26 @@ stack reads identically on desktop and phone:
 
 ```
 .funnel
-  1  #overview   👤 Profile Status: Verified ✅
-  2  #limit      [credit dial]  💹 Max Limit  KES 15,000  💱
-  3  #borrow     💱 Need Instant Cash? 💸      [ ⚡ BORROW NOW ]
+  1  #overview   Profile Status: Verified
+  2  #limit      [credit dial]  Max Limit  KES 15,000
+  3  #borrow     Need Instant Cash?      [ BORROW NOW ]
   4  #repay      Amount Due: KES X,XXX   Due Date: DD/MM/YYYY
-                 [ 💳 PAY NOW ]
+                 [ PAY NOW ]
                  recent activity (3 rows)
-                 ▸ 💰 View Transaction History   → Payments + Application history
+                 ▸ View Transaction History   → Payments + Application history
 .funnel-stack
   ·  Identity verification        (visible — the gate before borrowing)
   ·  Your loan / application      (visible — BORROW NOW scrolls here)
   ·  Updates                     (visible — in-app notifications)
-  ·  ▸ 💹 PESAFIX credit health   (collapsed, last)
-  ·  ▸ 🔒 Notices & support       (collapsed, last)
+  ·  ▸ PESAFIX credit health   (collapsed, last)
+  ·  ▸ Notices & support       (collapsed, last)
 ```
 
 ### Module contract
 
 | Module | Element | Behaviour |
 | --- | --- | --- |
-| 1 | `#funnelProfileState` | `Verified ✅` / `In review` / `Action needed` / `Not verified`, painted from `GET /users/me/` |
+| 1 | `#funnelProfileState` | `Verified` / `In review` / `Action needed` / `Not verified`, painted from `GET /users/me/` |
 | 2 | `#loyaltyRing`, `#loyaltyScore`, `#limitValue` | 360 credit dial beside the largest type on the page; value from the loyalty borrowing limit, capped by the product maximum |
 | 3 | `#borrowNow` | Reveals `#applyBlock`, scrolls to `#loanCard`, focuses `#amount`; otherwise routes to verification with a toast |
 | 4 | `#dueAmount`, `#dueDate`, `#funnelPayNow` | Amount/due date from the active loan; **PAY NOW** is enabled only when a real amount is payable (fail-closed) |
@@ -94,17 +99,17 @@ stack reads identically on desktop and phone:
 ### Exact string set
 
 ```
-👤 Profile Status:
-Verified ✅        In review        Action needed        Not verified
-💹 Max Limit
+Profile Status:
+Verified        In review        Action needed        Not verified
+Max Limit
 Unlock your limit  |  Ready to borrow  |  Verify your ID to unlock it
-💱 Need Instant Cash? 💸
-⚡ BORROW NOW
+Need Instant Cash?
+BORROW NOW
 Amount Due:        Due Date:
-💳 PAY NOW
-💰 View Transaction History
-💹 PESAFIX credit health
-🔒 Notices & support
+PAY NOW
+View Transaction History
+PESAFIX credit health
+Notices & support
 ```
 
 ---
@@ -116,9 +121,10 @@ Amount Due:        Due Date:
   the page. KES values use `MB.money()` (Intl, `en-KE`).
 * **Tight spacing.** Module padding `clamp(12px, 1.6vw, 18px)`, stack gap
   `--space-3`, no decorative margins, so the four modules fit a phone screen.
-* **Emoji are anchors, not content.** Every emoji is `aria-hidden="true"` and
-  sits beside a real label: 💹 limits, 💱 apply/exchange, 💰 balances and
-  history, 💸 new money, 💳 pay/documents.
+* **No emoji anywhere.** Labels, amounts and step numbers carry the meaning.
+  Where a visual anchor is useful (sidebar and bottom navigation) it is a
+  stroke SVG icon at `aria-hidden="true"`, never a pictograph standing in for a
+  word.
 * **Money figures wrap.** `overflow-wrap: anywhere` on every amount, so a long
   figure can never push content off a 320px screen.
 

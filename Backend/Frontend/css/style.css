@@ -3404,11 +3404,6 @@ body.is-offline .toast-region {
   height: 19px;
 }
 
-.bottom-emoji {
-  font-size: 17px;
-  line-height: 1;
-  filter: saturate(1.15) contrast(1.05);
-}
 
 .bottom-bar a,
 .bottom-bar button {
@@ -5749,13 +5744,6 @@ textarea:focus-visible {
   box-shadow: var(--shadow-card);
 }
 
-/* Emoji are structural anchors only — never the sole carrier of meaning. */
-.funnel-emoji {
-  flex: none;
-  font-size: 1.05em;
-  line-height: 1;
-  filter: saturate(1.15) contrast(1.05);
-}
 
 /* ---- Module 1 · profile standing ---------------------------------------- */
 
@@ -5901,10 +5889,6 @@ textarea:focus-visible {
   box-shadow: var(--shadow-gold);
 }
 
-.btn-glyph {
-  font-size: 1.1em;
-  line-height: 1;
-}
 
 .funnel-note {
   margin: 8px 0 0;
@@ -6074,14 +6058,6 @@ textarea:focus-visible {
   font-size: 0.88rem;
 }
 
-.side-emoji {
-  flex: none;
-  width: 18px;
-  text-align: center;
-  font-size: 0.98rem;
-  line-height: 1;
-  filter: saturate(1.15) contrast(1.05);
-}
 
 .side-link--accent {
   font-weight: 700;
@@ -6343,9 +6319,6 @@ textarea:focus-visible {
     font-size: 0.6rem;
   }
 
-  .bottom-emoji {
-    font-size: 15px;
-  }
 
   /* Connectivity and install notes share the sticky top edge with the
      topbar: let them wrap instead of clipping on a 320px screen. */
@@ -6357,39 +6330,18 @@ textarea:focus-visible {
 }
 
 /* =========================================================================
-   Landing page — marketable, hustler-first marketing surface.
+   Landing page — short, plain marketing surface.
 
-   The funnel hides the operational detail (fee table, full process, licence
-   notes) inside disclosures so the page reads as three promises and three
-   steps. Emoji carry tone only; every claim still has a text label beside it.
+   The page opens on the brand (mark plus wordmark) and one line of intent,
+   then three promises, three steps and a live fee calculator. The operational
+   detail — full fee table, full process, licence notes — sits inside
+   disclosures so it is one tap away without cluttering the pitch.
+
+   No emoji and no slang: labels, numbers and step numbers carry the meaning.
    ========================================================================= */
 
-.hero-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin: 0 0 10px;
-  padding: 5px 12px;
-  border: 1px solid var(--gold-line);
-  border-radius: var(--radius-pill);
-  background: var(--gold-soft);
-  color: var(--gold-deep);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
 
-/* Emoji points replace the dot markers: drop the bullet and its indent. */
-.hero-points--emoji li {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding-left: 0;
-}
 
-.hero-points--emoji li::before {
-  display: none;
-}
 
 /* ---- Social proof band -------------------------------------------------- */
 
@@ -6435,24 +6387,8 @@ textarea:focus-visible {
   line-height: 1.3;
 }
 
-/* ---- Key feature pitches ------------------------------------------------ */
 
-.pitch-card {
-  display: grid;
-  gap: 6px;
-  align-content: start;
-}
 
-.pitch-emoji {
-  font-size: 1.5rem;
-  line-height: 1;
-  filter: saturate(1.15) contrast(1.05);
-}
-
-.pitch-card h3 {
-  margin: 0;
-  font-size: 1.02rem;
-}
 
 /* ---- Three-step flow ---------------------------------------------------- */
 
@@ -6460,23 +6396,8 @@ textarea:focus-visible {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
 }
 
-.step-emoji {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  font-size: 1.35rem;
-  line-height: 1;
-  filter: saturate(1.15) contrast(1.05);
-}
 
-.mini-steps--plain li {
-  color: var(--ink-2);
-  font-size: 0.82rem;
-}
 
-.mini-steps--plain li::before {
-  border-color: var(--line-strong);
-}
 
 /* ---- Disclosures (fee table, full process) ------------------------------ */
 
@@ -6523,56 +6444,12 @@ textarea:focus-visible {
   margin-top: 12px;
 }
 
-/* ---- Testimonials ------------------------------------------------------- */
 
-.testimonials {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-  gap: 14px;
-}
 
-.testimonial {
-  margin: 0;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-}
 
-.testimonial blockquote {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: var(--ink-2);
-  overflow-wrap: anywhere;
-}
 
-.testimonial blockquote::before {
-  content: "“";
-  color: var(--gold);
-  font-size: 1.6rem;
-  line-height: 0;
-  vertical-align: -0.25em;
-  margin-right: 2px;
-}
 
-.testimonial figcaption {
-  display: grid;
-  gap: 1px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-}
 
-.testimonial figcaption strong {
-  font-size: 0.82rem;
-}
-
-.testimonial figcaption span {
-  font-size: 0.74rem;
-  color: var(--muted);
-}
 
 @media (max-width: 430px) {
   .proof-stats {
@@ -6584,13 +6461,61 @@ textarea:focus-visible {
     font-size: 0.7rem;
   }
 
-  .step-emoji {
-    top: 14px;
-    right: 14px;
-    font-size: 1.2rem;
+
+}
+
+/* ---- Hero brand lockup -------------------------------------------------- */
+
+.hero-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.hero-brand-mark {
+  width: 54px;
+  height: 54px;
+  display: inline-block;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 34px -22px rgba(0, 0, 0, 0.9);
+}
+
+.hero-brand-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Beats the generic `.hero h1` sizing so the wordmark sits on the brand grid. */
+.hero .hero-brand-word {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--text-4xl);
+  line-height: 1.04;
+  letter-spacing: -0.028em;
+}
+
+.hero-subhead {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 750;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+}
+
+@media (max-width: 640px) {
+  .hero-brand-mark {
+    width: 44px;
+    height: 44px;
   }
 
-  .testimonial {
-    padding: 14px;
+  .hero-subhead {
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
   }
 }

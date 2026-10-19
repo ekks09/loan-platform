@@ -48,13 +48,6 @@ def _page_context() -> dict:
         "initial_rate": Loan.fee_rate_percent(CALCULATOR_START),
         "initial_band_min": band[0] if band else Loan.MIN_AMOUNT,
         "initial_band_max": band[1] if band else Loan.MAX_AMOUNT,
-        # Landing-page stories. Empty when the block is switched off, so the
-        # template renders nothing rather than an empty strip.
-        "testimonials": (
-            list(settings.PLATFORM_TESTIMONIALS)
-            if settings.PLATFORM_TESTIMONIALS_ENABLED
-            else []
-        ),
     }
 
 

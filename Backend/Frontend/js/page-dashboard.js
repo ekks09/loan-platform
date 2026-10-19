@@ -1669,7 +1669,7 @@
   // no amount is ever invented on the client.
 
   const PROFILE_STANDING = {
-    verified: { text: "Verified ✅", className: "funnel-status-value is-verified" },
+    verified: { text: "Verified", className: "funnel-status-value is-verified" },
     review: { text: "In review", className: "funnel-status-value is-pending" },
     action: { text: "Action needed", className: "funnel-status-value is-action" },
     pending: { text: "Not verified", className: "funnel-status-value is-pending" },

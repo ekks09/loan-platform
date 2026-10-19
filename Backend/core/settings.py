@@ -525,30 +525,6 @@ PLATFORM_ADDRESS = env("PLATFORM_ADDRESS", "")
 # back to a non-numeric line rather than inventing a statistic.
 PLATFORM_SOCIAL_PROOF = env("PLATFORM_SOCIAL_PROOF", "").strip()
 
-# Customer stories shown on the landing page. Every entry is illustrative
-# placeholder copy: replace it with a real, consented quote (or turn the block
-# off with PLATFORM_TESTIMONIALS_ENABLED=false) before the page is used in a
-# live campaign. Publishing invented reviews as genuine customer feedback
-# breaches advertising and consumer-protection rules.
-PLATFORM_TESTIMONIALS_ENABLED = env_bool("PLATFORM_TESTIMONIALS_ENABLED", True)
-PLATFORM_TESTIMONIALS = [
-    {
-        "name": "Brian, 24",
-        "role": "Comrade · Nairobi",
-        "quote": "Rent was due on Monday and I was 800 bob short. I boosted on my phone at midnight and sorted it before the landlord even knocked.",
-    },
-    {
-        "name": "Amina",
-        "role": "Mama mboga · Kisumu",
-        "quote": "I needed stock before payday and the bank queue was not an option. Small boost, cleared it on time, and my limit went up.",
-    },
-    {
-        "name": "Kamau",
-        "role": "Boda rider · Thika",
-        "quote": "Puncture at 6am, no cash, no work. A quick boost got me back on the road the same morning — the whole thing took minutes.",
-    },
-]
-
 # M-Pesa collection shortcuts. Both are empty by default: fee collection runs
 # through Paystack's prompt, and the interface must never invent a Paybill or
 # Till number. Publish one only after the operating account is confirmed.

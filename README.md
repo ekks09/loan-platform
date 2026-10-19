@@ -107,7 +107,6 @@ CI runs the same commands in `.github/workflows/backend-tests.yml`.
 | `FEE_COLLECTION_APPROVED` | `false` | Required before `upfront` mode can boot |
 | `LEGAL_TERMS_APPROVED` | `false` | Required before live payments can boot |
 | `REQUIRE_DOCUMENT_STORAGE` | `true` outside DEBUG | Readiness fails if the private bucket is missing |
-| `PLATFORM_TESTIMONIALS_ENABLED` | `true` | `false` removes the landing-page stories block (shipped quotes are placeholders) |
 | `PLATFORM_SOCIAL_PROOF` | *(empty)* | Landing-page social-proof badge; empty falls back to a non-numeric line |
 
 ## Documentation
@@ -122,4 +121,4 @@ CI runs the same commands in `.github/workflows/backend-tests.yml`.
 - `docs/REMEDIATION_REPORT.md` — remediation verdict, test report, blockers, readiness
 - `docs/M-BIASHARA_REDESIGN_REPORT.md` — redesign, PWA and fee-repricing report (A–G)
 - `docs/FRONTEND_REFINEMENT_REPORT.md` — theming, navigation, motion, illustration and mobile refinement report
-- `docs/LANDING_PAGE_COPY.md` — public landing-page copy system, marketing settings and claim guardrails
+- `docs/LANDING_PAGE_COPY.md` — public landing-page copy system, marketing setting and claim guardrails
