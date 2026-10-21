@@ -3,133 +3,128 @@
 
 {% block title %}Sign in — {{ PLATFORM_NAME }}{% endblock %}
 {% block description %}Sign in to your {{ PLATFORM_NAME }} account to check your application, verification status and offer.{% endblock %}
-{% block body_class %}auth-page has-bottom-bar-off{% endblock %}
+{% block body_class %}auth-page{% endblock %}
 
 {% block sidebar %}{% include "partials/sidebar.html" with active="auth" active_page="login" %}{% endblock %}
 {% block topbar %}{% include "partials/topbar.html" with title="Sign in" section_label="Your account" %}{% endblock %}
 
 {% block content %}
-<div class="page page--wide">
-  <div class="auth-layout">
-    <aside class="auth-aside" data-reveal>
-      {% include "partials/brand_lockup.html" %}
-      <span class="eyebrow">Your account</span>
-      <h2>Come back to a clear picture.</h2>
-      <p>Your dashboard shows the real state of your application, not an estimate.</p>
-      <ul>
-        <li>Verification status and reviewer notes</li>
-        <li>Offer terms, fee and expiry</li>
-        <li>Provider-confirmed disbursement status</li>
-        <li>Application and payment history</li>
-      </ul>
-      <p class="tiny" style="margin-top: 18px;">Sessions expire after 30 minutes. Sign in again to continue where you left off.</p>
-      {% include "partials/art.html" with file="img/identity-plate" modifier="art--aside" w=750 h=1000 %}
-    </aside>
+<div class="auth-layout">
+  <aside class="auth-aside" data-reveal>
+    {% include "partials/brand_lockup.html" %}
+    <span class="section__eyebrow">Your account</span>
+    <h2 class="text-3xl font-bold text-primary mt-3 mb-2">Come back to a clear picture.</h2>
+    <p class="text-secondary text-lg">Your dashboard shows the real state of your application, not an estimate.</p>
+    <ul class="space-y-2 mt-6 list-disc list-inside text-secondary">
+      <li>Verification status and reviewer notes</li>
+      <li>Offer terms, fee and expiry</li>
+      <li>Provider-confirmed disbursement status</li>
+      <li>Application and payment history</li>
+    </ul>
+    <p class="text-xs text-muted mt-6">Sessions expire after 30 minutes. Sign in again to continue where you left off.</p>
+    {% include "partials/art.html" with file="img/identity-plate" modifier="art--aside" w=750 h=1000 %}
+  </aside>
 
-    <section class="card auth-card" data-reveal data-reveal-delay="1" aria-labelledby="loginTitle">
-      <h1 id="loginTitle">Welcome back</h1>
-      <p>Use the phone number you registered with.</p>
+  <section class="card auth-card" data-reveal data-reveal-delay="1" aria-labelledby="loginTitle">
+    <div class="card-head mb-6">
+      <h1 id="loginTitle" class="text-2xl font-bold">Welcome back</h1>
+      <p class="text-secondary">Use the phone number you registered with.</p>
+    </div>
 
-      <form id="loginForm" novalidate>
-        <div class="field">
-          <label for="loginPhone">Phone number</label>
-          <div class="phone-field">
-            <span class="phone-prefix" aria-hidden="true">KE</span>
-            <input id="loginPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
-                   placeholder="0712 345 678 or +254 712 345 678" required
-                   aria-describedby="loginPhoneHint" />
-          </div>
-          <p class="hint" id="loginPhoneHint">
-            Any Kenyan number (07…, 01…, +254…) or DR Congo number (08…, 09…, +243…).
-          </p>
-          <p class="carrier-badge" id="loginCarrier" aria-live="polite" hidden></p>
-          <p class="carrier-note" id="loginCarrierNote" hidden></p>
-          <p class="field-error" id="err-loginPhone" role="alert" hidden></p>
+    <form id="loginForm" novalidate class="space-y-5">
+      <div class="form-group">
+        <label for="loginPhone" class="form-label">Phone number</label>
+        <div class="phone-field">
+          <span class="phone-prefix" aria-hidden="true">KE</span>
+          <input id="loginPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
+                 placeholder="0712 345 678 or +254 712 345 678" required
+                 class="form-input" aria-describedby="loginPhoneHint" />
         </div>
-
-        <div class="field">
-          <label for="loginPassword">Password</label>
-          <div class="input-wrap">
-            <input id="loginPassword" name="password" type="password"
-                   autocomplete="current-password" required minlength="8" />
-            <button class="password-toggle" type="button" data-password-toggle="loginPassword"
-                    aria-label="Show password">Show</button>
-          </div>
-          <p class="field-error" id="err-loginPassword" role="alert" hidden></p>
-        </div>
-
-        <button class="btn btn-primary btn-block" type="submit" id="loginBtn">
-          Sign in
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <div class="alert alert-error" id="loginMsg" role="alert" hidden></div>
-        <p class="form-foot">
-          <button class="link-button" type="button" id="showReset">Forgot your password?</button>
+        <p class="hint" id="loginPhoneHint">
+          Any Kenyan number (07…, 01…, +254…) or DR Congo number (08…, 09…, +243…).
         </p>
-      </form>
+        <p class="carrier-badge" id="loginCarrier" aria-live="polite" hidden></p>
+        <p class="carrier-note" id="loginCarrierNote" hidden></p>
+        <p class="form-error" id="err-loginPhone" role="alert" hidden></p>
+      </div>
 
-      <form id="resetForm" hidden novalidate>
-        <h2 style="font-size: 1.15rem;">Reset your password</h2>
-        <p class="muted tiny">We will send a one-time code if the number is registered. The response is the same either way.</p>
-
-        <div id="resetStep1">
-          <div class="field">
-            <label for="resetPhone">Phone number</label>
-            <div class="phone-field">
-              <span class="phone-prefix" aria-hidden="true">+</span>
-              <input id="resetPhone" type="tel" inputmode="tel" autocomplete="tel"
-                     placeholder="0712 345 678" required
-                     aria-describedby="resetPhoneHint" />
-            </div>
-            <p class="hint" id="resetPhoneHint">
-              Kenya: 07…, 01… or +254…. DR Congo: 08…, 09… or +243….
-            </p>
-            <p class="carrier-badge" id="resetCarrier" aria-live="polite" hidden></p>
-            <p class="carrier-note" id="resetCarrierNote" hidden></p>
-          </div>
-          <button class="btn btn-secondary btn-block" type="button" id="requestResetBtn">Send code</button>
+      <div class="form-group">
+        <label for="loginPassword" class="form-label">Password</label>
+        <div class="input-wrap">
+          <input id="loginPassword" name="password" type="password"
+                 autocomplete="current-password" required minlength="8" class="form-input" />
+          <button type="button" class="password-toggle" data-password-toggle="loginPassword"
+                  aria-label="Show password">Show</button>
         </div>
+        <p class="form-error" id="err-loginPassword" role="alert" hidden></p>
+      </div>
 
-        <div id="resetStep2" hidden>
-          <div class="field">
-            <label for="resetCode">6-digit SMS code</label>
-            <input id="resetCode" class="otp-input" inputmode="numeric" pattern="[0-9]*"
-                   autocomplete="one-time-code" maxlength="6" placeholder="••••••"
-                   aria-describedby="resetCodeHint" required />
-            <p class="hint" id="resetCodeHint">The code expires 10 minutes after it was sent.</p>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">
+        Sign in
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="alert alert-error" id="loginMsg" role="alert" hidden></div>
+      <p class="text-center text-sm text-muted">
+        <button type="button" class="link-button" id="showReset">Forgot your password?</button>
+      </p>
+    </form>
+
+    <form id="resetForm" hidden novalidate class="space-y-5">
+      <h2 class="text-xl font-semibold">Reset your password</h2>
+      <p class="text-xs text-muted">We will send a one-time code if the number is registered. The response is the same either way.</p>
+
+      <div id="resetStep1">
+        <div class="form-group">
+          <label for="resetPhone" class="form-label">Phone number</label>
+          <div class="phone-field">
+            <span class="phone-prefix" aria-hidden="true">+</span>
+            <input id="resetPhone" type="tel" inputmode="tel" autocomplete="tel"
+                   placeholder="0712 345 678" required class="form-input" aria-describedby="resetPhoneHint" />
           </div>
-          <button class="link-button" type="button" id="resendResetBtn" disabled>
-            Resend code
-          </button>
-          <p class="hint" id="resendHint" role="status" aria-live="polite"></p>
-          <div class="field">
-            <label for="resetPassword">New password</label>
-            <div class="input-wrap">
-              <input id="resetPassword" type="password" autocomplete="new-password" minlength="8" required />
-              <button class="password-toggle" type="button" data-password-toggle="resetPassword"
-                      aria-label="Show password">Show</button>
-            </div>
-          </div>
-          <div class="field">
-            <label for="resetConfirm">Confirm new password</label>
-            <input id="resetConfirm" type="password" autocomplete="new-password" minlength="8" required />
-          </div>
-          <button class="btn btn-primary btn-block" type="button" id="resetSubmitBtn">Set new password</button>
+          <p class="hint" id="resetPhoneHint">
+            Kenya: 07…, 01… or +254…. DR Congo: 08…, 09… or +243….
+          </p>
+          <p class="carrier-badge" id="resetCarrier" aria-live="polite" hidden></p>
+          <p class="carrier-note" id="resetCarrierNote" hidden></p>
         </div>
+        <button type="button" class="btn btn-secondary btn-block" id="requestResetBtn">Send code</button>
+      </div>
 
-        <div class="alert alert-info" id="resetMsg" role="status" hidden></div>
-        {% if SMS_BACKEND == 'none' %}
-          <div class="banner banner-warning" role="note" style="margin-top: 14px;">
-            SMS delivery is not configured on this deployment. Password reset codes cannot be
-            sent here; contact support if you cannot access your account.
+      <div id="resetStep2" hidden>
+        <div class="form-group">
+          <label for="resetCode" class="form-label">6-digit SMS code</label>
+          <input id="resetCode" class="form-input otp-input" inputmode="numeric" pattern="[0-9]*"
+                 autocomplete="one-time-code" maxlength="6" placeholder="••••••"
+                 aria-describedby="resetCodeHint" required />
+          <p class="hint" id="resetCodeHint">The code expires 10 minutes after it was sent.</p>
+        </div>
+        <button type="button" class="link-button" id="resendResetBtn" disabled>Resend code</button>
+        <p class="hint" id="resendHint" role="status" aria-live="polite"></p>
+        <div class="form-group">
+          <label for="resetPassword" class="form-label">New password</label>
+          <div class="input-wrap">
+            <input id="resetPassword" type="password" autocomplete="new-password" minlength="8" required class="form-input" />
+            <button type="button" class="password-toggle" data-password-toggle="resetPassword" aria-label="Show password">Show</button>
           </div>
-        {% endif %}
-        <p class="form-foot"><button class="link-button" type="button" id="backToLogin">Back to sign in</button></p>
-      </form>
+        </div>
+        <div class="form-group">
+          <label for="resetConfirm" class="form-label">Confirm new password</label>
+          <input id="resetConfirm" type="password" autocomplete="new-password" minlength="8" required class="form-input" />
+        </div>
+        <button type="button" class="btn btn-primary btn-block btn-lg" id="resetSubmitBtn">Set new password</button>
+      </div>
 
-      <p class="auth-switch">New to {{ PLATFORM_NAME }}? <a href="{% url 'register' %}">Create an account</a></p>
-    </section>
-  </div>
+      <div class="alert alert-info" id="resetMsg" role="status" hidden></div>
+      {% if SMS_BACKEND == 'none' %}
+        <div class="banner banner-warning" role="note" style="margin-top: 14px;">
+          SMS delivery is not configured on this deployment. Password reset codes cannot be sent here; contact support if you cannot access your account.
+        </div>
+      {% endif %}
+      <p class="text-center text-sm text-muted"><button type="button" class="link-button" id="backToLogin">Back to sign in</button></p>
+    </form>
+
+    <p class="text-center text-muted mt-6">New to {{ PLATFORM_NAME }}? <a href="{% url 'register' %}" class="text-trust font-medium">Create an account</a></p>
+  </section>
 </div>
 {% endblock %}
 

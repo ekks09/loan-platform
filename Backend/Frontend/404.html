@@ -7,15 +7,17 @@
 {% block topbar %}{% include "partials/topbar.html" with title="Page not found" section_label="404" %}{% endblock %}
 
 {% block content %}
-<div class="page error-page">
-  <div class="card">
-    <div class="error-code">404</div>
-    <h1>That page is not here</h1>
-    <p class="muted">The link may be outdated, or the page may have moved. Your account is unaffected.</p>
-    <div class="row" style="justify-content: center;">
+<div class="container" style="max-width: 400px; text-align: center; padding: var(--space-16) 0;">
+  <div class="card card-interactive" data-reveal>
+    <div class="error-code text-6xl font-bold text-trust mb-4">404</div>
+    <h1 class="text-2xl font-bold mb-3">That page is not here</h1>
+    <p class="text-secondary mb-6">The link may be outdated, or the page may have moved. Your account is unaffected.</p>
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
       <a class="btn btn-primary" href="/">Go to the homepage</a>
       <a class="btn btn-ghost" href="/dashboard/">Open dashboard</a>
     </div>
   </div>
 </div>
 {% endblock %}
+
+{% block footer %}{% include "partials/footer.html" %}{% endblock %}

@@ -3,6 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <script>
+    // Remove no-js class immediately to prevent FOUC
+    document.documentElement.classList.remove('no-js');
+  </script>
   <title>{% block title %}{{ PLATFORM_NAME }} — {{ PLATFORM_TAGLINE }}{% endblock %}</title>
   <meta name="description" content="{% block description %}{{ PLATFORM_NAME }} — simple, fast, and transparent loans. Create your free account, upload your ID and track your loan status live from one dashboard.{% endblock %}" />
   <meta name="theme-color" content="{{ PWA_THEME_COLOR }}" />
@@ -20,6 +24,12 @@
   <meta property="og:type" content="website" />
   <meta property="og:image" content="{% static 'icons/icon-512.png' %}" />
   <meta name="twitter:card" content="summary" />
+
+  <!-- Inter Font - loaded efficiently with preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <script src="{% static 'js/theme-init.js' %}"></script>
   <link rel="stylesheet" href="{% static 'css/style.css' %}" />
   {% block head %}{% endblock %}
@@ -35,58 +45,211 @@
 >
   <a class="skip-link" href="#main">Skip to content</a>
 
+  <!-- Offline Banner -->
   <div class="offline-banner" id="offlineBanner" role="status" hidden>
-    You are offline. Pages you already visited may still open, but applications, uploads and payments cannot be submitted.
+    <svg class="offline-banner__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="M1 1l22 22M5 19.5V19.5a2 2 0 0 1 2-2h10a2 2 0 0 0 2-2V6.5a2 2 0 0 0-2-2H7a2 2 0 0 1-2-2V4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M17 21v-5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span>You are offline. Pages you already visited may still open, but applications, uploads and payments cannot be submitted.</span>
   </div>
 
-  <div class="app-shell">
-    {% block sidebar %}{% include "partials/sidebar.html" with active="public" %}{% endblock %}
+  {% block header %}
+    <header class="header" role="banner">
+      <div class="header__inner">
+        <a class="header__brand" href="{% url 'index' %}" aria-label="{{ PLATFORM_NAME }} — Home">
+          {% include "partials/brand_mark.svg" %}
+          <span class="header__brand-word">{{ PLATFORM_NAME }}</span>
+          <span class="header__brand-sub">Kenya</span>
+        </a>
 
-    <div class="app-main">
-      {% block topbar %}{% include "partials/topbar.html" with title="Overview" %}{% endblock %}
+        <nav class="header__nav" aria-label="Main navigation">
+          <a class="header__nav-link" href="{% url 'index' %}#overview">Overview</a>
+          <a class="header__nav-link" href="{% url 'index' %}#how-it-works">How it works</a>
+          <a class="header__nav-link" href="{% url 'index' %}#fees">Fees</a>
+          <a class="header__nav-link" href="{% url 'index' %}#security">Security</a>
+          <a class="header__nav-link" href="{% url 'index' %}#faq">FAQ</a>
+        </nav>
 
-      <main id="main" tabindex="-1">
-        <noscript>
-          <div class="page" style="padding-bottom: 0;">
-            <div class="banner banner-info" role="note">
-              JavaScript is required to submit applications, upload documents and manage your account. Information pages remain readable without it.
-            </div>
-          </div>
-        </noscript>
-        {% block content %}{% endblock %}
-      </main>
+        <div class="header__actions">
+                  <a class="btn btn-ghost" href="{% url 'login_view' %}">Sign in</a>
+                  <a class="btn btn-primary" href="{% url 'register' %}">Create account</a>
 
-      {% block footer %}{% endblock %}
+                  <!-- Theme Toggle -->
+                  <button class="header__theme-toggle" type="button" data-theme-toggle
+                          role="switch" aria-checked="false" aria-label="Toggle dark theme">
+                    {% include "partials/theme_icons.html" %}
+                    <span class="sr-only">Dark theme</span>
+                  </button>
+                </div>
+
+        <button class="header__mobile-menu" aria-label="Open menu" aria-expanded="false" aria-controls="mobileDrawer" data-nav-open>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile Navigation Drawer -->
+    <div class="mobile-drawer" id="mobileDrawer" role="dialog" aria-label="Navigation menu" aria-hidden="true">
+      <div class="mobile-drawer__header">
+        <a class="header__brand" href="{% url 'index' %}">
+          {% include "partials/brand_mark.svg" %}
+          <span class="header__brand-word">{{ PLATFORM_NAME }}</span>
+          <span class="header__brand-sub">Kenya</span>
+        </a>
+        <button class="mobile-drawer__close" aria-label="Close menu" data-nav-close>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <nav class="mobile-drawer__nav" aria-label="Mobile navigation">
+        <a class="mobile-drawer__link" href="{% url 'index' %}#overview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V20H4z"/><path d="M9.5 20v-5h5v5"/></svg>
+          Overview
+        </a>
+        <a class="mobile-drawer__link" href="{% url 'index' %}#how-it-works">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 6h14M5 12h9M5 18h6"/><circle cx="18.5" cy="17.5" r="2.5"/></svg>
+          How it works
+        </a>
+        <a class="mobile-drawer__link" href="{% url 'index' %}#fees">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h8"/></svg>
+          Fees
+        </a>
+        <a class="mobile-drawer__link" href="{% url 'index' %}#security">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3.5 19 6v6c0 4.2-2.9 7.4-7 8.5-4.1-1.1-7-4.3-7-8.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>
+          Security
+        </a>
+        <a class="mobile-drawer__link" href="{% url 'index' %}#faq">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .9-1 1.7"/><circle cx="12" cy="16.8" r=".9" fill="currentColor" stroke="none"/></svg>
+          FAQ
+        </a>
+        <hr style="border-color: var(--color-border-light); margin: var(--space-4) 0;">
+        <a class="mobile-drawer__link" href="{% url 'register' %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Create account
+        </a>
+        <a class="mobile-drawer__link" href="{% url 'login_view' %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/></svg>
+          Sign in
+        </a>
+      </nav>
     </div>
+    <div class="mobile-drawer__scrim" data-nav-close aria-hidden="true"></div>
+  {% endblock %}
+
+  <div class="app-main">
+    {% block topbar %}{% endblock %}
+
+    <main id="main" tabindex="-1" role="main">
+      <noscript>
+        <div class="page" style="padding-bottom: 0;">
+          <div class="banner banner-info" role="note">
+            JavaScript is required to submit applications, upload documents and manage your account. Information pages remain readable without it.
+          </div>
+        </div>
+      </noscript>
+      {% block content %}{% endblock %}
+    </main>
+
+    {% block footer %}
+      <footer class="footer" role="contentinfo">
+        <div class="container footer__grid">
+          <div class="footer__brand">
+            <a class="footer__brand-link" href="{% url 'index' %}">
+              {% include "partials/brand_mark.svg" %}
+              <span class="footer__brand-word">{{ PLATFORM_NAME }}</span>
+              <span class="footer__brand-sub">Kenya</span>
+            </a>
+            <p class="footer__description">{{ PLATFORM_NAME }} — simple, fast, and transparent loans, with careful identity review and provider-confirmed statuses.</p>
+            <p class="text-xs" style="margin-top: var(--space-4); color: rgba(255,255,255,0.5);">The published schedule is transparent. Fees are collected only after an accepted offer, and no credit is issued until the required approvals are recorded.</p>
+          </div>
+
+          <nav aria-labelledby="footerExplore">
+            <h2 id="footerExplore" class="footer__nav-title">Explore</h2>
+            <ul class="footer__nav">
+              <li><a class="footer__nav-link" href="{% url 'index' %}#overview">Overview</a></li>
+              <li><a class="footer__nav-link" href="{% url 'index' %}#how-it-works">How it works</a></li>
+              <li><a class="footer__nav-link" href="{% url 'index' %}#fees">Fees</a></li>
+              <li><a class="footer__nav-link" href="{% url 'index' %}#security">Security</a></li>
+            </ul>
+          </nav>
+
+          <nav aria-labelledby="footerHelp">
+            <h2 id="footerHelp" class="footer__nav-title">Help</h2>
+            <ul class="footer__nav">
+              <li><a class="footer__nav-link" href="{% url 'index' %}#faq">FAQ</a></li>
+              <li><a class="footer__nav-link" href="{% url 'index' %}#contact">Contact</a></li>
+              <li><a class="footer__nav-link" href="{% url 'privacy' %}">Privacy notice</a></li>
+              <li><a class="footer__nav-link" href="{% url 'terms' %}">Terms</a></li>
+            </ul>
+          </nav>
+
+          <div>
+            <h2 class="footer__nav-title">Account</h2>
+            <ul class="footer__nav">
+              <li><a class="footer__nav-link" href="{% url 'register' %}">Create an account</a></li>
+              <li><a class="footer__nav-link" href="{% url 'login_view' %}">Sign in</a></li>
+              <li><a class="footer__nav-link" href="{% url 'index' %}#fees">Fee disclosure</a></li>
+              {% if PLATFORM_SUPPORT_EMAIL %}
+                <li><a class="footer__nav-link" href="mailto:{{ PLATFORM_SUPPORT_EMAIL }}">{{ PLATFORM_SUPPORT_EMAIL }}</a></li>
+              {% endif %}
+              {% if PLATFORM_SUPPORT_PHONE %}
+                <li><a class="footer__nav-link" href="tel:{{ PLATFORM_SUPPORT_PHONE }}">{{ PLATFORM_SUPPORT_PHONE }}</a></li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer__bottom">
+                  <span>&copy; {{ CURRENT_YEAR }} {{ PLATFORM_NAME }}</span>
+                  <span>{{ PLATFORM_LICENCE_STATUS }}</span>
+                  <span>Fee schedule {{ fee_schedule_version|default:"2026-10-draft" }} · {% if FEE_COLLECTION_MODE == "upfront" %}collected only after an accepted offer{% else %}collection disabled{% endif %}</span>
+
+                  <!-- Theme Toggle in Footer -->
+                  <button class="footer__theme-toggle" type="button" data-theme-toggle
+                          role="switch" aria-checked="false" aria-label="Toggle dark theme">
+                    {% include "partials/theme_icons.html" %}
+                    <span class="sr-only">Dark theme</span>
+                  </button>
+                </div>
+      </footer>
+    {% endblock %}
   </div>
 
-  <div class="drawer-scrim" data-nav-close hidden></div>
-
-  {% block bottom_nav %}{% endblock %}
-
+  <!-- Toast Region -->
   <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="false"></div>
 
+  <!-- Install Prompt Dialog -->
   <dialog class="dialog" id="installDialog" aria-labelledby="installTitle">
-    <div class="dialog-head">
-      <h2 id="installTitle">Install {{ PLATFORM_NAME }}</h2>
-      <p class="hint">Open your account from the home screen, without a browser address bar.</p>
-    </div>
-    <div class="dialog-body">
-      <div class="icon-pwa-standard pwa-tile" aria-hidden="true">
-        {% include "partials/brand_mark.svg" %}
+    <div class="dialog__scrim" data-dialog-close></div>
+    <div class="dialog__panel">
+      <div class="dialog__header">
+        <h2 id="installTitle" class="dialog__title">Install {{ PLATFORM_NAME }}</h2>
+        <button class="dialog__close" type="button" data-dialog-close aria-label="Close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
-      <p id="installBody">Installing keeps the sign-in page and public information one tap away. Financial data is never stored for offline use.</p>
-      <ol class="install-steps" id="iosSteps" hidden>
-        <li>Open this page in Safari.</li>
-        <li>Tap the Share button.</li>
-        <li>Choose “Add to Home Screen”, then tap Add.</li>
-      </ol>
-    </div>
-    <div class="dialog-actions">
-      <button class="btn btn-ghost" type="button" data-dialog-close>Not now</button>
-      <button class="btn btn-primary" type="button" id="installConfirm">Install</button>
-    </div>
-  </dialog>
+      <div class="dialog__body">
+        <div class="icon-pwa-standard pwa-tile" aria-hidden="true">
+          {% include "partials/brand_mark.svg" %}
+        </div>
+        <p id="installBody">Installing keeps the sign-in page and public information one tap away. Financial data is never stored for offline use.</p>
+        <ol class="install-steps" id="iosSteps" hidden>
+          <li>Open this page in Safari.</li>
+          <li>Tap the Share button.</li>
+          <li>Choose "Add to Home Screen", then tap Add.</li>
+        </ol>
+      </div>
+      <div class="dialog__actions">
+        <button class="btn btn-ghost" type="button" data-dialog-close>Not now</button>
+        <button class="btn btn-primary" type="button" id="installConfirm">Install</button>
+      </div>
+    </dialog>
 
   {% block dialogs %}{% endblock %}
 

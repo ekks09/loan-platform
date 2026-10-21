@@ -152,6 +152,7 @@ INSTALLED_APPS = [
     "loans",
     "payments",
     "loyalty",
+    "repayments",
 ]
 
 MIDDLEWARE = [
@@ -554,7 +555,8 @@ if PAYMENTS_LIVE_MODE and not LEGAL_TERMS_APPROVED:
 # =========================================================================
 # NOTIFICATIONS
 # =========================================================================
-SMS_BACKEND = (env("SMS_BACKEND", "console" if DEBUG else "none") or "none").lower()
+_sms_backend_raw = env("SMS_BACKEND", "console" if DEBUG else "none")
+SMS_BACKEND = (_sms_backend_raw.strip().lower() if _sms_backend_raw else "none")
 if SMS_BACKEND not in {"console", "africastalking", "none"}:
     raise ImproperlyConfigured("SMS_BACKEND must be console, africastalking or none.")
 AFRICASTALKING_USERNAME = env("AFRICASTALKING_USERNAME", "")

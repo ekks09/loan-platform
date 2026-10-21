@@ -7,15 +7,17 @@
 {% block topbar %}{% include "partials/topbar.html" with title="Something went wrong" section_label="500" %}{% endblock %}
 
 {% block content %}
-<div class="page error-page">
-  <div class="card">
-    <div class="error-code">500</div>
-    <h1>Something went wrong</h1>
-    <p class="muted">The request could not be completed. Nothing was charged. If you were submitting an application or payment, check your dashboard before retrying.</p>
-    <div class="row" style="justify-content: center;">
+<div class="container" style="max-width: 400px; text-align: center; padding: var(--space-16) 0;">
+  <div class="card card-interactive" data-reveal>
+    <div class="error-code text-6xl font-bold text-warning mb-4">500</div>
+    <h1 class="text-2xl font-bold mb-3">Something went wrong</h1>
+    <p class="text-secondary mb-6">The request could not be completed. Nothing was charged. If you were submitting an application or payment, check your dashboard before retrying.</p>
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
       <a class="btn btn-primary" href="/dashboard/">Check your dashboard</a>
       <a class="btn btn-ghost" href="/">Go to the homepage</a>
     </div>
   </div>
 </div>
 {% endblock %}
+
+{% block footer %}{% include "partials/footer.html" %}{% endblock %}

@@ -43,9 +43,16 @@
     </div>
 
     <div class="footer-bottom">
-      <span>&copy; {{ CURRENT_YEAR }} {{ PLATFORM_NAME }}</span>
-      <span>{{ PLATFORM_LICENCE_STATUS }}</span>
-      <span>Fee schedule {{ fee_schedule_version|default:"2026-10-draft" }} · {% if FEE_COLLECTION_MODE == "upfront" %}collected only after an accepted offer{% else %}collection disabled{% endif %}</span>
-    </div>
+          <span>&copy; {{ CURRENT_YEAR }} {{ PLATFORM_NAME }}</span>
+          <span>{{ PLATFORM_LICENCE_STATUS }}</span>
+          <span>Fee schedule {{ fee_schedule_version|default:"2026-10-draft" }} · {% if FEE_COLLECTION_MODE == "upfront" %}collected only after an accepted offer{% else %}collection disabled{% endif %}</span>
+
+          <!-- Theme Toggle in Footer -->
+          <button class="footer__theme-toggle" type="button" data-theme-toggle
+                  role="switch" aria-checked="false" aria-label="Toggle dark theme">
+            {% include "partials/theme_icons.html" %}
+            <span class="sr-only">Dark theme</span>
+          </button>
+        </div>
   </div>
 </footer>
