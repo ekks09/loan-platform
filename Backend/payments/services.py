@@ -31,7 +31,7 @@ from core.errors import (
 )
 from core.money import from_minor, to_minor
 from core.notifications import send_sms
-from loans.models import Loan
+from loans.models import Loan, RepaymentSchedule
 from payments.models import (
     LedgerEntry,
     Payment,
@@ -569,16 +569,20 @@ def confirm_transfer_success(transfer: Transfer, data: dict | None = None) -> Tr
             loan.transition_to(Loan.Status.DISBURSED, reason="Disbursement confirmed")
 
             post_journal(
-                [
-                    (LedgerEntry.Account.LOAN_RECEIVABLE, LedgerEntry.Direction.DEBIT, transfer.amount_kes),
-                    (LedgerEntry.Account.PROVIDER_CLEARING, LedgerEntry.Direction.CREDIT, transfer.amount_kes),
-                ],
-                reference=transfer.reference,
-                memo="Loan principal disbursed",
-                loan=loan,
-                transfer=transfer,
+                            [
+                                (LedgerEntry.Account.LOAN_RECEIVABLE, LedgerEntry.Direction.DEBIT, transfer.amount_kes),
+                                (LedgerEntry.Account.PROVIDER_CLEARING, LedgerEntry.Direction.CREDIT, transfer.amount_kes),
+                            ],
+                            reference=transfer.reference,
+                            memo="Loan principal disbursed",
+                            loan=loan,
+                            transfer=transfer,
             )
-        phone = loan.user.phone
+            # Generate repayment schedule now that loan is disbursed
+            transaction.on_commit(
+                lambda: generate_schedule(loan)
+            )
+            phone = loan.user.phone
         amount = transfer.amount_kes
         transaction.on_commit(
             lambda: send_sms(
@@ -868,8 +872,12 @@ def _dispatch_event(event: WebhookEvent) -> str:
     reference = envelope.reference
 
     if envelope.kind is WebhookEventKind.CHARGE_SUCCESS:
-        process_charge_success(reference, data)
-        return "processed"
+            payment = process_charge_success(reference, data)
+            # If this was a repayment payment, allocate it to schedules
+            if payment.purpose == Payment.Purpose.REPAYMENT:
+                from repayments.services import process_repayment_webhook
+                process_repayment_webhook(payment)
+            return "processed"
 
     if envelope.kind in {
         WebhookEventKind.TRANSFER_SUCCESS,
@@ -1047,3 +1055,86 @@ def run_reconciliation(*, dry_run: bool = True, actor=None) -> ReconciliationRun
         run.save()
         logger.exception("Reconciliation run %s failed", run.pk)
         raise
+
+
+
+# ---------------------------------------------------------------------
+# Repayment payment initialization
+# ---------------------------------------------------------------------
+def initialize_repayment_payment(loan: Loan, schedule: "RepaymentSchedule", *, actor=None) -> Payment:
+    """Create a Paystack checkout for a repayment installment.
+
+    The amount is the outstanding balance on the schedule (including any late fees).
+    """
+    if not settings.PAYMENTS_ENABLED:
+        raise PaymentsDisabled()
+
+    if loan.status != Loan.Status.DISBURSED:
+        raise InvalidTransition("Repayment only available for disbursed loans.")
+
+    if schedule.loan_id != loan.pk:
+        raise InvalidTransition("Schedule does not belong to this loan.")
+
+    if not schedule.can_allocate(schedule.outstanding_kes):
+        raise InvalidTransition("This installment cannot accept payment.")
+
+    # Check for existing pending payment for this schedule
+    existing = Payment.objects.filter(
+        loan=loan,
+        purpose=Payment.Purpose.REPAYMENT,
+        status__in=[Payment.Status.PENDING, Payment.Status.INITIALIZED],
+    ).first()
+    if existing:
+        return existing
+
+    # Create new payment for the outstanding amount
+    reference = f"RPT_{loan.pk}_{schedule.installment_number}_{secrets.token_hex(4)}"
+    payment = Payment.objects.create(
+        loan=loan,
+        user=loan.user,
+        purpose=Payment.Purpose.REPAYMENT,
+        reference=reference,
+        idempotency_key=f"repay:loan:{loan.pk}:schedule:{schedule.installment_number}",
+        amount_kes=schedule.outstanding_kes,
+        currency="KES",
+        status=Payment.Status.PENDING,
+        provider=settings.PAYMENT_PROVIDER,
+    )
+
+    checkout = _provider().initialize(
+        email=internal_email(loan.user.phone),
+        amount_minor=to_minor(payment.amount_kes),
+        reference=payment.reference,
+        currency=payment.currency,
+        metadata={
+            "loan_id": loan.pk,
+            "schedule_id": schedule.pk,
+            "installment_number": schedule.installment_number,
+            "purpose": "repayment",
+            "user_id": loan.user_id,
+            "provider": "mpesa",
+        },
+        channels=["mobile_money"],
+    )
+
+    with transaction.atomic():
+        payment = Payment.objects.select_for_update().get(pk=payment.pk)
+        payment.provider_reference = (checkout.provider_reference or payment.reference)[:64]
+        payment.authorization_url = checkout.authorization_url
+        payment.access_code = checkout.access_code or None
+        payment.save(
+            update_fields=[
+                "provider_reference",
+                "authorization_url",
+                "access_code",
+                "updated_at",
+            ]
+        )
+        if payment.status == Payment.Status.PENDING:
+            payment.transition_to(
+                Payment.Status.INITIALIZED, reason="Checkout created", actor=actor
+            )
+
+    logger.info("Repayment payment %s initialised for loan %s schedule %s",
+                payment.pk, loan.pk, schedule.installment_number)
+    return payment

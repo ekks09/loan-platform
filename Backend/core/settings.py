@@ -152,6 +152,7 @@ INSTALLED_APPS = [
     "loans",
     "payments",
     "loyalty",
+    "repayments",
 ]
 
 MIDDLEWARE = [
