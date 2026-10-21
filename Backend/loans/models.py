@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -53,7 +54,7 @@ class Loan(models.Model):
         DISBURSEMENT_PENDING = "DISBURSEMENT_PENDING", "Disbursement pending"
         DISBURSED = "DISBURSED", "Disbursed"
         REVERSED = "REVERSED", "Disbursement reversed"
-        REPAID = "REPAID", "Repaid"  # reserved until repayment exists
+        REPAID = "REPAID", "Repaid"
         REJECTED = "REJECTED", "Rejected"
         EXPIRED = "EXPIRED", "Offer expired"
         CANCELLED = "CANCELLED", "Cancelled"
@@ -503,3 +504,99 @@ class LoanEvent(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValueError("LoanEvent records are immutable.")
+
+
+class RepaymentSchedule(models.Model):
+    """Planned installment for a disbursed loan.
+
+    Created when a loan reaches DISBURSED status. Immutable once created;
+    only the amount_paid and status fields change as payments are allocated.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        PARTIAL = "PARTIAL", "Partially paid"
+        PAID = "PAID", "Paid"
+        OVERDUE = "OVERDUE", "Overdue"
+        WAIVED = "WAIVED", "Waived"
+
+    loan = models.ForeignKey(
+        "Loan", on_delete=models.CASCADE, related_name="repayment_schedules"
+    )
+    installment_number = models.PositiveIntegerField()
+    due_on = models.DateField()
+    expected_principal_kes = models.PositiveIntegerField()
+    expected_interest_kes = models.PositiveIntegerField(default=0)
+    expected_fees_kes = models.PositiveIntegerField(default=0)
+    expected_total_kes = models.PositiveIntegerField()
+    amount_paid_kes = models.PositiveIntegerField(default=0)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING
+    )
+    late_fee_kes = models.PositiveIntegerField(default=0)
+    late_fee_applied_at = models.DateTimeField(null=True, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["loan", "installment_number"]
+        indexes = [
+            models.Index(
+                fields=["loan", "status"], name="repay_sched_loan_status_idx"
+            ),
+            models.Index(fields=["due_on", "status"], name="repay_sched_due_status_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["loan", "installment_number"],
+                name="repay_sched_unique_installment",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Schedule #{self.installment_number} for Loan {self.loan_id}"
+
+    @property
+    def outstanding_kes(self) -> int:
+        return max(0, self.expected_total_kes - self.amount_paid_kes)
+
+    @property
+    def is_overdue(self) -> bool:
+        if self.status in {self.Status.PAID, self.Status.WAIVED}:
+            return False
+        return timezone.now().date() > self.due_on
+
+    def can_allocate(self, amount_kes: int) -> bool:
+        return self.outstanding_kes > 0 and amount_kes > 0
+
+
+class RepaymentAllocation(models.Model):
+    """Links a provider-confirmed payment to the schedule installments it paid.
+
+    One payment (e.g., a Paystack charge.success) can cover multiple installments
+    (partial payments, overpayments). Each allocation row is immutable.
+    """
+
+    payment = models.ForeignKey(
+        "payments.Payment",
+        on_delete=models.PROTECT,
+        related_name="repayment_allocations",
+    )
+    schedule = models.ForeignKey(
+        RepaymentSchedule,
+        on_delete=models.PROTECT,
+        related_name="allocations",
+    )
+    amount_kes = models.PositiveIntegerField()
+    allocated_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-allocated_at"]
+        indexes = [
+            models.Index(fields=["payment"], name="repay_alloc_payment_idx"),
+            models.Index(fields=["schedule"], name="repay_alloc_schedule_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"Allocation {self.amount_kes} from {self.payment.reference} to schedule {self.schedule_id}"
