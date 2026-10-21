@@ -1,152 +1,194 @@
 {% extends "base.html" %}
 {% load static humanize %}
 
-{% block title %}{{ PLATFORM_NAME }} — Borrow Quick Loan Now{% endblock %}
+{% block title %}{{ PLATFORM_NAME }} — Best way to manage your loan{% endblock %}
 {% block description %}Quick loans from KES {{ min_amount|intcomma }} to KES {{ max_amount|intcomma }}. Apply on your phone with your National ID and have the money sent straight to your M-PESA line.{% endblock %}
 {% block body_class %}marketing-page{% endblock %}
 
-{% block topbar %}{% include "partials/topbar.html" with title="Overview" section_label=PLATFORM_NAME %}{% endblock %}
-
 {% block content %}
+<!-- Hero Section -->
 <section class="hero" id="overview">
-  <div class="page page--wide" style="padding-top: 0;">
-    <div class="hero-grid">
-      <div class="hero-copy" data-reveal>
-        <div class="hero-brand">
-          <span class="hero-brand-mark">{% include "partials/brand_mark.svg" %}</span>
-          <h1 class="hero-brand-word">{{ PLATFORM_NAME }}</h1>
-          <p class="hero-subhead">Borrow Quick Loan Now</p>
-        </div>
-        <p class="lead">
-          Quick loans from <strong>KES {{ min_amount|intcomma }}</strong> to
-          <strong>KES {{ max_amount|intcomma }}</strong>, paid straight to your M-PESA.
-          Apply with your phone number and National ID. No paperwork, no branch visits.
-        </p>
-        <div class="hero-actions">
-          <a class="btn btn-primary" href="{% url 'register' %}">
-            Create Account
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-          <a class="btn btn-ghost" href="#how-it-works">See how it works</a>
-        </div>
-        <ul class="hero-points">
-          <li>Free to create an account</li>
-          <li>No paperwork, no guarantor</li>
-          <li>Money sent to your M-PESA line</li>
-        </ul>
+  <div class="container hero__grid">
+    <div class="hero__copy" data-reveal>
+      <div class="hero__brand">
+        <span class="hero__brand-mark">{% include "partials/brand_mark.svg" %}</span>
+        <h1 class="hero__brand-word">{{ PLATFORM_NAME }}</h1>
+        <p class="hero__subhead">Best way to manage your loan</p>
       </div>
-
-      <div class="hero-visual" data-reveal data-reveal-delay="1">
-        <img src="{% static 'img/hero-skyline.jpg' %}" alt="" width="1440" height="900"
-             fetchpriority="high" decoding="async" />
-        <div class="hero-overlay">
-          <div class="row row-between">
-            <h2>How it works</h2>
-            <span class="chip chip-gold">KES {{ min_amount|intcomma }} min</span>
-          </div>
-          <ol class="mini-steps">
-            <li class="is-done">Enter your phone number</li>
-            <li class="is-current">Choose your loan amount</li>
-            <li>Receive the money on M-PESA</li>
-          </ol>
-        </div>
+      <p class="hero__lead">
+        Understand your costs, review your repayment terms, and track every step of your loan application with <strong>{{ PLATFORM_NAME }}</strong>.
+        Quick loans from <strong>KES {{ min_amount|intcomma }}</strong> to <strong>KES {{ max_amount|intcomma }}</strong>, paid straight to your M-PESA.
+        Apply with your phone number and National ID. No paperwork, no branch visits.
+      </p>
+      <div class="hero__actions">
+        <a class="btn btn-primary" href="{% url 'register' %}">
+          Create Account
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="btn btn-secondary" href="#how-it-works">See how it works</a>
       </div>
+      <ul class="hero__points">
+        <li>Free to create an account</li>
+        <li>No paperwork, no guarantor</li>
+        <li>Money sent to your M-PESA line</li>
+      </ul>
     </div>
 
-    <div class="hero-badge" data-reveal>
-      <strong>{{ PLATFORM_SOCIAL_PROOF|default:"Clear fees, quick decisions, and money paid straight to your M-PESA." }}</strong>
-      <span>· {{ PLATFORM_LICENCE_STATUS }}</span>
+    <div class="hero__visual" data-reveal data-reveal-delay="1">
+      <img src="{% static 'img/hero-skyline.jpg' %}" alt="Kenyan professional using mobile phone for banking" width="1440" height="900" fetchpriority="high" decoding="async" />
+      <div class="hero__overlay">
+        <div class="row row-between">
+          <h2>How it works</h2>
+          <span class="chip chip-info">KES {{ min_amount|intcomma }} min</span>
+        </div>
+        <ol class="hero__mini-steps">
+          <li class="is-done">Enter your phone number</li>
+          <li class="is-current">Choose your loan amount</li>
+          <li>Receive the money on M-PESA</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero__badge" data-reveal>
+    <strong>{{ PLATFORM_SOCIAL_PROOF|default:"Clear fees, quick decisions, and money paid straight to your M-PESA." }}</strong>
+    <span>· {{ PLATFORM_LICENCE_STATUS }}</span>
+  </div>
+</section>
+
+<!-- Trust Strip -->
+<section class="section" style="padding-top: 0; padding-bottom: var(--space-8);">
+  <div class="container">
+    <div class="trust-strip" data-reveal>
+      <div class="trust-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>256-bit Encryption</span>
+      </div>
+      <div class="trust-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22s9-5.5 9-10"/></svg>
+        <span>CBK Licensed</span>
+      </div>
+      <div class="trust-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        <span>M-Pesa Partner</span>
+      </div>
+      <div class="trust-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3.5 19 6v6c0 4.2-2.9 7.4-7 8.5-4.1-1.1-7-4.3-7-8.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>
+        <span>PCI-DSS Compliant</span>
+      </div>
+      <div class="trust-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/></svg>
+        <span>Kenyan Owned</span>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="proof-band" aria-label="Loan summary">
-  <div class="page page--wide">
-    <ul class="proof-stats" data-reveal>
-      <li class="proof-stat">
-        <strong>KES {{ min_amount|intcomma }}</strong>
-        <span>minimum loan</span>
+<!-- Social Proof / Proof Band -->
+<section class="section" style="padding-top: 0;" aria-label="Loan summary">
+  <div class="container">
+    <ul class="grid grid-cols-4 proof-stats" data-reveal>
+      <li class="proof-stat text-center">
+        <strong class="text-3xl text-trust">KES {{ min_amount|intcomma }}</strong>
+        <span class="block text-muted text-sm">minimum loan</span>
       </li>
-      <li class="proof-stat">
-        <strong>3 min</strong>
-        <span>to apply</span>
+      <li class="proof-stat text-center">
+        <strong class="text-3xl text-trust">3 min</strong>
+        <span class="block text-muted text-sm">to apply</span>
       </li>
-      <li class="proof-stat">
-        <strong>No paperwork</strong>
-        <span>phone number and ID only</span>
+      <li class="proof-stat text-center">
+        <strong class="text-3xl text-trust">No paperwork</strong>
+        <span class="block text-muted text-sm">phone number and ID only</span>
       </li>
-      <li class="proof-stat">
-        <strong>M-PESA</strong>
-        <span>paid to your line</span>
+      <li class="proof-stat text-center">
+        <strong class="text-3xl text-mpesa">M-PESA</strong>
+        <span class="block text-muted text-sm">paid to your line</span>
       </li>
     </ul>
   </div>
 </section>
 
+<!-- Why Pesa-Fix -->
 <section class="section" id="why">
-  <div class="page page--wide">
+  <div class="container">
     <div class="section-head" data-reveal>
-      <span class="eyebrow">Why {{ PLATFORM_NAME }}</span>
-      <h2>Simple loans. Clear costs.</h2>
-      <p>No branch visits, no guarantor and no long forms. Just the three things that matter.</p>
+      <span class="section__eyebrow">Why {{ PLATFORM_NAME }}</span>
+      <h2 class="section__title">Simple loans. Clear costs.</h2>
+      <p class="section__description">No branch visits, no guarantor and no long forms. Just the three things that matter.</p>
     </div>
 
     <div class="grid grid-3" data-reveal>
-      <div class="card card--flat">
+      <article class="card card-interactive">
         <h3>Instant M-PESA payout</h3>
-        <p class="muted">Once your loan is approved, the money is sent straight to the M-PESA line registered on your account.</p>
-      </div>
-      <div class="card card--flat">
+        <p class="text-muted">Once your loan is approved, the money is sent straight to the M-PESA line registered on your account.</p>
+      </article>
+      <article class="card card-interactive">
         <h3>Start small, grow your limit</h3>
-        <p class="muted">Borrow from <strong>KES {{ min_amount|intcomma }}</strong> and grow your limit each time you repay on time.</p>
-      </div>
-      <div class="card card--flat">
+        <p class="text-muted">Borrow from <strong>KES {{ min_amount|intcomma }}</strong> and grow your limit each time you repay on time.</p>
+      </article>
+      <article class="card card-interactive">
         <h3>100% digital and paperless</h3>
-        <p class="muted">All you need is your phone number and your National ID. Apply from anywhere.</p>
-      </div>
+        <p class="text-muted">All you need is your phone number and your National ID. Apply from anywhere.</p>
+      </article>
     </div>
   </div>
 </section>
 
+<!-- How it works -->
 <section class="section" id="how-it-works">
   <span id="how" class="anchor-alias" aria-hidden="true"></span>
-  <div class="page page--wide">
+  <div class="container">
     <div class="section-head" data-reveal>
-      <span class="eyebrow">How it works</span>
-      <h2>Three steps.</h2>
-      <p>No fine print to decode. Enter your number, choose your amount, get your money.</p>
+      <span class="section__eyebrow">How it works</span>
+      <h2 class="section__title">Three steps.</h2>
+      <p class="section__description">No fine print to decode. Enter your number, choose your amount, get your money.</p>
     </div>
 
-    <div class="steps steps--three" style="margin-top: var(--space-5);">
-      <article class="step" data-reveal>
-        <span class="step-number">01</span>
+    <div class="grid grid-3" style="margin-top: var(--space-8);">
+      <article class="card card-interactive step" data-reveal>
+        <span class="chip chip-info">01</span>
         <h3>Enter your phone number</h3>
         <p>Register with your Kenyan mobile number and National ID, then record consent. It takes about three minutes.</p>
-        <span class="step-note">Free to create. No payment at this stage.</span>
+        <span class="step-note text-muted text-sm">Free to create. No payment at this stage.</span>
       </article>
-      <article class="step" data-reveal data-reveal-delay="1">
-        <span class="step-number">02</span>
+      <article class="card card-interactive step" data-reveal data-reveal-delay="1">
+        <span class="chip chip-info">02</span>
         <h3>Choose your loan amount</h3>
         <p>Pick anything from <strong>KES {{ min_amount|intcomma }}</strong> up to KES {{ max_amount|intcomma }}. The processing fee is shown before you commit to anything.</p>
-        <span class="step-note">You see the cost first. Always.</span>
+        <span class="step-note text-muted text-sm">You see the cost first. Always.</span>
       </article>
-      <article class="step" data-reveal data-reveal-delay="2">
-        <span class="step-number">03</span>
+      <article class="card card-interactive step" data-reveal data-reveal-delay="2">
+        <span class="chip chip-info">03</span>
         <h3>Receive M-PESA cash</h3>
         <p>Once approved and confirmed, the money is sent to the M-PESA line registered on your account.</p>
-        <span class="step-note">Payout is confirmed by the provider, not the page.</span>
+        <span class="step-note text-muted text-sm">Payout is confirmed by the provider, not the page.</span>
       </article>
     </div>
 
-    <details class="flow-details" data-reveal>
+    <details class="flow-details" data-reveal style="margin-top: var(--space-10);">
       <summary class="flow-details-summary">The full process, in detail</summary>
       <div class="flow-details-body">
-        <ol class="mini-steps">
-          <li>Create your account and record consent.</li>
-          <li>Upload the front and back of your National ID plus a selfie. A reviewer checks them by hand.</li>
-          <li>Apply for an amount. If approved you receive written terms to accept or decline.</li>
-          <li>The disclosed processing fee is collected only after you accept the offer.</li>
-          <li>Disbursement is marked complete only when the payment provider confirms the transfer.</li>
+        <ol class="mini-steps" style="list-style: none; padding: 0;">
+          <li style="display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-4); padding-left: 2rem; position: relative;">
+            <span style="position: absolute; left: 0; top: 0.25rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--color-trust-blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;">1</span>
+            Create your account and record consent.
+          </li>
+          <li style="display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-4); padding-left: 2rem; position: relative;">
+            <span style="position: absolute; left: 0; top: 0.25rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--color-trust-blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;">2</span>
+            Upload the front and back of your National ID plus a selfie. A reviewer checks them by hand.
+          </li>
+          <li style="display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-4); padding-left: 2rem; position: relative;">
+            <span style="position: absolute; left: 0; top: 0.25rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--color-trust-blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;">3</span>
+            Apply for an amount. If approved you receive written terms to accept or decline.
+          </li>
+          <li style="display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--space-4); padding-left: 2rem; position: relative;">
+            <span style="position: absolute; left: 0; top: 0.25rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--color-trust-blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;">4</span>
+            The disclosed processing fee is collected only after you accept the offer.
+          </li>
+          <li style="display: flex; align-items: flex-start; gap: var(--space-3); padding-left: 2rem; position: relative;">
+            <span style="position: absolute; left: 0; top: 0.25rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: var(--color-trust-blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;">5</span>
+            Disbursement is marked complete only when the payment provider confirms the transfer.
+          </li>
         </ol>
         {% include "partials/art.html" with file="img/how-flow" modifier="art--band" w=1400 h=659 %}
       </div>
@@ -154,39 +196,40 @@
   </div>
 </section>
 
+<!-- Fees & Live Calculator -->
 <section class="section" id="fees">
-  <div class="page page--wide">
+  <div class="container">
     <div class="section-head" data-reveal>
-      <span class="eyebrow">Fees</span>
-      <h2>Know the cost before you apply.</h2>
-      <p>Move the slider to see the exact processing fee. No surprises later.</p>
+      <span class="section__eyebrow">Fees</span>
+      <h2 class="section__title">Know the cost before you apply.</h2>
+      <p class="section__description">Move the slider to see the exact processing fee. No surprises later.</p>
     </div>
 
-    <div class="fee-calc" data-reveal data-fee-calc>
-      <div class="fee-calc-main">
-        <div class="fee-calc-head">
-          <label for="feeAmount">How much do you need?</label>
-          <output class="fee-calc-value" id="feeAmountOut" for="feeAmount">KES {{ initial_amount|intcomma }}</output>
+    <div class="loan-calculator" data-reveal data-fee-calc>
+      <div class="loan-calculator__header">
+        <label class="loan-calculator__label" for="feeAmount">How much do you need?</label>
+        <div class="loan-calculator__amount">
+          <output class="loan-calculator__amount-value" id="feeAmountOut" for="feeAmount"><span class="loan-calculator__amount-currency">KES</span> {{ initial_amount|intcomma }}</output>
         </div>
-        <input class="range" type="range" id="feeAmount"
+        <input class="loan-calculator__slider" type="range" id="feeAmount"
                min="{{ min_amount }}" max="{{ max_amount }}" step="100" value="{{ initial_amount }}"
-               aria-describedby="feeCalcNote" />
-        <div class="fee-calc-scale" aria-hidden="true">
+               aria-describedby="feeCalcNote" aria-label="Loan amount" />
+        <div class="loan-calculator__scale" aria-hidden="true">
           <span>KES {{ min_amount|intcomma }}</span>
           <span>KES {{ max_amount|intcomma }}</span>
         </div>
       </div>
 
-      <dl class="fee-calc-readout" aria-live="polite">
-        <div><dt>Band</dt><dd id="calcBand">KES {{ initial_band_min|intcomma }} – {{ initial_band_max|intcomma }}</dd></div>
-        <div><dt>Band rate</dt><dd id="calcRate">{{ initial_rate }}%</dd></div>
-        <div><dt>Processing fee</dt><dd id="calcFee">KES {{ initial_fee|intcomma }}</dd></div>
-        <div><dt>Principal + fee</dt><dd id="calcTotal">KES {{ initial_amount|add:initial_fee|intcomma }}</dd></div>
+      <dl class="loan-calculator__readout" aria-live="polite">
+        <div class="loan-calculator__readout-item"><dt>Band</dt><dd id="calcBand">KES {{ initial_band_min|intcomma }} – {{ initial_band_max|intcomma }}</dd></div>
+        <div class="loan-calculator__readout-item"><dt>Band rate</dt><dd id="calcRate" class="text-trust">{{ initial_rate }}%</dd></div>
+        <div class="loan-calculator__readout-item"><dt>Processing fee</dt><dd id="calcFee" class="text-trust">KES {{ initial_fee|intcomma }}</dd></div>
+        <div class="loan-calculator__readout-item"><dt>Principal + fee</dt><dd id="calcTotal" class="text-trust">KES {{ initial_amount|add:initial_fee|intcomma }}</dd></div>
       </dl>
 
-      <p class="tiny muted" id="feeCalcNote">
+      <p class="text-xs text-muted" id="feeCalcNote">
         Each figure comes from the server's published schedule, rounded to the nearest
-        shilling (rounded down) with a KES {{ fee_minimum }} minimum. “Principal + fee” is not a repayment
+        shilling (rounded down) with a KES {{ fee_minimum }} minimum. "Principal + fee" is not a repayment
         schedule; repayment terms are not implemented in this environment.
       </p>
     </div>
@@ -243,7 +286,7 @@
               <li>A KES {{ fee_minimum }} minimum applies, so the smallest amounts carry a
                 higher effective percentage than the band rate shown.</li>
             </ul>
-            <p class="tiny">This is a draft commercial proposal. It is not interest and it is not a repayment schedule. Repayment terms are not implemented in this environment.</p>
+            <p class="text-xs text-muted">This is a draft commercial proposal. It is not interest and it is not a repayment schedule. Repayment terms are not implemented in this environment.</p>
           </aside>
         </div>
       </div>
@@ -257,79 +300,79 @@
   </div>
 </section>
 
+<!-- Security -->
 <section class="section" id="security">
-  <div class="page page--wide">
+  <div class="container">
     <div class="section-head" data-reveal>
-      <span class="eyebrow">Your data is safe</span>
-      <h2>Privacy, straight up.</h2>
+      <span class="section__eyebrow">Security</span>
+      <h2 class="section__title">Privacy, straight up.</h2>
     </div>
 
-    <div class="security-layout" data-reveal>
-      <div class="grid grid-3">
-      <article class="card card--flat">
+    <div class="grid grid-3" data-reveal>
+      <article class="card card-interactive">
         <h3>Private ID storage</h3>
-        <p class="muted">Your ID images stay in private storage. Staff see them through links that expire in five minutes, and every view is logged.</p>
+        <p class="text-muted">Your ID images stay in private storage. Staff see them through links that expire in five minutes, and every view is logged.</p>
       </article>
-      <article class="card card--flat">
+      <article class="card card-interactive">
         <h3>Masked on screen</h3>
-        <p class="muted">Your National ID is masked on screen and your number is masked in logs. We collect only what a lender must hold.</p>
+        <p class="text-muted">Your National ID is masked on screen and your number is masked in logs. We collect only what a lender must hold.</p>
       </article>
-      <article class="card card--flat">
+      <article class="card card-interactive">
         <h3>Provider-confirmed money</h3>
-        <p class="muted">No screen ever marks a payment successful by itself. Only the payment provider's confirmation moves your loan forward.</p>
+        <p class="text-muted">No screen ever marks a payment successful by itself. Only the payment provider's confirmation moves your loan forward.</p>
       </article>
-      </div>
-
-      {% include "partials/art.html" with file="img/security-plate" modifier="art--aside" w=600 h=900 %}
     </div>
 
-    <p class="tiny muted" style="margin-top: 20px;">
+    {% include "partials/art.html" with file="img/security-plate" modifier="art--aside" w=600 h=900 %}
+
+    <p class="text-xs text-muted" style="margin-top: 20px; text-align: center;">
       These are application controls, not certification claims. External audits and regulatory
-      approvals are still outstanding. Read the <a href="{% url 'privacy' %}">privacy notice</a>
-      or the <a href="{% url 'terms' %}">terms</a> for the detail.
+      approvals are still outstanding. Read the <a href="{% url 'privacy' %}" class="text-trust">privacy notice</a>
+      or the <a href="{% url 'terms' %}" class="text-trust">terms</a> for the detail.
     </p>
   </div>
 </section>
 
+<!-- FAQ -->
 <section class="section" id="faq">
-  <div class="page page--wide">
+  <div class="container">
     <div class="section-head" data-reveal>
-      <span class="eyebrow">Questions</span>
-      <h2>Straight answers.</h2>
+      <span class="section__eyebrow">FAQ</span>
+      <h2 class="section__title">Straight answers.</h2>
     </div>
 
-    <div class="faq-list" data-reveal>
-      <details class="faq-item">
+    <div class="faq-list" data-reveal style="max-width: 720px; margin: 0 auto;">
+      <details class="faq-item card">
         <summary>What is the smallest amount I can borrow?</summary>
         <div class="faq-body">
           <p>KES {{ min_amount|intcomma }}. The maximum is KES {{ max_amount|intcomma }}, and your limit grows as you repay on time.</p>
         </div>
       </details>
-      <details class="faq-item">
+      <details class="faq-item card">
         <summary>Who can apply?</summary>
         <div class="faq-body">
           <p>You need a Kenyan mobile number and a National ID. Identity review is manual. Submitting documents does not guarantee approval, and the service does not yet issue live loans while operating approvals are outstanding.</p>
         </div>
       </details>
-      <details class="faq-item">
+      <details class="faq-item card">
         <summary>What does it cost to apply?</summary>
         <div class="faq-body">
           <p>Nothing at registration. The processing fee shown above applies to an approved offer. In this environment fee collection is disabled, so no money is taken. If collection is enabled after approval, the fee is only requested after you accept the written offer.</p>
         </div>
       </details>
-      <details class="faq-item">
+      <details class="faq-item card">
         <summary>Which documents do you ask for, and why?</summary>
         <div class="faq-body">
           <p>The front and back of your National ID and a selfie, up to 5 MB each in JPEG, PNG or WebP. They are used to check that the person applying matches the identity record. Documents are optional when you create the account and can be uploaded from the dashboard.</p>
         </div>
       </details>
-      <details class="faq-item">
+      <details class="faq-item card">
         <summary>How long does review take?</summary>
         <div class="faq-body">
           <p>Review is performed by staff, not an automated score. Timing depends on document quality and volume. We do not promise a same-day decision, and the dashboard shows the actual state rather than a countdown.</p>
         </div>
       </details>
-      <details class="faq-item">
+      <details class="faq-item card">
         <summary>How do I raise a concern?</summary>
         <div class="faq-body">
           <p>Use the support channel published in the footer or the contact route in the privacy notice. Include your registered phone number and the request ID shown with any error message. We do not use fabricated response times or resolution guarantees.</p>
@@ -339,17 +382,18 @@
   </div>
 </section>
 
+<!-- CTA -->
 <section class="section" style="padding-top: 0;">
-  <div class="page page--wide">
-    <div class="cta" data-reveal>
-      <div>
-        <h2 style="margin-top: 0;">Create your free account.</h2>
-        <p>See your limit and upload your ID when you are ready. No payment is ever taken to register.</p>
+  <div class="container">
+    <div class="card card-interactive" style="max-width: 640px; margin: 0 auto; text-align: center;" data-reveal>
+      <h2 style="margin-top: 0;">Create your free account.</h2>
+      <p class="text-muted">See your limit and upload your ID when you are ready. No payment is ever taken to register.</p>
+      <div style="margin-top: var(--space-6);">
+        <a class="btn btn-primary btn-lg" href="{% url 'register' %}">
+          Create Account
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
       </div>
-      <a class="btn btn-primary" href="{% url 'register' %}">
-        Create Account
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </a>
     </div>
   </div>
 </section>

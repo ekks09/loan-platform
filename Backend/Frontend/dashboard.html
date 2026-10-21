@@ -3,520 +3,410 @@
 
 {% block title %}Your dashboard — {{ PLATFORM_NAME }}{% endblock %}
 {% block description %}Check your identity verification, application status, offer and payment history.{% endblock %}
-{% block body_class %}dashboard-page has-bottom-bar{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
 
 {% block sidebar %}{% include "partials/sidebar.html" with active="dashboard" %}{% endblock %}
 {% block topbar %}{% include "partials/topbar.html" with title="Overview" section_label="Your account" %}{% endblock %}
 
 {% block content %}
-<div class="page page--wide funnel-page">
+<div class="dashboard-layout" data-reveal>
 
-  <div class="funnel">
-
-  <!-- MODULE 1 · Identity & quick profile standing -->
-  <section class="funnel-module funnel-module--identity" id="overview"
-           aria-labelledby="funnelProfileLabel" data-reveal>
-    <h2 class="visually-hidden" id="funnelProfileLabel">Profile standing</h2>
-    <p class="funnel-status">
-      <span class="funnel-status-key">Profile Status:</span>
-      <strong class="funnel-status-value" id="funnelProfileState">Loading…</strong>
-    </p>
-  </section>
-
-  <!-- MODULE 2 · Credit limit & borrowing capacity (the hook) -->
-  <section class="funnel-module funnel-module--limit" id="limit"
-           aria-labelledby="funnelLimitLabel" data-reveal>
-    <h2 class="visually-hidden" id="funnelLimitLabel">Borrowing capacity</h2>
-    <div class="funnel-limit-grid">
-      <div class="credit-dial credit-dial--compact">
-        <svg viewBox="0 0 120 120" aria-hidden="true">
-          <circle class="credit-dial-track" cx="60" cy="60" r="46"></circle>
-          <circle class="credit-dial-progress" id="loyaltyRing" cx="60" cy="60" r="46"></circle>
-        </svg>
-        <div class="credit-dial-value">
-          <strong id="loyaltyScore">—</strong>
-          <span id="loyaltyScoreBand">Loading…</span>
+  <!-- Security Status Card -->
+  <section class="card security-card" id="securityCard" aria-labelledby="securityTitle">
+    <div class="security-card__header">
+      <h2 id="securityTitle" class="security-card__title">Account security</h2>
+      <span class="sr-only">Security status indicators</span>
+    </div>
+    <div class="security-card__items">
+      <div class="security-item" data-security="email">
+        <div class="security-item__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="m22 6-10 7L2 6"/></svg>
         </div>
+        <span class="security-item__label">Email</span>
+        <span class="security-item__value" id="secEmail">—</span>
       </div>
-      <div class="funnel-limit-copy">
-        <p class="funnel-eyebrow">
-          Max Limit
-        </p>
-        <p class="funnel-money" id="limitValue">KES {{ max_amount|intcomma }}</p>
-        <p class="funnel-sub">
-          <span id="limitNote">Unlock your limit</span>
-        </p>
+      <div class="security-item" data-security="phone">
+        <div class="security-item__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <span class="security-item__label">Phone</span>
+        <span class="security-item__value" id="secPhone">—</span>
+      </div>
+      <div class="security-item" data-security="2fa">
+        <div class="security-item__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M10 19v-5"/><path d="M14 19v-5"/><path d="M6 19v-5"/><path d="M18 19v-5"/></svg>
+        </div>
+        <span class="security-item__label">2FA</span>
+        <span class="security-item__value" id="sec2FA">—</span>
+      </div>
+      <div class="security-item" data-security="pin">
+        <div class="security-item__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <span class="security-item__label">PIN</span>
+        <span class="security-item__value" id="secPIN">—</span>
       </div>
     </div>
   </section>
 
-  <!-- MODULE 3 · Direct action application card -->
-  <section class="funnel-module funnel-module--cta" id="borrow"
-           aria-labelledby="funnelBorrowLabel" data-reveal>
-    <h2 class="visually-hidden" id="funnelBorrowLabel">Borrow now</h2>
-    <p class="funnel-cta-title">
-      Need Instant Cash?
-    </p>
-    <button class="btn btn-borrow btn-block" type="button" id="borrowNow" data-requires-network>
-      BORROW NOW
-    </button>
-    <p class="funnel-note" id="borrowNote"></p>
-  </section>
-
-  <!-- MODULE 4 · Simple repayment & activity -->
-  <section class="funnel-module funnel-module--repay" id="repay"
-           aria-labelledby="funnelRepayLabel" data-reveal>
-    <h2 class="visually-hidden" id="funnelRepayLabel">Repayment</h2>
-    <div class="funnel-repay-grid">
-      <p class="funnel-due">
-        <span class="funnel-due-key">Amount Due:</span>
-        <strong class="funnel-due-money" id="dueAmount">KES 0</strong>
-      </p>
-      <p class="funnel-due">
-        <span class="funnel-due-key">Due Date:</span>
-        <strong class="funnel-due-date" id="dueDate">—</strong>
-      </p>
-    </div>
-    <button class="btn btn-pay btn-block" type="button" id="funnelPayNow" data-requires-network>
-      PAY NOW
-    </button>
-    <ul class="funnel-recent" id="funnelRecent" aria-label="Recent activity"></ul>
-    <details class="funnel-history" id="txHistory">
-      <summary class="funnel-history-summary">
-        View Transaction History
-      </summary>
-      <div class="funnel-history-body">
-        <section class="card" id="payments" aria-labelledby="paymentsTitle">
-          <div class="card-head">
-            <div>
-              <h2 id="paymentsTitle">Payments</h2>
-              <p class="hint">Provider references, receipts and the state recorded on the server.</p>
-            </div>
-            <span class="chip chip-neutral">Server record</span>
-          </div>
-
-          <div class="ledger-tabs" role="group" aria-label="Filter activity">
-            <button class="ledger-tab is-active" type="button" data-ledger-filter="all" aria-pressed="true">All</button>
-            <button class="ledger-tab" type="button" data-ledger-filter="disbursement" aria-pressed="false">Disbursements</button>
-            <button class="ledger-tab" type="button" data-ledger-filter="repayment" aria-pressed="false">Repayments</button>
-          </div>
-          <p class="tiny muted" id="ledgerNote" hidden></p>
-
-          <div class="table-wrap">
-            <table class="table table--cards">
-              <caption class="visually-hidden">Your payments</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Date</th>
-                  <th scope="col">Reference</th>
-                  <th scope="col">Amount (KES)</th>
-                  <th scope="col">Status</th>
-                  <th scope="col"><span class="visually-hidden">Receipt</span></th>
-                </tr>
-              </thead>
-              <tbody id="paymentsBody">
-                <tr><td colspan="5" class="muted">Loading…</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <p class="tiny muted" id="repaymentNote" hidden>
-            Repayments are not implemented in this environment, so this view is intentionally
-            empty. When repayment exists it will appear here; nothing is simulated.
-          </p>
-        </section>
-        <section class="card" id="history" aria-labelledby="historyTitle">
-          <div class="card-head">
-            <div>
-              <h2 id="historyTitle">Application history</h2>
-              <p class="hint">Every application you have submitted, including closed ones.</p>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table class="table table--cards">
-              <caption class="visually-hidden">Your loan applications</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Date</th>
-                  <th scope="col">Amount (KES)</th>
-                  <th scope="col">Fee (KES)</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Last update</th>
-                </tr>
-              </thead>
-              <tbody id="historyBody">
-                <tr><td colspan="5" class="muted">Loading…</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="row row-between" id="historyPager" hidden>
-            <button class="btn btn-ghost btn-sm" type="button" id="prevPage">Previous</button>
-            <span class="muted tiny" id="pageInfo"></span>
-            <button class="btn btn-ghost btn-sm" type="button" id="nextPage">Next</button>
-          </div>
-        </section>
+  <!-- Loan Summary Card -->
+  <section class="card loan-card" id="loanCard" aria-labelledby="loanTitle">
+    <div class="loan-card__header">
+      <div>
+        <h2 id="loanTitle" class="text-xl font-semibold">Your loan</h2>
+        <p class="text-sm text-muted" id="loanSubtitle">The latest state from our records.</p>
       </div>
-    </details>
-  </section>
+      <span class="status-chip" id="loanStatus" hidden>—</span>
+    </div>
 
-  </div>
+    <div id="loanLoading" aria-hidden="true" class="skeleton-loader">
+      <div class="skeleton skeleton-text w-60"></div>
+      <div class="skeleton skeleton-text w-80"></div>
+      <div class="skeleton skeleton-text"></div>
+    </div>
 
-  <div class="funnel-stack">
-      <section class="card" aria-labelledby="verifyTitle" data-reveal>
-        <div class="card-head">
-          <div>
-            <h2 id="verifyTitle">Identity verification</h2>
-            <p class="hint">Manual review by staff.</p>
-          </div>
-          <span class="chip" id="verifyChip">Loading…</span>
+    <div class="alert alert-error" id="loanError" role="alert" hidden>
+      <span id="loanErrorText">Could not load your loan.</span>
+      <button class="btn btn-ghost btn-sm" type="button" id="retryLoan">Retry</button>
+    </div>
+
+    <!-- Apply Block -->
+    <div id="applyBlock" hidden>
+      <p class="text-muted text-sm">
+        Apply for any amount between <strong>KES {{ min_amount|intcomma }}</strong> and
+        <strong>KES <span id="applyLimitCopy">{{ max_amount|intcomma }}</span></strong>. The
+        processing fee is shown before you submit.
+      </p>
+
+      {% include "partials/art.html" with file="img/verify-plate" modifier="art--card" w=1400 h=788 %}
+
+      <form id="applyForm" novalidate class="space-y-5">
+        <div class="form-group">
+          <label for="amount" class="form-label">Amount (KES)</label>
+          <input type="text" id="amount" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 10000" required
+                 class="form-input" aria-describedby="amountHint" />
+          <p class="hint" id="amountHint">Between KES {{ min_amount|intcomma }} and KES {{ max_amount|intcomma }}.</p>
         </div>
 
-        <p class="muted tiny" id="verifyHint"></p>
-        <div class="banner banner-error" id="verifyNotes" hidden></div>
-
-        <div id="consentBlock" hidden>
-          <div class="banner banner-warning">
-            The privacy notice has been updated. Review it and record consent again before applying.
-          </div>
-          <a class="link" href="{% url 'privacy' %}" target="_blank" rel="noopener">Read the privacy notice</a>
-          <button class="btn btn-ghost btn-block" type="button" id="consentBtn" data-requires-network>
-            I agree
-          </button>
+        <div class="quick-amounts" aria-label="Quick amounts">
+          <button type="button" class="btn btn-ghost btn-sm" data-amount="500">500</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-amount="5000">5,000</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-amount="20000">20,000</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-amount="60000">60,000</button>
         </div>
 
-        <div id="uploadBlock" hidden>
-          <p class="tiny muted">
-            Upload the front and back of your National ID and a selfie. Maximum 5 MB each
-            (JPEG, PNG or WebP). Images are stored privately.
+        <div class="quote" id="quoteBox" aria-live="polite"></div>
+
+        <div class="form-group">
+          <label for="mpesa_phone" class="form-label">M-Pesa number for disbursement</label>
+          <div class="phone-field">
+            <span class="phone-prefix" aria-hidden="true">KE</span>
+            <input type="tel" id="mpesa_phone" inputmode="tel" autocomplete="tel"
+                   placeholder="0712 345 678 or +254 712 345 678" required
+                   class="form-input" aria-describedby="mpesaHint" />
+          </div>
+          <p class="hint" id="mpesaHint">
+            Any Kenyan mobile format works. Use a line registered in your own name —
+            M-Pesa payouts go to a Safaricom number only.
           </p>
-          <form class="upload-form" id="docForm" novalidate>
-            <div class="doc-inputs">
-              <div class="doc-input">
-                <label for="doc_front">ID front</label>
-                <input type="file" id="doc_front" accept="image/jpeg,image/png,image/webp" required />
-                <p class="hint">Photograph the whole document in good light.</p>
-              </div>
-              <div class="doc-input">
-                <label for="doc_back">ID back</label>
-                <input type="file" id="doc_back" accept="image/jpeg,image/png,image/webp" required />
-              </div>
-              <div class="doc-input">
-                <label for="doc_selfie">Selfie</label>
-                <input type="file" id="doc_selfie" accept="image/jpeg,image/png,image/webp" required />
-                <p class="hint">Face the camera without a hat or filter.</p>
-              </div>
-            </div>
-            <div class="progress-container" id="docProgressWrap" hidden>
-              <div class="progress-bar-wrap"><div class="progress-bar-fill" id="docProgressFill"></div></div>
-              <div class="progress-label" id="docProgressLabel">Uploading…</div>
-            </div>
-            <button class="btn btn-primary btn-block" type="submit" id="docSubmit" data-requires-network>
-              Upload documents
-            </button>
-            <div class="msg" id="docMsg" role="status"></div>
-          </form>
+          <p class="carrier-badge" id="mpesaCarrier" hidden aria-live="polite"></p>
+          <p class="carrier-note" id="mpesaCarrierNote" hidden></p>
         </div>
 
-        <div id="verifiedBlock" hidden>
-          <div class="banner banner-success">
-            <span>Your identity is verified. You can apply for a loan.</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="card" id="loanCard" aria-labelledby="loanTitle" data-reveal>
-        <div class="card-head">
-          <div>
-            <h2 id="loanTitle">Your loan</h2>
-            <p class="hint" id="loanSubtitle">The latest state from our records.</p>
-          </div>
-          <span class="chip" id="loanStatus" hidden>—</span>
-        </div>
-
-        <div id="loanLoading" aria-hidden="true">
-          <div class="skeleton skeleton-line w-40"></div>
-          <div class="skeleton skeleton-line w-70"></div>
-          <div class="skeleton skeleton-line"></div>
-        </div>
-
-        <div class="alert alert-error" id="loanError" role="alert" hidden>
-          <span id="loanErrorText">Could not load your loan.</span>
-          <button class="link-button" type="button" id="retryLoan">Retry</button>
-        </div>
-
-        <div id="applyBlock" hidden>
-          <p class="muted" style="font-size: 0.9rem;">
-            Apply for any amount between KES {{ min_amount|intcomma }} and
-            KES <span id="applyLimitCopy">{{ max_amount|intcomma }}</span>. The
-            processing fee is shown before you submit.
-          </p>
-
-          {% include "partials/art.html" with file="img/verify-plate" modifier="art--card" w=1400 h=788 %}
-
-          <form id="applyForm" novalidate>
-            <div class="field">
-              <label for="amount">Amount (KES)</label>
-              <input id="amount" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 10000" required
-                     aria-describedby="amountHint" />
-              <p class="hint" id="amountHint">Between KES {{ min_amount|intcomma }} and KES {{ max_amount|intcomma }}.</p>
-            </div>
-
-            <div class="row" style="margin: -6px 0 var(--space-4);" aria-label="Quick amounts">
-              <button class="btn btn-ghost btn-sm" type="button" data-amount="500">500</button>
-              <button class="btn btn-ghost btn-sm" type="button" data-amount="5000">5,000</button>
-              <button class="btn btn-ghost btn-sm" type="button" data-amount="20000">20,000</button>
-              <button class="btn btn-ghost btn-sm" type="button" data-amount="60000">60,000</button>
-            </div>
-
-            <div class="quote" id="quoteBox" aria-live="polite"></div>
-
-            <div class="field">
-              <label for="mpesa_phone">M-Pesa number for disbursement</label>
-              <div class="phone-field">
-                <span class="phone-prefix" aria-hidden="true">KE</span>
-                <input id="mpesa_phone" type="tel" inputmode="tel" autocomplete="tel"
-                       placeholder="0712 345 678 or +254 712 345 678" required
-                       aria-describedby="mpesaHint" />
-              </div>
-              <p class="hint" id="mpesaHint">
-                Any Kenyan mobile format works. Use a line registered in your own name —
-                M-Pesa payouts go to a Safaricom number only.
-              </p>
-              <p class="carrier-badge" id="mpesaCarrier" hidden aria-live="polite"></p>
-              <p class="carrier-note" id="mpesaCarrierNote" hidden></p>
-            </div>
-
-            <button class="btn btn-primary btn-block" type="submit" id="applyBtn" data-requires-network>
-              Submit application
-            </button>
-            <div class="msg" id="applyMsg" role="status"></div>
-          </form>
-        </div>
-
-        <div id="loanDetail" hidden>
-          <div class="loan-header">
-            <div>
-              <div class="loan-amount" id="loanAmount"></div>
-              <div class="muted tiny" id="loanFee"></div>
-            </div>
-          </div>
-
-          <div class="meta-grid">
-            <dl class="meta"><dt>Status</dt><dd id="loanStatusText">—</dd></dl>
-            <dl class="meta"><dt>Processing fee</dt><dd id="loanFeeMeta">—</dd></dl>
-            <dl class="meta"><dt>Applied</dt><dd id="loanCreated">—</dd></dl>
-          </div>
-
-          <p class="muted" id="loanNext" style="font-size: 0.9rem;"></p>
-          <div class="banner banner-error" id="loanRejection" hidden></div>
-
-          <div class="offer-box" id="offerBox" hidden>
-            <h3>Your offer</h3>
-            <dl class="definition-list">
-              <dt>Principal</dt><dd id="offerAmount"></dd>
-              <dt>Processing fee</dt><dd id="offerFee"></dd>
-              <dt>Offer expires</dt><dd id="offerExpiry"></dd>
-              <dt>Terms version</dt><dd id="offerTerms"></dd>
-            </dl>
-            <p class="tiny muted" style="margin-top: 12px;">
-              Review the principal and fee. Accepting records the version of the terms you
-              agreed to and moves the application forward. You can still cancel before
-              disbursement.
-            </p>
-            <button class="btn btn-primary btn-block" type="button" id="acceptBtn" data-requires-network>
-              Accept this offer
-            </button>
-            <div class="msg" id="offerMsg" role="status"></div>
-          </div>
-
-          <div class="pay-box" id="payBox" hidden>
-            <div class="row row-between">
-              <h3><span class="mpesa-mark" aria-hidden="true">M</span> Pay the processing fee</h3>
-              <span class="chip chip-neutral" id="payStatusChip">Not started</span>
-            </div>
-            <p class="muted tiny" style="margin-bottom: 4px;">Amount due</p>
-            <p class="pay-amount" id="payAmount">—</p>
-
-            <div class="pay-state" id="payInlineState" data-state="idle">
-              <span class="pay-state-dot" aria-hidden="true"></span>
-              <p id="payStatus" role="status" aria-live="polite">
-                The provider confirms this payment, not the page. Keep your phone nearby.
-              </p>
-            </div>
-
-            <button class="btn btn-secondary btn-block" type="button" id="payBtn" data-requires-network>
-              <span class="mpesa-mark" aria-hidden="true">M</span>
-              Pay with M-Pesa
-            </button>
-            <div class="msg" id="payMsg" role="status"></div>
-
-            <div class="paybill-card">
-              <h4>Paybill / Till</h4>
-              {% if MPESA_PAYBILL_NUMBER or MPESA_TILL_NUMBER %}
-                {% if MPESA_PAYBILL_NUMBER %}
-                  <div class="copy-row">
-                    <span>Paybill</span>
-                    <code id="paybillValue">{{ MPESA_PAYBILL_NUMBER }}</code>
-                    <button class="copy-button" type="button" data-copy-target="paybillValue">Copy</button>
-                  </div>
-                {% endif %}
-                {% if MPESA_TILL_NUMBER %}
-                  <div class="copy-row">
-                    <span>Till</span>
-                    <code id="tillValue">{{ MPESA_TILL_NUMBER }}</code>
-                    <button class="copy-button" type="button" data-copy-target="tillValue">Copy</button>
-                  </div>
-                {% endif %}
-                <p class="tiny muted">Confirm the amount in the prompt before you send. Manual Paybill payments are reconciled by staff.</p>
-              {% else %}
-                <p class="tiny muted" style="margin: 0;">
-                  No manual Paybill or Till is published. The fee is collected by the
-                  M-Pesa prompt our payment partner sends to your phone.
-                </p>
-              {% endif %}
-              <div class="copy-row">
-                <span>Payment reference</span>
-                <code id="payReferenceValue">—</code>
-                <button class="copy-button" type="button" data-copy-target="payReferenceValue">Copy</button>
-              </div>
-            </div>
-            <div class="msg" id="payMsg" role="status"></div>
-
-            <p class="provider-note">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-              A browser callback never marks a payment successful. Confirmation comes from the provider's signed webhook.
-            </p>
-          </div>
-
-          <div class="offer-box" id="disbursementBox" hidden>
-            <h3>Disbursement</h3>
-            <p class="muted" id="disbursementText"></p>
-          </div>
-
-          <h3 style="margin-top: 24px; font-size: 1rem;">Activity</h3>
-          <ul class="timeline" id="timeline"></ul>
-        </div>
-      </section>
-
-      <section class="card" id="notifyCard" aria-labelledby="notifyTitle" data-reveal>
-        <div class="card-head">
-          <div>
-            <h2 id="notifyTitle">Updates</h2>
-            <p class="hint">Account messages from the team and the system.</p>
-          </div>
-          <span class="chip chip-gold" id="notifyBadge" hidden>0 new</span>
-        </div>
-        <ul class="notify-list" id="notifyList"></ul>
-        <p class="muted tiny" id="notifyEmpty">
-          Nothing yet. When your documents are reviewed or your loan status
-          changes, you will see it here — even if the SMS could not reach you.
-        </p>
-        <button class="link-button" type="button" id="notifyReadAll" hidden>
-          Mark all as read
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="applyBtn" data-requires-network>
+          Submit application
         </button>
+        <div class="msg" id="applyMsg" role="status"></div>
+      </form>
+    </div>
+
+    <!-- Loan Detail -->
+    <div id="loanDetail" hidden>
+      <div class="loan-header">
+        <div>
+          <div class="loan-amount text-3xl font-bold text-trust" id="loanAmount"></div>
+          <div class="text-sm text-muted" id="loanFee"></div>
+        </div>
+      </div>
+
+      <div class="meta-grid">
+        <dl class="meta"><dt class="text-xs font-semibold text-muted">Status</dt><dd id="loanStatusText" class="font-semibold">—</dd></dl>
+        <dl class="meta"><dt class="text-xs font-semibold text-muted">Processing fee</dt><dd id="loanFeeMeta" class="font-semibold">—</dd></dl>
+        <dl class="meta"><dt class="text-xs font-semibold text-muted">Applied</dt><dd id="loanCreated" class="font-semibold">—</dd></dl>
+      </div>
+
+      <p class="text-muted" id="loanNext" style="font-size: 0.9rem;"></p>
+      <div class="banner banner-error" id="loanRejection" hidden></div>
+
+      <!-- Offer Box -->
+      <div class="card offer-box" id="offerBox" hidden>
+        <h3 class="text-lg font-semibold mb-4">Your offer</h3>
+        <dl class="definition-list space-y-3">
+          <div><dt class="text-sm text-muted">Principal</dt><dd id="offerAmount" class="font-semibold font-mono"></dd></div>
+          <div><dt class="text-sm text-muted">Processing fee</dt><dd id="offerFee" class="font-semibold font-mono"></dd></div>
+          <div><dt class="text-sm text-muted">Offer expires</dt><dd id="offerExpiry" class="font-semibold"></dd></div>
+          <div><dt class="text-sm text-muted">Terms version</dt><dd id="offerTerms" class="font-semibold font-mono"></dd></div>
+        </dl>
+        <p class="text-xs text-muted mt-4">
+          Review the principal and fee. Accepting records the version of the terms you
+          agreed to and moves the application forward. You can still cancel before
+          disbursement.
+        </p>
+        <button type="button" class="btn btn-primary btn-block btn-lg mt-4" id="acceptBtn" data-requires-network>
+          Accept this offer
+        </button>
+        <div class="msg" id="offerMsg" role="status"></div>
+      </div>
+
+      <!-- Pay Box -->
+      <div class="card pay-box" id="payBox" hidden>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold"><span class="mpesa-mark" aria-hidden="true">M</span> Pay the processing fee</h3>
+          <span class="status-chip" id="payStatusChip">Not started</span>
+        </div>
+        <p class="text-xs text-muted mb-1">Amount due</p>
+        <p class="pay-amount text-2xl font-bold font-mono text-trust" id="payAmount">—</p>
+
+        <div class="pay-state" id="payInlineState" data-state="idle" role="status" aria-live="polite">
+          <span class="pay-state-dot" aria-hidden="true"></span>
+          <p id="payStatus">The provider confirms this payment, not the page. Keep your phone nearby.</p>
+        </div>
+
+        <button type="button" class="btn btn-mpesa btn-block btn-lg mt-4" id="payBtn" data-requires-network>
+          <span class="mpesa-mark" aria-hidden="true">M</span>
+          Pay with M-Pesa
+        </button>
+        <div class="msg" id="payMsg" role="status"></div>
+
+        <div class="card paybill-card mt-4">
+          <h4 class="font-semibold mb-3">Paybill / Till</h4>
+          {% if MPESA_PAYBILL_NUMBER or MPESA_TILL_NUMBER %}
+            {% if MPESA_PAYBILL_NUMBER %}
+              <div class="copy-row flex items-center justify-between gap-3 mb-3 p-3 bg-warm-sand rounded-lg">
+                <span class="text-sm text-muted">Paybill</span>
+                <code id="paybillValue" class="font-mono">{{ MPESA_PAYBILL_NUMBER }}</code>
+                <button type="button" class="btn btn-ghost btn-sm" data-copy-target="paybillValue">Copy</button>
+              </div>
+            {% endif %}
+            {% if MPESA_TILL_NUMBER %}
+              <div class="copy-row flex items-center justify-between gap-3 mb-3 p-3 bg-warm-sand rounded-lg">
+                <span class="text-sm text-muted">Till</span>
+                <code id="tillValue" class="font-mono">{{ MPESA_TILL_NUMBER }}</code>
+                <button type="button" class="btn btn-ghost btn-sm" data-copy-target="tillValue">Copy</button>
+              </div>
+            {% endif %}
+            <p class="text-xs text-muted">Confirm the amount in the prompt before you send. Manual Paybill payments are reconciled by staff.</p>
+          {% else %}
+            <p class="text-xs text-muted">No manual Paybill or Till is published. The fee is collected by the M-Pesa prompt our payment partner sends to your phone.</p>
+          {% endif %}
+          <div class="copy-row flex items-center justify-between gap-3 mt-3 p-3 bg-warm-sand rounded-lg">
+            <span class="text-sm text-muted">Payment reference</span>
+            <code id="payReferenceValue" class="font-mono">—</code>
+            <button type="button" class="btn btn-ghost btn-sm" data-copy-target="payReferenceValue">Copy</button>
+          </div>
+        </div>
+
+        <p class="provider-note flex items-start gap-2 text-sm text-muted mt-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true" class="flex-shrink-0 mt-0.5"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          A browser callback never marks a payment successful. Confirmation comes from the provider's signed webhook.
+        </p>
+      </div>
+
+      <!-- Disbursement Box -->
+      <div class="card offer-box" id="disbursementBox" hidden>
+        <h3 class="text-lg font-semibold mb-2">Disbursement</h3>
+        <p class="text-muted" id="disbursementText"></p>
+      </div>
+
+      <h3 class="text-lg font-semibold mt-6">Activity</h3>
+      <div class="ledger-tabs" role="group" aria-label="Filter activity">
+        <button class="ledger-tab is-active" type="button" data-ledger-filter="all" aria-pressed="true">All</button>
+        <button class="ledger-tab" type="button" data-ledger-filter="disbursement" aria-pressed="false">Disbursements</button>
+        <button class="ledger-tab" type="button" data-ledger-filter="repayment" aria-pressed="false">Repayments</button>
+      </div>
+      <p class="text-xs text-muted" id="ledgerNote" hidden></p>
+      <ul class="timeline" id="timeline"></ul>
+    </div>
+  </section>
+
+  <!-- Identity Verification Card -->
+  <section class="card" id="verifyCard" aria-labelledby="verifyTitle">
+    <div class="card-head flex items-start justify-between gap-4 mb-5 flex-wrap">
+      <div>
+        <h2 id="verifyTitle" class="text-xl font-semibold">Identity verification</h2>
+        <p class="hint">Manual review by staff.</p>
+      </div>
+      <span class="status-chip" id="verifyChip">Loading…</span>
+    </div>
+
+    <p class="text-xs text-muted" id="verifyHint"></p>
+    <div class="banner banner-error" id="verifyNotes" hidden></div>
+
+    <!-- Consent Block -->
+    <div id="consentBlock" hidden>
+      <div class="banner banner-warning">
+        The privacy notice has been updated. Review it and record consent again before applying.
+      </div>
+      <a class="link" href="{% url 'privacy' %}" target="_blank" rel="noopener">Read the privacy notice</a>
+      <button type="button" class="btn btn-ghost btn-block mt-3" id="consentBtn" data-requires-network>
+        I agree
+      </button>
+    </div>
+
+    <!-- Upload Block -->
+    <div id="uploadBlock" hidden>
+      <p class="text-xs text-muted mb-4">
+        Upload the front and back of your National ID and a selfie. Maximum 5 MB each
+        (JPEG, PNG or WebP). Images are stored privately.
+      </p>
+      <form id="docForm" novalidate class="space-y-4">
+        <div class="doc-inputs grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="doc-input">
+            <label for="doc_front" class="form-label">ID front</label>
+            <input type="file" id="doc_front" accept="image/jpeg,image/png,image/webp" required class="form-input" />
+            <p class="hint">Photograph the whole document in good light.</p>
+          </div>
+          <div class="doc-input">
+            <label for="doc_back" class="form-label">ID back</label>
+            <input type="file" id="doc_back" accept="image/jpeg,image/png,image/webp" required class="form-input" />
+          </div>
+          <div class="doc-input">
+            <label for="doc_selfie" class="form-label">Selfie</label>
+            <input type="file" id="doc_selfie" accept="image/jpeg,image/png,image/webp" required class="form-input" />
+            <p class="hint">Face the camera without a hat or filter.</p>
+          </div>
+        </div>
+        <div class="progress-container" id="docProgressWrap" hidden>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" id="docProgressFill"></div></div>
+          <div class="progress-label text-sm text-muted" id="docProgressLabel">Uploading…</div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="docSubmit" data-requires-network>
+          Upload documents
+        </button>
+        <div class="msg" id="docMsg" role="status"></div>
+      </form>
+    </div>
+
+    <!-- Verified Block -->
+    <div id="verifiedBlock" hidden>
+      <div class="banner banner-success">
+        <span>Your identity is verified. You can apply for a loan.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notifications Card -->
+  <section class="card" id="notifyCard" aria-labelledby="notifyTitle">
+    <div class="card-head flex items-center justify-between">
+      <div>
+        <h2 id="notifyTitle" class="text-xl font-semibold">Updates</h2>
+        <p class="hint">Account messages from the team and the system.</p>
+      </div>
+      <span class="status-chip status-chip--gold" id="notifyBadge" hidden>0 new</span>
+    </div>
+    <ul class="notify-list" id="notifyList"></ul>
+    <p class="text-xs text-muted" id="notifyEmpty">
+      Nothing yet. When your documents are reviewed or your loan status
+      changes, you will see it here — even if the SMS could not reach you.
+    </p>
+    <button type="button" class="link-button" id="notifyReadAll" hidden>Mark all as read</button>
+  </section>
+
+  <!-- Credit Health Panel -->
+  <details class="disclosure" id="creditPanel">
+    <summary class="disclosure-summary">{{ PLATFORM_NAME }} credit health</summary>
+    <div class="disclosure-body">
+      <section class="card loyalty-card" id="loyaltyCard" aria-labelledby="loyaltyTitle" hidden>
+        <div class="card-head flex items-center justify-between">
+          <div>
+            <h2 id="loyaltyTitle" class="text-xl font-semibold">{{ PLATFORM_NAME }} credit health</h2>
+            <p class="hint">Built from your activity here, and only here.</p>
+          </div>
+          <span class="status-chip" id="loyaltyTier">Base</span>
+        </div>
+
+        <p class="text-xs text-muted mt-2">
+          Score scale <span id="loyaltyScoreScale">300 – 850</span>. This is not a credit
+          bureau score.
+        </p>
+
+        <div class="credit-factors mt-4">
+          <h3 class="font-semibold mb-3">What moves your score</h3>
+          <ul id="loyaltyFactors" class="space-y-2"></ul>
+        </div>
+        <p class="text-xs text-muted mt-4" id="loyaltyPortability">
+          Your score is built from activity recorded on {{ PLATFORM_NAME }} only. It is not shared
+          with other lenders and cannot be transferred to another provider.
+        </p>
+
+        <div class="streak-block mt-6">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-semibold">Tier progress</h3>
+            <span class="text-xs text-muted" id="loyaltyTierSince"></span>
+          </div>
+          <div class="streak-dots" id="loyaltyStreak" aria-hidden="true"></div>
+          <p class="text-sm" id="loyaltyStreakLabel">Loading…</p>
+          <p class="text-xs text-muted" id="loyaltyBenefit"></p>
+          <dl class="definition-list mt-3">
+            <dt class="text-sm text-muted">Borrowing limit</dt>
+            <dd id="loyaltyLimit" class="font-semibold font-mono">—</dd>
+          </dl>
+        </div>
+
+        <div class="vault-block mt-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-semibold">Savings vault</h3>
+            <span class="status-chip">Cash-back only</span>
+          </div>
+          <div class="vault-balances grid grid-cols-2 gap-4 mb-4">
+            <div class="p-3 bg-warm-sand rounded-lg">
+              <span class="text-xs text-muted">Cash-back</span>
+              <strong id="loyaltyCashback" class="block font-mono">—</strong>
+            </div>
+            <div class="p-3 bg-warm-sand rounded-lg">
+              <span class="text-xs text-muted">In the vault</span>
+              <strong id="loyaltyVault" class="block font-mono">—</strong>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="vaultAmount" class="form-label">Amount (KES)</label>
+            <input type="text" id="vaultAmount" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 100" class="form-input" />
+          </div>
+          <div class="flex gap-3 mt-3">
+            <button type="button" class="btn btn-secondary btn-sm" id="vaultLockBtn" data-requires-network>Lock in vault</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="vaultReleaseBtn" data-requires-network>Release</button>
+          </div>
+          <div class="msg" id="vaultMsg" role="status"></div>
+          <p class="text-xs text-muted" id="vaultHint"></p>
+        </div>
+
+        <h3 class="text-lg font-semibold mt-6">Loyalty activity</h3>
+        <ul class="timeline" id="loyaltyEvents"></ul>
+        <p class="alert alert-error" id="loyaltyError" role="alert" hidden></p>
       </section>
+    </div>
+  </details>
 
-    <details class="funnel-disclosure" id="creditPanel">
-      <summary class="funnel-disclosure-summary">
-        {{ PLATFORM_NAME }} credit health
-      </summary>
-      <div class="funnel-disclosure-body">
-        <section class="card loyalty-card" id="loyaltyCard" aria-labelledby="loyaltyTitle" hidden>
-          <div class="card-head">
-            <div>
-              <h2 id="loyaltyTitle">{{ PLATFORM_NAME }} credit health</h2>
-              <p class="hint">Built from your activity here, and only here.</p>
-            </div>
-            <span class="chip chip-neutral" id="loyaltyTier">Base</span>
-          </div>
-
-          <p class="tiny muted" style="margin: 4px 0 0;">
-            Score scale <span id="loyaltyScoreScale">300 – 850</span>. This is not a credit
-            bureau score.
-          </p>
-
-          <div class="credit-factors">
-            <h3>What moves your score</h3>
-            <ul id="loyaltyFactors"></ul>
-          </div>
-          <p class="tiny muted" id="loyaltyPortability">
-            Your score is built from activity recorded on {{ PLATFORM_NAME }} only. It is not shared
-            with other lenders and cannot be transferred to another provider.
-          </p>
-
-          <div class="streak-block">
-            <div class="row row-between">
-              <h3>Tier progress</h3>
-              <span class="tiny muted" id="loyaltyTierSince"></span>
-            </div>
-            <div class="streak-dots" id="loyaltyStreak" aria-hidden="true"></div>
-            <p class="tiny" id="loyaltyStreakLabel">Loading…</p>
-            <p class="tiny muted" id="loyaltyBenefit"></p>
-            <dl class="definition-list">
-              <dt>Borrowing limit</dt><dd id="loyaltyLimit">—</dd>
-            </dl>
-          </div>
-
-          <div class="vault-block">
-            <div class="row row-between">
-              <h3>Savings vault</h3>
-              <span class="chip chip-neutral">Cash-back only</span>
-            </div>
-            <div class="vault-balances">
-              <div>
-                <span class="tiny muted">Cash-back</span>
-                <strong id="loyaltyCashback">—</strong>
-              </div>
-              <div>
-                <span class="tiny muted">In the vault</span>
-                <strong id="loyaltyVault">—</strong>
-              </div>
-            </div>
-            <div class="field" style="margin-bottom: 8px;">
-              <label for="vaultAmount">Amount (KES)</label>
-              <input id="vaultAmount" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 100" />
-            </div>
-            <div class="row">
-              <button class="btn btn-secondary btn-sm" type="button" id="vaultLockBtn" data-requires-network>
-                Lock in vault
-              </button>
-              <button class="btn btn-ghost btn-sm" type="button" id="vaultReleaseBtn" data-requires-network>
-                Release
-              </button>
-            </div>
-            <div class="msg" id="vaultMsg" role="status"></div>
-            <p class="tiny muted" id="vaultHint"></p>
-          </div>
-
-          <h3 style="margin-top: 18px; font-size: 0.95rem;">Loyalty activity</h3>
-          <ul class="timeline" id="loyaltyEvents"></ul>
-          <p class="alert alert-error" id="loyaltyError" role="alert" hidden></p>
-        </section>
+  <!-- Notices Panel -->
+  <details class="disclosure" id="noticesPanel">
+    <summary class="disclosure-summary">Notices & support</summary>
+    <div class="disclosure-body">
+      <p class="text-xs text-muted">
+        Applications are reviewed manually. Fee collection and live disbursement
+        stay disabled until the required approvals are complete.
+      </p>
+      <p class="text-xs text-muted mt-2">
+        Your session expires after 30 minutes — sign out on a shared device and never
+        share your password or one-time code with anyone.
+      </p>
+      <div class="flex flex-wrap gap-3 mt-4">
+        <a class="btn btn-ghost btn-sm" href="{% url 'privacy' %}">Privacy notice</a>
+        <a class="btn btn-ghost btn-sm" href="{% url 'terms' %}">Terms of use</a>
+        {% if PLATFORM_SUPPORT_EMAIL %}<a class="btn btn-ghost btn-sm" href="mailto:{{ PLATFORM_SUPPORT_EMAIL }}">{{ PLATFORM_SUPPORT_EMAIL }}</a>{% endif %}
+        {% if PLATFORM_SUPPORT_PHONE %}<a class="btn btn-ghost btn-sm" href="tel:{{ PLATFORM_SUPPORT_PHONE }}">{{ PLATFORM_SUPPORT_PHONE }}</a>{% endif %}
       </div>
-    </details>
-
-    <details class="funnel-disclosure" id="noticesPanel">
-      <summary class="funnel-disclosure-summary">
-        Notices &amp; support
-      </summary>
-      <div class="funnel-disclosure-body">
-        <p class="tiny muted">
-          Applications are reviewed manually. Fee collection and live disbursement
-          stay disabled until the required approvals are complete.
-        </p>
-        <p class="tiny muted">
-          Your session expires after 30 minutes — sign out on a shared device and never
-          share your password or one-time code with anyone.
-        </p>
-        <p class="funnel-disclosure-links">
-          <a class="link-button" href="{% url 'privacy' %}">Privacy notice</a>
-          <a class="link-button" href="{% url 'terms' %}">Terms of use</a>
-          {% if PLATFORM_SUPPORT_EMAIL %}<a class="link-button" href="mailto:{{ PLATFORM_SUPPORT_EMAIL }}">{{ PLATFORM_SUPPORT_EMAIL }}</a>{% endif %}
-          {% if PLATFORM_SUPPORT_PHONE %}<a class="link-button" href="tel:{{ PLATFORM_SUPPORT_PHONE }}">{{ PLATFORM_SUPPORT_PHONE }}</a>{% endif %}
-        </p>
-      </div>
-    </details>
-  </div>
+    </div>
+  </details>
 
   <div class="visually-hidden" id="statusAnnouncer" role="status" aria-live="polite"></div>
 </div>
@@ -524,26 +414,23 @@
 
 {% block dialogs %}
   <dialog class="dialog dialog--pay" id="payDialog" aria-labelledby="payDialogTitle">
-    <div class="dialog-head">
-      <div class="row row-between">
-        <h2 id="payDialogTitle">
-          <span class="mpesa-mark" aria-hidden="true">M</span>
-          M-Pesa payment
-        </h2>
-        <span class="chip chip-neutral" id="payDialogStatus">Not started</span>
+    <div class="dialog__header">
+      <div class="flex items-center justify-between">
+        <h2 id="payDialogTitle" class="dialog__title"><span class="mpesa-mark" aria-hidden="true">M</span> M-Pesa payment</h2>
+        <span class="status-chip" id="payDialogStatus">Not started</span>
       </div>
-      <p class="hint">The payment provider requests the prompt and confirms the result.</p>
+      <p class="hint mt-2">The payment provider requests the prompt and confirms the result.</p>
     </div>
 
-    <div class="dialog-body">
-      <div class="pay-summary">
+    <div class="dialog__body">
+      <div class="pay-summary grid grid-cols-2 gap-4 mb-6">
         <div>
-          <span class="tiny muted">Amount due</span>
-          <strong id="payDialogAmount">—</strong>
+          <span class="text-xs text-muted">Amount due</span>
+          <strong id="payDialogAmount" class="block text-xl font-mono">—</strong>
         </div>
         <div>
-          <span class="tiny muted">Registered number</span>
-          <strong id="payDialogPhone">—</strong>
+          <span class="text-xs text-muted">Registered number</span>
+          <strong id="payDialogPhone" class="block font-mono">—</strong>
         </div>
       </div>
 
@@ -555,23 +442,21 @@
           </svg>
           <span class="pay-ring-value" id="payCountdown">60</span>
         </div>
-        <p class="pay-window-copy" id="payWindowCopy">
+        <p class="pay-window-copy text-center text-sm text-muted" id="payWindowCopy">
           When the checkout opens, approve the prompt on your handset. This window
           tracks the prompt; it does not prove a payment.
         </p>
       </div>
 
-      <button class="resend-link" type="button" id="payResend" hidden>
-        Didn’t receive the prompt? Re-trigger STK Push
+      <button type="button" class="resend-link btn btn-ghost btn-sm mt-4" id="payResend" hidden>
+        Didn't receive the prompt? Re-trigger STK Push
       </button>
 
-      <div class="pay-state-card" id="payStateCard" data-state="idle">
+      <div class="pay-state-card card" id="payStateCard" data-state="idle">
         <span class="pay-state-icon" id="payStateIcon" aria-hidden="true"></span>
         <div>
           <strong id="payStateTitle">Ready when you are</strong>
-          <p id="payStateBody">
-            Nothing has been charged. The fee is only collected after an accepted offer.
-          </p>
+          <p id="payStateBody" class="text-muted text-sm">Nothing has been charged. The fee is only collected after an accepted offer.</p>
         </div>
       </div>
 
@@ -581,33 +466,30 @@
         <li data-pay-step="3">Provider confirmed</li>
       </ol>
 
-      <p class="tiny" id="payDialogMessage" role="status" aria-live="polite">
-        Choose “Pay with M-Pesa” to start. A request is sent to the phone registered on the account.
+      <p class="text-sm" id="payDialogMessage" role="status" aria-live="polite">
+        Choose "Pay with M-Pesa" to start. A request is sent to the phone registered on the account.
       </p>
 
-      <dl class="pay-refs" id="payRefs" hidden>
-        <dt>Provider reference</dt><dd class="mono" id="payProviderRef">—</dd>
-        <dt>M-Pesa code</dt><dd class="mono" id="payMpesaRef">—</dd>
+      <dl class="pay-refs mt-4" id="payRefs" hidden>
+        <dt class="text-sm text-muted">Provider reference</dt><dd class="font-mono" id="payProviderRef">—</dd>
+        <dt class="text-sm text-muted">M-Pesa code</dt><dd class="font-mono" id="payMpesaRef">—</dd>
       </dl>
 
       <div class="banner banner-error" id="payDialogError" role="alert" hidden></div>
 
-      <details class="pay-help">
-        <summary>What happens after I enter my PIN?</summary>
-        <div>
-          <p>The payment provider forwards the result to this application. This page reads the saved
-          payment record and shows it. If the prompt does not arrive, check that the SIM is
-          in the phone, that the line is registered for M-Pesa and that you have signal.</p>
-          <p>A cancelled prompt, an insufficient balance or a timeout leaves the fee unpaid.
-          Nothing is disbursed until the fee is confirmed and the remaining checks are complete.</p>
+      <details class="pay-help mt-4">
+        <summary class="cursor-pointer text-sm font-medium text-trust">What happens after I enter my PIN?</summary>
+        <div class="mt-2 text-sm text-muted space-y-2">
+          <p>The payment provider forwards the result to this application. This page reads the saved payment record and shows it. If the prompt does not arrive, check that the SIM is in the phone, that the line is registered for M-Pesa and that you have signal.</p>
+          <p>A cancelled prompt, an insufficient balance or a timeout leaves the fee unpaid. Nothing is disbursed until the fee is confirmed and the remaining checks are complete.</p>
         </div>
       </details>
     </div>
 
-    <div class="dialog-actions">
-      <button class="btn btn-ghost" type="button" data-dialog-close>Close</button>
-      <button class="btn btn-ghost" type="button" id="payCheckStatus">Check status</button>
-      <button class="btn btn-primary" type="button" id="payDialogStart" data-requires-network>
+    <div class="dialog__actions flex justify-end gap-3">
+      <button type="button" class="btn btn-ghost" data-dialog-close>Close</button>
+      <button type="button" class="btn btn-ghost" id="payCheckStatus">Check status</button>
+      <button type="button" class="btn btn-mpesa" id="payDialogStart" data-requires-network>
         <span class="mpesa-mark" aria-hidden="true">M</span>
         Pay with M-Pesa
       </button>
@@ -615,53 +497,50 @@
   </dialog>
 
   <dialog class="dialog dialog--receipt" id="receiptDialog" aria-labelledby="receiptTitle">
-    <div class="dialog-head">
-      <div class="row row-between">
-        <h2 id="receiptTitle">Payment receipt</h2>
-        <span class="chip chip-neutral" id="receiptStatus">—</span>
+    <div class="dialog__header">
+      <div class="flex items-center justify-between">
+        <h2 id="receiptTitle" class="dialog__title">Payment receipt</h2>
+        <span class="status-chip" id="receiptStatus">—</span>
       </div>
-      <p class="hint">Generated from the saved payment record, not from this browser.</p>
+      <p class="hint mt-2">Generated from the saved payment record, not from this browser.</p>
     </div>
 
-    <div class="dialog-body" id="receiptPrintable">
-      <div class="receipt-head">
-        <span class="brand-mark" aria-hidden="true">{% include "partials/brand_mark.svg" %}</span>
+    <div class="dialog__body" id="receiptPrintable">
+      <div class="receipt-head flex items-center gap-3 mb-4">
+        <span class="brand-mark p-2 bg-trust-blue-light rounded-lg" aria-hidden="true">{% include "partials/brand_mark.svg" %}</span>
         <div>
           <strong>{{ PLATFORM_NAME }}</strong>
-          <span class="tiny muted">Payment record · Kenya · KES</span>
+          <span class="text-xs text-muted block">Payment record · Kenya · KES</span>
         </div>
       </div>
 
-      <p class="receipt-amount" id="receiptAmount">—</p>
+      <p class="receipt-amount text-3xl font-bold font-mono text-trust" id="receiptAmount">—</p>
 
-      <dl class="receipt-list">
-        <dt>Status</dt><dd id="receiptStatusText">—</dd>
-        <dt>Purpose</dt><dd id="receiptPurpose">—</dd>
-        <dt>Application</dt><dd id="receiptLoan">—</dd>
-        <dt>Loan principal</dt><dd id="receiptPrincipal">—</dd>
-        <dt>Processing fee</dt><dd id="receiptFee">—</dd>
-        <dt>Provider reference</dt><dd class="mono" id="receiptReference">—</dd>
-        <dt>M-Pesa code</dt><dd class="mono" id="receiptMpesa">—</dd>
-        <dt>Channel</dt><dd id="receiptChannel">—</dd>
-        <dt>Paid at</dt><dd id="receiptDate">—</dd>
-        <dt>Recorded at</dt><dd id="receiptCreated">—</dd>
+      <dl class="receipt-list space-y-3 mt-4">
+        <div><dt class="text-sm text-muted">Status</dt><dd id="receiptStatusText" class="font-semibold">—</dd></div>
+        <div><dt class="text-sm text-muted">Purpose</dt><dd id="receiptPurpose" class="font-semibold">—</dd></div>
+        <div><dt class="text-sm text-muted">Application</dt><dd id="receiptLoan" class="font-mono">—</dd></div>
+        <div><dt class="text-sm text-muted">Loan principal</dt><dd id="receiptPrincipal" class="font-mono">—</dd></div>
+        <div><dt class="text-sm text-muted">Processing fee</dt><dd id="receiptFee" class="font-mono">—</dd></div>
+        <div><dt class="text-sm text-muted">Provider reference</dt><dd class="font-mono" id="receiptReference">—</dd></div>
+        <div><dt class="text-sm text-muted">M-Pesa code</dt><dd class="font-mono" id="receiptMpesa">—</dd></div>
+        <div><dt class="text-sm text-muted">Channel</dt><dd id="receiptChannel">—</dd></div>
+        <div><dt class="text-sm text-muted">Paid at</dt><dd id="receiptDate">—</dd></div>
+        <div><dt class="text-sm text-muted">Recorded at</dt><dd id="receiptCreated">—</dd></div>
       </dl>
 
-      <p class="tiny muted" id="receiptFailure" hidden></p>
-      <p class="tiny muted">
-        This receipt reflects the server record at the time it was opened. A payment is only
-        complete when the status reads Confirmed.
-      </p>
+      <p class="text-xs text-muted" id="receiptFailure" hidden></p>
+      <p class="text-xs text-muted mt-4">This receipt reflects the server record at the time it was opened. A payment is only complete when the status reads Confirmed.</p>
     </div>
 
-    <div class="dialog-actions">
-      <button class="btn btn-ghost" type="button" data-dialog-close>Close</button>
-      <button class="btn btn-secondary" type="button" id="receiptPrint">Save as PDF</button>
+    <div class="dialog__actions flex justify-end gap-3">
+      <button type="button" class="btn btn-ghost" data-dialog-close>Close</button>
+      <button type="button" class="btn btn-secondary" id="receiptPrint">Save as PDF</button>
     </div>
   </dialog>
 
   <div class="sheet-fab-wrap">
-    <button class="sheet-fab" type="button" data-sheet-open="expressSheet" aria-haspopup="dialog">
+    <button type="button" class="btn btn-mpesa sheet-fab" data-sheet-open="expressSheet" aria-haspopup="dialog">
       <span class="sheet-fab-dot" aria-hidden="true"></span>
       Payment Express
     </button>
@@ -669,37 +548,37 @@
 
   <div class="sheet" id="expressSheet" role="dialog" aria-modal="true" aria-labelledby="expressTitle" hidden>
     <div class="sheet-backdrop" data-sheet-close></div>
-    <div class="sheet-panel" role="document">
+    <div class="sheet-panel">
       <span class="sheet-grab" aria-hidden="true"></span>
-      <div class="row row-between">
-        <h2 id="expressTitle">Payment Express</h2>
-        <button class="icon-button" type="button" data-sheet-close aria-label="Close">×</button>
+      <div class="flex items-center justify-between mb-4">
+        <h2 id="expressTitle" class="text-xl font-semibold">Payment Express</h2>
+        <button type="button" class="icon-button" data-sheet-close aria-label="Close">×</button>
       </div>
-      <p class="muted tiny">One tap to the action you need. Nothing here moves money without your confirmation.</p>
+      <p class="text-xs text-muted mb-4">One tap to the action you need. Nothing here moves money without your confirmation.</p>
 
-      <ul class="sheet-actions">
+      <ul class="sheet-actions space-y-2">
         <li>
-          <button class="sheet-action" type="button" id="expressPay">
+          <button type="button" class="sheet-action btn btn-mpesa btn-block justify-start" id="expressPay">
             <span class="sheet-action-icon" aria-hidden="true">M</span>
-            <span>
+            <span class="flex flex-col items-start">
               <strong>Pay processing fee</strong>
               <small id="expressPayHint">Available after an offer is accepted.</small>
             </span>
           </button>
         </li>
         <li>
-          <button class="sheet-action" type="button" id="expressReceipts">
+          <button type="button" class="sheet-action btn btn-secondary btn-block justify-start" id="expressReceipts">
             <span class="sheet-action-icon" aria-hidden="true">R</span>
-            <span>
+            <span class="flex flex-col items-start">
               <strong>Open receipts</strong>
               <small>Every provider reference recorded on your account.</small>
             </span>
           </button>
         </li>
         <li>
-          <button class="sheet-action" type="button" id="expressDisbursement">
+          <button type="button" class="sheet-action btn btn-ghost btn-block justify-start" id="expressDisbursement">
             <span class="sheet-action-icon" aria-hidden="true">→</span>
-            <span>
+            <span class="flex flex-col items-start">
               <strong>Disbursement status</strong>
               <small id="expressDisbursementHint">No disbursement recorded yet.</small>
             </span>
@@ -707,7 +586,7 @@
         </li>
       </ul>
 
-      <p class="tiny muted">
+      <p class="text-xs text-muted mt-4">
         M-Pesa prompts are delivered by our payment provider. {{ PLATFORM_NAME }} never asks for your PIN
         and never stores it.
       </p>

@@ -9,129 +9,136 @@
 {% block topbar %}{% include "partials/topbar.html" with title="Create account" section_label="Get started" %}{% endblock %}
 
 {% block content %}
-<div class="page page--wide">
-  <div class="auth-layout auth-layout--wide">
-    <aside class="auth-aside" data-reveal>
-      {% include "partials/brand_lockup.html" %}
-      <span class="eyebrow">Before you start</span>
-      <h2>What we ask for, and why.</h2>
-      <ul>
-        <li><strong>Mobile number</strong> — identifies your account and receives status messages.</li>
-        <li><strong>National ID</strong> — matched against the documents you upload.</li>
-        <li><strong>Password</strong> — protects your account. We never display or email it.</li>
-      </ul>
-      <p style="margin-top: 18px;">Identity documents are optional at registration. You can upload them from your dashboard when you are ready; review is manual.</p>
-      <p class="tiny">No payment is collected at registration. The fee schedule is published on the homepage, and fee collection is disabled while the required approvals are outstanding.</p>
-      {% include "partials/art.html" with file="img/identity-plate" modifier="art--aside" w=750 h=1000 %}
-    </aside>
+<div class="auth-layout auth-layout--wide">
+  <aside class="auth-aside" data-reveal>
+    {% include "partials/brand_lockup.html" %}
+    <span class="section__eyebrow">Before you start</span>
+    <h2 class="text-3xl font-bold text-primary mt-3 mb-2">What we ask for, and why.</h2>
+    <ul class="space-y-3 text-secondary">
+      <li><strong>Mobile number</strong> — identifies your account and receives status messages.</li>
+      <li><strong>National ID</strong> — matched against the documents you upload.</li>
+      <li><strong>Password</strong> — protects your account. We never display or email it.</li>
+    </ul>
+    <p class="text-secondary mt-6">Identity documents are optional at registration. You can upload them from your dashboard when you are ready; review is manual.</p>
+    <p class="text-xs text-muted mt-2">No payment is collected at registration. The fee schedule is published on the homepage, and fee collection is disabled while the required approvals are outstanding.</p>
+    {% include "partials/art.html" with file="img/identity-plate" modifier="art--aside" w=750 h=1000 %}
+  </aside>
 
-    <section class="card auth-card" data-reveal data-reveal-delay="1" aria-labelledby="registerTitle">
-      <h1 id="registerTitle">Create your account</h1>
-      <p>Two form steps and a confirmation. You can add identity documents afterwards.</p>
+  <section class="card auth-card" data-reveal data-reveal-delay="1" aria-labelledby="registerTitle">
+    <div class="card-head mb-6">
+      <h1 id="registerTitle" class="text-2xl font-bold">Create your account</h1>
+      <p class="text-secondary">Two form steps and a confirmation. You can add identity documents afterwards.</p>
+    </div>
 
-      <ol class="progress" aria-label="Registration progress">
-        <li class="is-active" data-progress="1">Account</li>
-        <li data-progress="2">Review and consent</li>
-        <li data-progress="3">Ready</li>
-      </ol>
+    <ol class="progress flex items-center gap-2 mb-6" aria-label="Registration progress" style="background: var(--color-warm-sand); padding: var(--space-3); border-radius: var(--radius-lg);">
+      <li class="progress-step is-active" data-progress="1">
+        <span class="progress-step-num">1</span>
+        <span class="progress-step-label">Account</span>
+      </li>
+      <li class="progress-step" data-progress="2">
+        <span class="progress-step-num">2</span>
+        <span class="progress-step-label">Review & consent</span>
+      </li>
+      <li class="progress-step" data-progress="3">
+        <span class="progress-step-num">3</span>
+        <span class="progress-step-label">Ready</span>
+      </li>
+    </ol>
 
-      <form id="registerForm" novalidate>
-        <fieldset id="regStep1" style="border: 0; padding: 0; margin: 0;">
-          <legend class="visually-hidden">Account details</legend>
+    <form id="registerForm" novalidate class="space-y-5">
+      <fieldset id="regStep1" class="space-y-5">
+        <legend class="visually-hidden">Account details</legend>
 
-          <div class="field">
-            <label for="regPhone">Phone number</label>
-            <div class="phone-field">
-              <span class="phone-prefix" aria-hidden="true">KE</span>
-              <input id="regPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
-                     placeholder="0712 345 678" required
-                     aria-describedby="regPhoneHint" />
-            </div>
-            <p class="hint" id="regPhoneHint">
-              Kenya: 07…, 01… or +254… (Safaricom, Airtel, Telkom, Equitel).
-              DR Congo: 08…, 09… or +243…. M-Pesa payouts need a Kenyan line.
-            </p>
-            <p class="carrier-badge" id="regCarrier" aria-live="polite" hidden></p>
-            <p class="carrier-note" id="regCarrierNote" hidden></p>
-            <p class="field-error" id="err-regPhone" role="alert" hidden></p>
+        <div class="form-group">
+          <label for="regPhone" class="form-label">Phone number</label>
+          <div class="phone-field">
+            <span class="phone-prefix" aria-hidden="true">KE</span>
+            <input id="regPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel"
+                   placeholder="0712 345 678" required class="form-input" aria-describedby="regPhoneHint" />
           </div>
-
-          <div class="field">
-            <label for="regNationalId">National ID</label>
-            <input id="regNationalId" name="national_id" inputmode="numeric" pattern="[0-9]*"
-                   autocomplete="off" maxlength="10" placeholder="6–10 digits" required
-                   aria-describedby="regNationalIdHint" />
-            <p class="hint" id="regNationalIdHint">Digits only. Used to match your identity documents.</p>
-            <p class="field-error" id="err-regNationalId" role="alert" hidden></p>
-          </div>
-
-          <div class="field">
-            <label for="regPassword">Password</label>
-            <div class="input-wrap">
-              <input id="regPassword" name="password" type="password" autocomplete="new-password"
-                     minlength="8" required aria-describedby="regPasswordHint" />
-              <button class="password-toggle" type="button" data-password-toggle="regPassword"
-                      aria-label="Show password">Show</button>
-            </div>
-            <p class="hint" id="regPasswordHint">At least 8 characters. Never reuse another service's password.</p>
-            <p class="field-error" id="err-regPassword" role="alert" hidden></p>
-          </div>
-
-          <div class="field">
-            <label for="regPasswordConfirm">Confirm password</label>
-            <div class="input-wrap">
-              <input id="regPasswordConfirm" name="password_confirm" type="password"
-                     autocomplete="new-password" minlength="8" required />
-              <button class="password-toggle" type="button" data-password-toggle="regPasswordConfirm"
-                      aria-label="Show password">Show</button>
-            </div>
-            <p class="field-error" id="err-regPasswordConfirm" role="alert" hidden></p>
-          </div>
-        </fieldset>
-
-        <fieldset id="regStep2" hidden style="border: 0; padding: 0; margin: 0;">
-          <legend class="visually-hidden">Review and consent</legend>
-
-          <div class="card card--flat" style="background: var(--surface-3); margin-bottom: var(--space-4);">
-            <dl class="definition-list">
-              <dt>Phone</dt><dd id="sumPhone">—</dd>
-              <dt>National ID</dt><dd id="sumNationalId">—</dd>
-            </dl>
-          </div>
-
-          <div class="checkbox">
-            <input type="checkbox" id="regConsent" name="consent" required />
-            <label for="regConsent" style="margin: 0; font-weight: 500;">
-              I have read the <a href="{% url 'privacy' %}" target="_blank" rel="noopener">privacy notice</a>
-              (version {{ PRIVACY_VERSION }}) and the <a href="{% url 'terms' %}" target="_blank" rel="noopener">terms</a>
-              (version {{ TERMS_VERSION }}), and I consent to identity processing for this application.
-            </label>
-          </div>
-          <p class="field-error" id="err-regConsent" role="alert" hidden></p>
-        </fieldset>
-
-        <div class="wizard-actions">
-          <button class="btn btn-ghost" type="button" id="regBack" hidden>Back</button>
-          <button class="btn btn-primary" type="button" id="regNext">
-            Continue
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-          <button class="btn btn-primary" type="submit" id="regSubmit" hidden>Create account</button>
+          <p class="hint" id="regPhoneHint">
+            Kenya: 07…, 01… or +254… (Safaricom, Airtel, Telkom, Equitel).
+            DR Congo: 08…, 09… or +243…. M-Pesa payouts need a Kenyan line.
+          </p>
+          <p class="carrier-badge" id="regCarrier" aria-live="polite" hidden></p>
+          <p class="carrier-note" id="regCarrierNote" hidden></p>
+          <p class="form-error" id="err-regPhone" role="alert" hidden></p>
         </div>
 
-        <div class="msg" id="registerMsg" role="status"></div>
-      </form>
+        <div class="form-group">
+          <label for="regNationalId" class="form-label">National ID</label>
+          <input id="regNationalId" name="national_id" inputmode="numeric" pattern="[0-9]*"
+                 autocomplete="off" maxlength="10" placeholder="6–10 digits" required
+                 class="form-input" aria-describedby="regNationalIdHint" />
+          <p class="hint" id="regNationalIdHint">Digits only. Used to match your identity documents.</p>
+          <p class="form-error" id="err-regNationalId" role="alert" hidden></p>
+        </div>
 
-      {# Kept OUTSIDE the form: the JS hides the whole form on success. #}
-      {# A banner inside the form would be hidden along with it. #}
-      {# NOTE: Django hash-comments are single-line only — never stretch one. #}
-      <div class="banner banner-success" id="registerSuccess" role="status" hidden style="margin-top: 14px;">
-        Account created. Continue to your dashboard to add identity documents.
+        <div class="form-group">
+          <label for="regPassword" class="form-label">Password</label>
+          <div class="input-wrap">
+            <input id="regPassword" name="password" type="password" autocomplete="new-password"
+                   minlength="8" required class="form-input" aria-describedby="regPasswordHint" />
+            <button type="button" class="password-toggle" data-password-toggle="regPassword"
+                    aria-label="Show password">Show</button>
+          </div>
+          <p class="hint" id="regPasswordHint">At least 8 characters. Never reuse another service's password.</p>
+          <p class="form-error" id="err-regPassword" role="alert" hidden></p>
+        </div>
+
+        <div class="form-group">
+          <label for="regPasswordConfirm" class="form-label">Confirm password</label>
+          <div class="input-wrap">
+            <input id="regPasswordConfirm" name="password_confirm" type="password"
+                   autocomplete="new-password" minlength="8" required class="form-input" />
+            <button type="button" class="password-toggle" data-password-toggle="regPasswordConfirm"
+                    aria-label="Show password">Show</button>
+          </div>
+          <p class="form-error" id="err-regPasswordConfirm" role="alert" hidden></p>
+        </div>
+      </fieldset>
+
+      <fieldset id="regStep2" hidden class="space-y-5">
+        <legend class="visually-hidden">Review and consent</legend>
+
+        <div class="card bg-warm-sand mb-4">
+          <dl class="definition-list space-y-2">
+            <dt class="text-sm text-muted">Phone</dt><dd id="sumPhone" class="font-semibold">—</dd>
+            <dt class="text-sm text-muted">National ID</dt><dd id="sumNationalId" class="font-semibold font-mono">—</dd>
+          </dl>
+        </div>
+
+        <div class="checkbox">
+          <input type="checkbox" id="regConsent" name="consent" required />
+          <label for="regConsent" style="margin: 0; font-weight: 500;">
+            I have read the <a href="{% url 'privacy' %}" target="_blank" rel="noopener" class="text-trust">privacy notice</a>
+            (version {{ PRIVACY_VERSION }}) and the <a href="{% url 'terms' %}" target="_blank" rel="noopener" class="text-trust">terms</a>
+            (version {{ TERMS_VERSION }}), and I consent to identity processing for this application.
+          </label>
+        </div>
+        <p class="form-error" id="err-regConsent" role="alert" hidden></p>
+      </fieldset>
+
+      <div class="wizard-actions flex items-center justify-between">
+        <button type="button" class="btn btn-ghost" id="regBack" hidden>Back</button>
+        <div class="flex items-center gap-3">
+          <button type="button" class="btn btn-primary" id="regNext">
+            Continue
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button type="submit" class="btn btn-primary" id="regSubmit" hidden>Create account</button>
+        </div>
       </div>
 
-      <p class="auth-switch">Already registered? <a href="{% url 'login_view' %}">Sign in</a></p>
-    </section>
-  </div>
+      <div class="msg" id="registerMsg" role="status"></div>
+    </form>
+
+    <div class="banner banner-success" id="registerSuccess" role="status" hidden style="margin-top: 14px;">
+      Account created. Continue to your dashboard to add identity documents.
+    </div>
+
+    <p class="text-center text-muted mt-6">Already registered? <a href="{% url 'login_view' %}" class="text-trust font-medium">Sign in</a></p>
+  </section>
 </div>
 {% endblock %}
 

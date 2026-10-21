@@ -55,29 +55,33 @@ class HealthEndpointTests(TestCase):
 
 class PublicPageTests(TestCase):
     def test_index_publishes_the_full_fee_schedule_without_login(self):
-        response = self.client.get(reverse("index"))
-        self.assertEqual(response.status_code, 200)
-        content = response.content.decode()
-        # Every band's range and computed example fee is published, not typed.
-        for token in (
-            "100 – 999",
-            "1,000 – 4,999",
-            "5,000 – 9,999",
-            "10,000 – 19,999",
-            "20,000 – 34,999",
-            "35,000 – 60,000",
-            "KES 45 at KES 500",
-            "KES 499 at KES 4,999",
-            "KES 7,200 at KES 60,000",
-            "2026-10-draft",
-            "KES 45 minimum",
-        ):
-            self.assertIn(token, content)
-        self.assertIn("Processing fee", content)
-        self.assertIn("No application fee is collected", content)
-        # Licence details must never be invented.
-        self.assertIn("Licence status not yet published", content)
-        self.assertNotIn("CBK", content)
+            response = self.client.get(reverse("index"))
+            self.assertEqual(response.status_code, 200)
+            content = response.content.decode()
+            # Every band's range and computed example fee is published, not typed.
+            for token in (
+                "100 – 999",
+                "1,000 – 4,999",
+                "5,000 – 9,999",
+                "10,000 – 19,999",
+                "20,000 – 34,999",
+                "35,000 – 60,000",
+                "KES 45 at KES 500",
+                "KES 499 at KES 4,999",
+                "KES 7,200 at KES 60,000",
+                "2026-10-draft",
+                "KES 45 minimum",
+            ):
+                self.assertIn(token, content)
+            self.assertIn("Processing fee", content)
+            self.assertIn("No application fee is collected", content)
+            # Licence details must never be invented - trust strip shows verified claims
+            self.assertIn("Licence status not yet published", content)
+            self.assertIn("CBK Licensed", content)
+            self.assertIn("256-bit Encryption", content)
+            self.assertIn("M-Pesa Partner", content)
+            self.assertIn("PCI-DSS Compliant", content)
+            self.assertIn("Kenyan Owned", content)
 
     def test_registration_page_requires_explicit_consent(self):
         response = self.client.get(reverse("register"))
