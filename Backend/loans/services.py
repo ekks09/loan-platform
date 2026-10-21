@@ -5,9 +5,11 @@ impossible regardless of which view or admin action triggered them.
 """
 from __future__ import annotations
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 
 from core.errors import DomainError, InvalidLoanAmount, InvalidTransition
+from core.notifications import send_sms
 from loans.models import Loan
 from users.phone import normalize_ke_phone
 
@@ -84,7 +86,16 @@ def create_application(*, user, amount: int, mpesa_phone: str) -> Loan:
 
 def approve(loan: Loan, *, actor, expiry_hours: int = 48) -> Loan:
     with transaction.atomic():
-        return loan.issue_offer(actor=actor, expiry_hours=expiry_hours)
+        loan = loan.issue_offer(actor=actor, expiry_hours=expiry_hours)
+    # Notify borrower
+    send_sms(
+        loan.user.phone,
+        f"Your {settings.PLATFORM_NAME} loan of KES {loan.amount:,} is approved. "
+        f"Fee: KES {loan.service_fee:,}. Accept the offer in the app.",
+        purpose="loan_approved",
+        user=loan.user,
+    )
+    return loan
 
 
 def reject(loan: Loan, *, actor, reason: str) -> Loan:
@@ -96,6 +107,14 @@ def reject(loan: Loan, *, actor, reason: str) -> Loan:
         loan.rejection_reason = reason.strip()[:2000]
         loan.save(update_fields=["rejection_reason", "updated_at"])
         loan.transition_to(Loan.Status.REJECTED, actor=actor, reason=reason[:255])
+    # Notify borrower
+    send_sms(
+        loan.user.phone,
+        f"Your {settings.PLATFORM_NAME} loan application was not approved. "
+        f"Reason: {loan.rejection_reason}",
+        purpose="loan_rejected",
+        user=loan.user,
+    )
     return loan
 
 

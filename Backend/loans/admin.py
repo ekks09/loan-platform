@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from django.contrib import admin, messages
+from django.urls import reverse
+from django.utils.html import format_html
 
 from loans.models import Loan, LoanEvent
 from loans.services import approve, reject
@@ -11,6 +13,7 @@ class LoanAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "user",
+        "user_kyc_status",
         "amount",
         "service_fee",
         "status",
@@ -50,6 +53,23 @@ class LoanAdmin(admin.ModelAdmin):
         if obj is not None:
             readonly += ["user", "amount", "mpesa_phone"]
         return readonly
+
+    @admin.display(description="KYC", ordering="user__verification_status")
+    def user_kyc_status(self, obj):
+        status = obj.user.verification_status
+        colors = {
+            "verified": "#10B981",
+            "pending": "#F59E0B",
+            "rejected": "#EF4444",
+        }
+        color = colors.get(status, "#6B7280")
+        url = reverse("v1-users:verification-dashboard") + f"?q={obj.user.phone}"
+        return format_html(
+            '<a href="{}" style="color: {}; font-weight: 600;">{}</a>',
+            url,
+            color,
+            status.capitalize(),
+        )
 
     @admin.action(description="Approve selected applications (issue offer)")
     def approve_loans(self, request, queryset):
